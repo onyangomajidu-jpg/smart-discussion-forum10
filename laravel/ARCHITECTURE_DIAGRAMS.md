@@ -1,0 +1,404 @@
+# System Architecture - Authentication Flow Diagrams
+
+## 🏗️ Component Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         USER INTERFACE                          │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│  │  Login   │  │ Register │  │  Forgot  │  │Dashboard │       │
+│  │  View    │  │   View   │  │ Password │  │   View   │       │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘       │
+└───────┼─────────────┼─────────────┼─────────────┼──────────────┘
+        │             │             │             │
+        ▼             ▼             ▼             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                         CONTROLLERS                             │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐                      │
+│  │  Login   │  │ Register │  │ Password │                      │
+│  │Controller│  │Controller│  │  Reset   │                      │
+│  │          │  │          │  │Controller│                      │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘                      │
+└───────┼─────────────┼─────────────┼──────────────────────────────┘
+        │             │             │
+        │             │             │
+        └─────────────┼─────────────┘
+                      ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     SERVICE LAYER                               │
+│  ┌────────────────────────────────────────────────────┐         │
+│  │         IAuthentication (Interface)                │         │
+│  │  • register(userData, acceptedRules)               │         │
+│  │  • login(credentials, remember)                    │         │
+│  │  • logout(request)                                 │         │
+│  │  • resetPassword(email)                            │         │
+│  │  • updatePasswordWithToken(credentials)            │         │
+│  │  • hasAcceptedForumRules(userId)                   │         │
+│  └───────────────────┬────────────────────────────────┘         │
+│                      │ implements                               │
+│  ┌───────────────────▼────────────────────────────────┐         │
+│  │      AuthenticationService                         │         │
+│  │  Business Logic + Eloquent ORM                     │         │
+│  └───────────────────┬────────────────────────────────┘         │
+│                      │                                          │
+│  ┌───────────────────▼────────────────────────────────┐         │
+│  │         SessionManager                             │         │
+│  │  Session operations and management                 │         │
+│  └────────────────────────────────────────────────────┘         │
+└───────────────────────┬──────────────────────────────────────────┘
+                        ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      MODEL LAYER                                │
+│  ┌──────┐  ┌────────┐  ┌─────────┐  ┌───────┐                 │
+│  │ User │  │ Member │  │Lecturer │  │ Admin │                 │
+│  │Model │  │ Model  │  │  Model  │  │ Model │                 │
+│  └───┬──┘  └───┬────┘  └────┬────┘  └───┬───┘                 │
+└──────┼─────────┼────────────┼───────────┼──────────────────────┘
+       │         │            │           │
+       ▼         ▼            ▼           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                       DATABASE                                  │
+│  ┌───────────────────────────────────────────────────┐          │
+│  │  users                                            │          │
+│  │  • id, name, email, password, role, is_active    │          │
+│  └───┬───────────┬───────────┬───────────┬──────────┘          │
+│      │           │           │           │                     │
+│  ┌───▼────┐  ┌───▼─────┐  ┌──▼──────┐  ┌▼─────────┐          │
+│  │members │  │lecturers│  │ admins  │  │ forum_   │          │
+│  │        │  │         │  │         │  │ rules_   │          │
+│  │        │  │         │  │         │  │acceptance│          │
+│  └────────┘  └─────────┘  └─────────┘  └──────────┘          │
+│                                                                 │
+│  ┌──────────┐  ┌───────────────────┐                          │
+│  │ sessions │  │password_reset_    │                          │
+│  │          │  │tokens             │                          │
+│  └──────────┘  └───────────────────┘                          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 🔄 Registration Flow
+
+```
+┌─────────┐
+│  User   │
+└────┬────┘
+     │ 1. Visit /register
+     ▼
+┌──────────────────────┐
+│  Registration View   │
+│  • Name field        │
+│  • Email field       │
+│  • Password field    │
+│  • Role selector     │
+│  • Forum rules box   │
+│  • Accept checkbox   │◄─── GATE: Required!
+└─────────┬────────────┘
+          │ 2. Fill form + Accept rules
+          ▼
+┌──────────────────────┐
+│  RegisterController  │
+└─────────┬────────────┘
+          │ 3. Validate input
+          ▼
+┌──────────────────────┐
+│ AuthenticationService│
+│  register()          │
+└─────────┬────────────┘
+          │ 4. Check rules accepted
+          ├─── NO ──► Exception thrown
+          │
+          └─── YES ──┐
+                     │ 5. Create user (Eloquent)
+                     ▼
+          ┌──────────────────────┐
+          │  User Model          │
+          │  • Create user       │
+          │  • Create profile    │
+          │  • Log acceptance    │
+          └──────────┬───────────┘
+                     │ 6. Auto-login
+                     ▼
+          ┌──────────────────────┐
+          │  Dashboard           │
+          └──────────────────────┘
+```
+
+## 🔐 Login Flow
+
+```
+┌─────────┐
+│  User   │
+└────┬────┘
+     │ 1. Visit /login
+     ▼
+┌──────────────────────┐
+│   Login View         │
+│  • Email field       │
+│  • Password field    │
+│  • Remember checkbox │
+│  • Rules panel ──────┤◄─── Always visible
+└─────────┬────────────┘
+          │ 2. Submit credentials
+          ▼
+┌──────────────────────┐
+│  LoginController     │
+└─────────┬────────────┘
+          │ 3. Validate input
+          ▼
+┌──────────────────────┐
+│ AuthenticationService│
+│  login()             │
+└─────────┬────────────┘
+          │ 4. Check credentials
+          ▼
+     ┌────────────┐
+     │ Valid?     │
+     └──┬─────┬───┘
+   NO───┤     └───YES
+        │         │
+        │         ▼
+        │    ┌─────────────┐
+        │    │ Active?     │
+        │    └──┬──────┬───┘
+        │  NO───┤      └───YES
+        │       │          │
+        │       │          ▼
+        │       │     ┌──────────┐
+        │       │     │ Banned?  │
+        │       │     └─┬────┬───┘
+        │       │  YES──┤    └───NO
+        │       │       │        │
+        ▼       ▼       ▼        │
+   ┌──────────────────────┐     │
+   │  Error Message       │     │
+   │  Redirect back       │     │
+   └──────────────────────┘     │
+                                │ 5. Success!
+                                ▼
+                     ┌─────────────────┐
+                     │ Regenerate      │
+                     │ Session         │
+                     └────────┬────────┘
+                              │ 6. Route by role
+                              ▼
+                    ┌──────────────────┐
+                    │  Dashboard       │
+                    │  (role-based)    │
+                    └──────────────────┘
+```
+
+## 🚪 Middleware Flow
+
+```
+┌─────────────┐
+│   Request   │
+└──────┬──────┘
+       │
+       ▼
+┌────────────────────┐
+│  Route Middleware  │
+│  ['auth', 'member']│
+└──────┬─────────────┘
+       │
+       ▼
+┌────────────────────┐     ┌──────────────┐
+│  Authenticated?    ├─NO─►│ Redirect to  │
+└──────┬─────────────┘     │ /login       │
+       │ YES               └──────────────┘
+       ▼
+┌────────────────────┐     ┌──────────────┐
+│  Correct Role?     ├─NO─►│ 403 Forbidden│
+└──────┬─────────────┘     └──────────────┘
+       │ YES
+       ▼
+┌────────────────────┐
+│  Process Request   │
+└────────────────────┘
+```
+
+## 🔑 Password Reset Flow
+
+```
+Step 1: Request Reset
+┌─────────┐
+│  User   │
+└────┬────┘
+     │ 1. Click "Forgot Password"
+     ▼
+┌──────────────────────┐
+│ Forgot Password View │
+└─────────┬────────────┘
+          │ 2. Enter email
+          ▼
+┌──────────────────────┐
+│PasswordResetController
+└─────────┬────────────┘
+          │ 3. Send reset link
+          ▼
+┌──────────────────────┐
+│ AuthenticationService│
+│ resetPassword()      │
+└─────────┬────────────┘
+          │ 4. Generate token
+          ▼
+┌──────────────────────┐
+│  Email with link     │
+│  /reset/{token}      │
+└──────────────────────┘
+
+Step 2: Reset Password
+┌─────────┐
+│  User   │
+└────┬────┘
+     │ 5. Click email link
+     ▼
+┌──────────────────────┐
+│ Reset Password View  │
+│ (with token)         │
+└─────────┬────────────┘
+          │ 6. Enter new password
+          ▼
+┌──────────────────────┐
+│PasswordResetController
+└─────────┬────────────┘
+          │ 7. Verify token
+          ▼
+┌──────────────────────┐
+│ AuthenticationService│
+│ updatePasswordWith   │
+│ Token()              │
+└─────────┬────────────┘
+          │ 8. Update password
+          ▼
+┌──────────────────────┐
+│  Success! Redirect   │
+│  to login            │
+└──────────────────────┘
+```
+
+## 🛡️ Forum Rules Gate (Multi-Layer)
+
+```
+LAYER 1: Frontend (JavaScript)
+┌─────────────────────────────────┐
+│  Checkbox State                 │
+│  ┌─────────────────────────┐    │
+│  │ [ ] Accept Forum Rules  │    │
+│  └─────────────────────────┘    │
+│          │                      │
+│          │ Unchecked            │
+│          ▼                      │
+│  ┌─────────────────────────┐    │
+│  │ [Submit] DISABLED       │    │
+│  └─────────────────────────┘    │
+│          │                      │
+│          │ Checked              │
+│          ▼                      │
+│  ┌─────────────────────────┐    │
+│  │ [Submit] ENABLED        │    │
+│  └─────────────────────────┘    │
+└─────────────────────────────────┘
+            │
+            ▼
+LAYER 2: Validation (Laravel)
+┌─────────────────────────────────┐
+│  'accept_rules' => 'required    │
+│                    |accepted'   │
+│          │                      │
+│          ├─── FAIL ──► Error    │
+│          │                      │
+│          └─── PASS              │
+└─────────────────────────────────┘
+            │
+            ▼
+LAYER 3: Business Logic
+┌─────────────────────────────────┐
+│  AuthenticationService          │
+│  if (!$acceptedRules) {         │
+│    throw new Exception(...);    │
+│  }                              │
+│          │                      │
+│          ├─── FAIL ──► Exception│
+│          │                      │
+│          └─── PASS              │
+└─────────────────────────────────┘
+            │
+            ▼
+LAYER 4: Database
+┌─────────────────────────────────┐
+│  forum_rules_acceptances        │
+│  • user_id                      │
+│  • accepted_at (timestamp)      │
+│  • ip_address                   │
+│                                 │
+│  AUDIT TRAIL CREATED            │
+└─────────────────────────────────┘
+```
+
+## 📊 Database Relationships
+
+```
+┌──────────────────┐
+│      users       │
+│  id (PK)         │
+│  name            │
+│  email (unique)  │
+│  password        │
+│  role (enum)     │◄─────┐
+│  is_active       │      │
+└────┬─────────────┘      │
+     │ 1                  │
+     │                    │
+     │ 1                  │
+     ├────────┬───────────┼──────────┐
+     │        │           │          │
+     │ 1      │ 1         │ 1        │ 1
+     ▼        ▼           ▼          ▼
+┌─────────┐ ┌──────────┐ ┌────────┐ ┌──────────────────┐
+│ members │ │lecturers │ │ admins │ │forum_rules_      │
+│         │ │          │ │        │ │acceptances       │
+│user_id  │ │user_id   │ │user_id │ │                  │
+│(FK)     │ │(FK)      │ │(FK)    │ │user_id (FK)      │
+│         │ │          │ │        │ │accepted_at       │
+│student  │ │staff_id  │ │super_  │ │ip_address        │
+│_id      │ │          │ │admin   │ └──────────────────┘
+│         │ │department│ │        │
+│programme│ │          │ │        │
+│         │ │specialisa│ │        │
+│year_of  │ │tion      │ │        │
+│_study   │ │          │ │        │
+│         │ │          │ │        │
+│reputation│ │         │ │        │
+└─────────┘ └──────────┘ └────────┘
+```
+
+## 🎭 Role System
+
+```
+               ┌──────────┐
+               │   USER   │
+               │  (Base)  │
+               └────┬─────┘
+                    │
+        ┌───────────┼───────────┐
+        │           │           │
+        ▼           ▼           ▼
+   ┌────────┐  ┌─────────┐  ┌───────┐
+   │ MEMBER │  │LECTURER │  │ ADMIN │
+   └────────┘  └─────────┘  └───────┘
+        │           │           │
+        │           │           │
+   ┌────▼──────┐┌───▼──────┐┌──▼────────┐
+   │ Can:      ││ Can:     ││ Can:      │
+   │ • Post    ││ • Post   ││ • All     │
+   │ • Reply   ││ • Reply  ││ • Warn    │
+   │ • Vote    ││ • Vote   ││ • Ban     │
+   │ • Join    ││ • Quiz   ││ • Delete  │
+   │   Groups  ││ • Mod    ││ • Manage  │
+   └───────────┘└──────────┘└───────────┘
+```
+
+---
+
+**Visual Reference for Smart Discussion Forum Authentication System**
+**All flows follow SOLID principles and security best practices**
