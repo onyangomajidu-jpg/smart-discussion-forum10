@@ -38,6 +38,19 @@ Route::middleware(['auth', App\Http\Middleware\MemberMiddleware::class])->group(
     // Member-specific routes will go here
 });
 
+// ── Topics / Content Management Routes ────────────────────────────
+Route::middleware('auth')->group(function () {
+    Route::get('/topics', [App\Http\Controllers\TopicController::class, 'index'])->name('topics.index');
+    Route::post('/topics', [App\Http\Controllers\TopicController::class, 'store'])->name('topics.store');
+    Route::get('/topics/{topic}', [App\Http\Controllers\TopicController::class, 'show'])->name('topics.show');
+    Route::delete('/topics/{topic}', [App\Http\Controllers\TopicController::class, 'destroy'])->name('topics.destroy');
+    Route::post('/topics/{topicId}/participate', [App\Http\Controllers\TopicController::class, 'participate'])->name('topics.participate');
+    Route::post('/posts/{postId}/answer', [App\Http\Controllers\TopicController::class, 'answer'])->name('topics.answer');
+    Route::put('/posts/{id}', [App\Http\Controllers\PostController::class, 'update'])->name('posts.update');
+    Route::delete('/posts/{id}', [App\Http\Controllers\PostController::class, 'destroy'])->name('posts.destroy');
+    Route::get('/notifications', [App\Http\Controllers\TopicController::class, 'notifications'])->name('notifications.index');
+});
+
 // ── Lecturer Routes ────────────────────────────────────────────────
 Route::middleware(['auth', App\Http\Middleware\LecturerMiddleware::class])->group(function () {
     Route::get('/lecturer/dashboard', function () {

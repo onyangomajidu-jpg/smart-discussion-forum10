@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use App\Contracts\IAuthentication;
+use App\Contracts\IContentManagement;
 use App\Services\AuthenticationService;
+use App\Services\ContentManagementService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -13,8 +15,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Bind IAuthentication interface to AuthenticationService
         $this->app->bind(IAuthentication::class, AuthenticationService::class);
+        $this->app->bind(IContentManagement::class, ContentManagementService::class);
     }
 
     /**
