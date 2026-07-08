@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Quiz\QuizController;
 
 // ── Guest Routes ───────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
@@ -35,7 +36,11 @@ Route::middleware('auth')->group(function () {
 
 // ── Member Routes ──────────────────────────────────────────────────
 Route::middleware(['auth', App\Http\Middleware\MemberMiddleware::class])->group(function () {
-    // Member-specific routes will go here
+    // Student quiz routes (SDD §4.2 — Student quiz screen Fig 6.6)
+    Route::get('/quizzes',                  [QuizController::class, 'index'])->name('quizzes.index');
+    Route::get('/quizzes/{quiz}',           [QuizController::class, 'take'])->name('quizzes.take');
+    Route::post('/quizzes/{quiz}/submit',   [QuizController::class, 'submit'])->name('quizzes.submit');
+    Route::get('/quizzes/{quiz}/result',    [QuizController::class, 'result'])->name('quizzes.result');
 });
 
 // ── Topics / Content Management Routes ────────────────────────────
@@ -56,6 +61,15 @@ Route::middleware(['auth', App\Http\Middleware\LecturerMiddleware::class])->grou
     Route::get('/lecturer/dashboard', function () {
         return view('lecturer.dashboard');
     })->name('lecturer.dashboard');
+
+    // Lecturer quiz management routes (SDD §4.2 — Lecturer quiz screen Fig 6.4)
+    Route::get('/lecturer/quizzes',                 [QuizController::class, 'lecturerIndex'])->name('lecturer.quizzes.index');
+    Route::get('/lecturer/quizzes/create',          [QuizController::class, 'create'])->name('lecturer.quizzes.create');
+    Route::post('/lecturer/quizzes',                [QuizController::class, 'store'])->name('lecturer.quizzes.store');
+    Route::get('/lecturer/quizzes/{quiz}',          [QuizController::class, 'show'])->name('lecturer.quizzes.show');
+    Route::post('/lecturer/quizzes/{quiz}/publish', [QuizController::class, 'publish'])->name('lecturer.quizzes.publish');
+    Route::post('/lecturer/quizzes/{quiz}/remind',  [QuizController::class, 'remind'])->name('lecturer.quizzes.remind');
+    Route::get('/lecturer/quizzes/{quiz}/results',  [QuizController::class, 'results'])->name('lecturer.quizzes.results');
 });
 
 // ── Administrator Routes ───────────────────────────────────────────

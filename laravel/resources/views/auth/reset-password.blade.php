@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('images/forum-favicon.png') }}">
     <title>Reset Password - Smart Discussion Forum</title>
     <style>
         * {
@@ -35,9 +36,17 @@
             margin-bottom: 30px;
         }
         
+        .logo img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto 14px;
+        }
         .logo h1 {
             color: #667eea;
-            font-size: 28px;
+            font-size: 24px;
+            font-weight: 700;
             margin-bottom: 10px;
         }
         
@@ -111,7 +120,8 @@
 <body>
     <div class="reset-password-container">
         <div class="logo">
-            <h1>🔐 Reset Password</h1>
+            <img src="{{ asset('images/forum.png') }}" alt="Smart Discussion Forum">
+            <h1>Reset Password</h1>
             <p>Enter your new password below</p>
         </div>
 
