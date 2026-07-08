@@ -50,6 +50,7 @@ Route::middleware(['auth', App\Http\Middleware\LecturerMiddleware::class])->grou
     })->name('lecturer.dashboard');
 
     // Lecturer quiz management routes (SDD §4.2 — Lecturer quiz screen Fig 6.4)
+    Route::get('/lecturer/quizzes',                 [QuizController::class, 'lecturerIndex'])->name('lecturer.quizzes.index');
     Route::get('/lecturer/quizzes/create',          [QuizController::class, 'create'])->name('lecturer.quizzes.create');
     Route::post('/lecturer/quizzes',                [QuizController::class, 'store'])->name('lecturer.quizzes.store');
     Route::get('/lecturer/quizzes/{quiz}',          [QuizController::class, 'show'])->name('lecturer.quizzes.show');

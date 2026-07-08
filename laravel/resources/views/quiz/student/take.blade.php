@@ -4,237 +4,383 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $quiz->title }} — Quiz in Progress</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI',sans-serif;background:#f0f2ff;color:#333;
-            user-select:none;-webkit-user-select:none}
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #f1f5f9;
+            color: #0f172a;
+            user-select: none;
+            -webkit-user-select: none;
+        }
 
-        /* ── Lockdown sticky header (SDD Fig 6.6) ───────────────────────── */
-        .quiz-header{
-            background:linear-gradient(135deg,#667eea,#764ba2);
-            color:#fff;padding:14px 28px;
-            display:flex;justify-content:space-between;align-items:center;
-            position:sticky;top:0;z-index:200;
-            box-shadow:0 3px 16px rgba(0,0,0,.25)}
-        .header-left .quiz-title{font-size:17px;font-weight:700;margin-bottom:3px}
-        .header-left .quiz-meta{font-size:12px;opacity:.8}
+        /* ── Lockdown Header ──────────────────────────────────────────── */
+        .quiz-header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #312e81 100%);
+            color: #fff;
+            padding: 0 32px;
+            height: 68px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky; top: 0; z-index: 200;
+            box-shadow: 0 4px 24px rgba(15,23,42,.5);
+        }
+        .header-brand { display: flex; align-items: center; gap: 12px; }
+        .header-brand .brand-icon {
+            width: 38px; height: 38px; border-radius: 10px;
+            background: rgba(255,255,255,.15);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; border: 1.5px solid rgba(255,255,255,.25);
+        }
+        .quiz-title-text { font-size: 15px; font-weight: 800; }
+        .quiz-meta-text { font-size: 11px; opacity: .65; margin-top: 2px; display: flex; align-items: center; gap: 10px; }
+        .lockdown-badge {
+            background: rgba(239,68,68,.25);
+            border: 1px solid rgba(239,68,68,.4);
+            color: #fca5a5;
+            padding: 3px 10px; border-radius: 20px;
+            font-size: 10px; font-weight: 700;
+            display: flex; align-items: center; gap: 4px;
+        }
 
-        /* ── Timer (SDD Fig 6.6 — 15-min countdown) ─────────────────────── */
-        .timer-box{background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.4);
-            border-radius:12px;padding:10px 20px;text-align:center;min-width:120px}
-        .timer-box .time{font-size:26px;font-weight:700;letter-spacing:3px;font-variant-numeric:tabular-nums}
-        .timer-box .lbl{font-size:10px;opacity:.75;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
-        .timer-warning .time{color:#ffc107}
-        .timer-danger{animation:timerPulse .8s infinite}
-        .timer-danger .time{color:#ff4444}
-        @keyframes timerPulse{0%,100%{background:rgba(255,255,255,.15)}50%{background:rgba(220,53,69,.35)}}
+        /* ── Timer ────────────────────────────────────────────────────── */
+        .timer-box {
+            background: rgba(255,255,255,.1);
+            border: 2px solid rgba(255,255,255,.25);
+            border-radius: 14px;
+            padding: 10px 22px;
+            text-align: center;
+            min-width: 130px;
+            backdrop-filter: blur(4px);
+            transition: all .3s;
+        }
+        .timer-time { font-size: 28px; font-weight: 900; letter-spacing: 3px; font-variant-numeric: tabular-nums; line-height: 1; }
+        .timer-label { font-size: 9px; opacity: .6; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; }
+        .timer-warning { border-color: rgba(245,158,11,.6); background: rgba(245,158,11,.15); }
+        .timer-warning .timer-time { color: #fbbf24; }
+        .timer-danger { border-color: rgba(239,68,68,.6); background: rgba(239,68,68,.15); animation: pulse .8s infinite; }
+        .timer-danger .timer-time { color: #f87171; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
 
-        /* ── Dual progress bars ──────────────────────────────────────────── */
-        .progress-section{background:#fff;padding:10px 28px;
-            border-bottom:1px solid #f0f2ff;display:flex;flex-direction:column;gap:5px}
-        .progress-row{display:flex;align-items:center;gap:10px}
-        .progress-label{font-size:11px;color:#9ca3af;width:110px;flex-shrink:0;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
-        .progress-track{flex:1;background:#f0f2ff;border-radius:4px;height:7px;overflow:hidden}
-        .progress-fill{height:100%;border-radius:4px;transition:width .35s}
-        .fill-answers{background:linear-gradient(90deg,#667eea,#764ba2)}
-        .fill-time{background:linear-gradient(90deg,#28a745,#20c997)}
-        .fill-time.warn{background:linear-gradient(90deg,#ffc107,#fd7e14)}
-        .fill-time.danger{background:linear-gradient(90deg,#dc3545,#c82333)}
-        .progress-val{font-size:11px;color:#9ca3af;width:50px;text-align:right;flex-shrink:0}
+        /* ── Progress Bar Strip ───────────────────────────────────────── */
+        .progress-strip {
+            background: #fff;
+            padding: 12px 32px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            gap: 24px;
+        }
+        .prog-row { display: flex; align-items: center; gap: 10px; flex: 1; }
+        .prog-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .5px; width: 90px; flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
+        .prog-track { flex: 1; background: #f1f5f9; border-radius: 6px; height: 8px; overflow: hidden; }
+        .prog-fill { height: 100%; border-radius: 6px; transition: width .4s ease; }
+        .fill-answers { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+        .fill-time    { background: linear-gradient(90deg, #10b981, #059669); }
+        .fill-time.warn   { background: linear-gradient(90deg, #f59e0b, #d97706); }
+        .fill-time.danger { background: linear-gradient(90deg, #ef4444, #dc2626); }
+        .prog-val { font-size: 11px; font-weight: 700; color: #64748b; width: 55px; text-align: right; flex-shrink: 0; }
 
-        /* ── Content ─────────────────────────────────────────────────────── */
-        .container{max-width:800px;margin:28px auto;padding:0 20px}
+        /* ── Content ──────────────────────────────────────────────────── */
+        .container { max-width: 820px; margin: 32px auto; padding: 0 20px; }
 
-        /* ── Question card ───────────────────────────────────────────────── */
-        .question-card{background:#fff;border-radius:14px;padding:28px;
-            box-shadow:0 2px 12px rgba(102,126,234,.08);margin-bottom:20px;
-            border-left:5px solid #e8eaf0;transition:.2s}
-        .question-card.answered{border-left-color:#667eea}
-        .q-number{font-size:11px;color:#667eea;font-weight:700;
-            text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;
-            display:flex;justify-content:space-between;align-items:center}
-        .q-answered-tag{background:#eef0ff;color:#667eea;padding:2px 8px;
-            border-radius:6px;font-size:10px}
-        .q-text{font-size:16px;font-weight:600;margin-bottom:6px;line-height:1.55;color:#222}
-        .q-marks{font-size:12px;color:#9ca3af;margin-bottom:16px}
+        /* ── Question Navigator ───────────────────────────────────────── */
+        .q-nav {
+            background: #fff;
+            border-radius: 14px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,.05);
+        }
+        .q-nav-title { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .q-nav-dots { display: flex; gap: 8px; flex-wrap: wrap; }
+        .q-dot {
+            width: 34px; height: 34px; border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 700;
+            border: 2px solid #e2e8f0;
+            background: #f8fafc; color: #64748b;
+            cursor: pointer; transition: all .2s;
+        }
+        .q-dot:hover { border-color: #6366f1; color: #6366f1; }
+        .q-dot.answered { background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; border-color: transparent; box-shadow: 0 3px 10px rgba(99,102,241,.35); }
 
-        /* ── Options ─────────────────────────────────────────────────────── */
-        .options{display:flex;flex-direction:column;gap:10px}
-        .option-label{display:flex;align-items:center;gap:14px;
-            padding:13px 18px;border:2px solid #e8eaf0;border-radius:10px;
-            cursor:pointer;transition:all .2s;font-size:14px;color:#444}
-        .option-label:hover{border-color:#667eea;background:#f8f9ff}
-        .option-label.selected{border-color:#667eea;background:#eef0ff;color:#333;font-weight:500}
-        .option-label input[type=radio]{accent-color:#667eea;width:17px;height:17px;flex-shrink:0}
+        /* ── Question Card ────────────────────────────────────────────── */
+        .question-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 28px 32px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.06);
+            margin-bottom: 20px;
+            border: 2px solid #e2e8f0;
+            transition: border-color .2s;
+        }
+        .question-card.answered { border-color: #c7d2fe; }
+        .q-number {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 14px;
+        }
+        .q-num-badge {
+            background: linear-gradient(135deg,#6366f1,#8b5cf6);
+            color: #fff; font-size: 11px; font-weight: 700;
+            padding: 4px 12px; border-radius: 20px;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .q-answered-tag {
+            background: #d1fae5; color: #065f46;
+            font-size: 11px; font-weight: 700;
+            padding: 4px 10px; border-radius: 20px;
+            display: none; align-items: center; gap: 4px;
+        }
+        .q-text { font-size: 17px; font-weight: 700; line-height: 1.55; color: #0f172a; margin-bottom: 6px; }
+        .q-marks { font-size: 12px; color: #94a3b8; margin-bottom: 20px; display: flex; align-items: center; gap: 5px; }
 
-        /* ── Submit bar ──────────────────────────────────────────────────── */
-        .submit-bar{background:#fff;border-radius:14px;padding:20px 28px;
-            box-shadow:0 2px 12px rgba(102,126,234,.08);
-            display:flex;justify-content:space-between;align-items:center;
-            margin-bottom:32px}
-        .submit-info{font-size:14px;color:#555}
-        .submit-info strong{color:#667eea}
-        .btn-submit{background:linear-gradient(135deg,#667eea,#764ba2);
-            color:#fff;border:none;border-radius:10px;
-            padding:13px 32px;font-size:15px;font-weight:700;cursor:pointer;
-            transition:all .2s;box-shadow:0 4px 14px rgba(102,126,234,.35)}
-        .btn-submit:hover{opacity:.9;transform:translateY(-1px)}
+        /* ── Options ──────────────────────────────────────────────────── */
+        .options { display: flex; flex-direction: column; gap: 10px; }
+        .option-label {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all .2s;
+            font-size: 14px; color: #374151;
+            position: relative;
+        }
+        .option-label:hover { border-color: #a5b4fc; background: #f8f9ff; transform: translateX(3px); }
+        .option-label.selected { border-color: #6366f1; background: linear-gradient(135deg,rgba(99,102,241,.06),rgba(139,92,246,.04)); color: #0f172a; font-weight: 600; }
+        .option-label.selected::after { content: '\f058'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; right: 16px; color: #6366f1; font-size: 16px; }
+        .option-label input[type=radio] { accent-color: #6366f1; width: 18px; height: 18px; flex-shrink: 0; }
+        .opt-letter {
+            width: 32px; height: 32px; border-radius: 9px;
+            background: #f1f5f9; color: #64748b;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 800; flex-shrink: 0;
+            transition: all .2s;
+        }
+        .option-label.selected .opt-letter { background: #6366f1; color: #fff; }
 
-        /* ── Focus warning overlay (SDD Fig 6.6 — interface lockdown) ────── */
-        #focusOverlay{display:none;position:fixed;inset:0;
-            background:rgba(220,53,69,.95);z-index:9999;
-            flex-direction:column;align-items:center;justify-content:center;
-            color:#fff;text-align:center;padding:40px}
-        #focusOverlay .warn-icon{font-size:64px;margin-bottom:16px}
-        #focusOverlay h2{font-size:30px;font-weight:700;margin-bottom:12px}
-        #focusOverlay p{font-size:16px;opacity:.9;margin-bottom:8px;max-width:480px;line-height:1.6}
-        #focusOverlay .warn-count{font-size:13px;opacity:.7;margin-bottom:24px}
-        #focusOverlay button{background:#fff;color:#dc3545;border:none;
-            padding:13px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;
-            transition:.2s}
-        #focusOverlay button:hover{background:#f8d7da}
+        /* ── Submit Bar ───────────────────────────────────────────────── */
+        .submit-bar {
+            background: #fff;
+            border-radius: 16px;
+            padding: 22px 28px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            border: 1px solid #e2e8f0;
+        }
+        .submit-info { font-size: 14px; color: #64748b; }
+        .submit-info strong { color: #6366f1; font-size: 18px; font-weight: 900; }
+        .btn-submit {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff; border: none; border-radius: 12px;
+            padding: 14px 36px; font-size: 15px; font-weight: 800;
+            cursor: pointer; transition: all .2s;
+            box-shadow: 0 6px 20px rgba(99,102,241,.4);
+            display: flex; align-items: center; gap: 8px;
+            font-family: inherit;
+        }
+        .btn-submit:hover { opacity: .9; transform: translateY(-2px); box-shadow: 0 10px 28px rgba(99,102,241,.5); }
 
-        /* ── Auto-submit modal ───────────────────────────────────────────── */
-        #autoSubmitModal{display:none;position:fixed;inset:0;
-            background:rgba(0,0,0,.65);z-index:9998;
-            align-items:center;justify-content:center}
-        .modal-box{background:#fff;border-radius:16px;padding:40px;
-            text-align:center;max-width:400px;width:90%;
-            box-shadow:0 20px 60px rgba(0,0,0,.3)}
-        .modal-box .modal-icon{font-size:52px;margin-bottom:14px}
-        .modal-box h3{font-size:22px;font-weight:700;margin-bottom:10px;color:#333}
-        .modal-box p{font-size:14px;color:#9ca3af;margin-bottom:20px;line-height:1.5}
-        .modal-box .countdown{font-size:52px;font-weight:700;color:#dc3545;
-            margin-bottom:8px;font-variant-numeric:tabular-nums}
-        .modal-box .countdown-label{font-size:12px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px}
+        /* ── Focus Warning Overlay ────────────────────────────────────── */
+        #focusOverlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(15,23,42,.97);
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            text-align: center;
+            padding: 40px;
+        }
+        .focus-warn-box {
+            background: rgba(239,68,68,.15);
+            border: 2px solid rgba(239,68,68,.4);
+            border-radius: 24px;
+            padding: 48px 56px;
+            max-width: 500px;
+        }
+        .focus-warn-icon { font-size: 72px; color: #f87171; margin-bottom: 20px; animation: shake .5s ease; }
+        @keyframes shake { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-8deg)} 75%{transform:rotate(8deg)} }
+        .focus-warn-title { font-size: 28px; font-weight: 900; margin-bottom: 12px; }
+        .focus-warn-text { font-size: 15px; opacity: .8; line-height: 1.6; margin-bottom: 8px; }
+        .focus-warn-count { font-size: 12px; opacity: .5; margin-bottom: 28px; }
+        .btn-return {
+            background: linear-gradient(135deg,#6366f1,#8b5cf6);
+            color: #fff; border: none; border-radius: 12px;
+            padding: 14px 36px; font-size: 15px; font-weight: 700;
+            cursor: pointer; transition: all .2s; font-family: inherit;
+            display: flex; align-items: center; gap: 8px; margin: 0 auto;
+        }
+        .btn-return:hover { opacity: .9; transform: translateY(-1px); }
+
+        /* ── Auto-submit Modal ────────────────────────────────────────── */
+        #autoSubmitModal {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(15,23,42,.85);
+            z-index: 9998;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-box {
+            background: #fff;
+            border-radius: 20px;
+            padding: 48px 40px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 24px 80px rgba(0,0,0,.4);
+        }
+        .modal-icon { font-size: 56px; margin-bottom: 16px; }
+        .modal-title { font-size: 24px; font-weight: 900; margin-bottom: 10px; color: #0f172a; }
+        .modal-text { font-size: 14px; color: #64748b; margin-bottom: 24px; line-height: 1.6; }
+        .modal-countdown { font-size: 64px; font-weight: 900; color: #ef4444; line-height: 1; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+        .modal-countdown-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
-{{-- ── Focus warning overlay (SDD Fig 6.6 — interface lockdown mode) ──────── --}}
+{{-- Focus Warning Overlay --}}
 <div id="focusOverlay">
-    <div class="warn-icon">⚠️</div>
-    <h2>Focus Warning!</h2>
-    <p>You have left the quiz window. This violation has been recorded.<br>
-       Please remain on this page for the entire duration of the quiz.</p>
-    <p class="warn-count" id="warnCount">Warning #1</p>
-    <button onclick="dismissFocusWarning()">↩ Return to Quiz</button>
+    <div class="focus-warn-box">
+        <div class="focus-warn-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="focus-warn-title">Focus Violation!</div>
+        <div class="focus-warn-text">You left the quiz window. This violation has been recorded.<br>Stay on this page for the entire duration of the quiz.</div>
+        <div class="focus-warn-count" id="warnCount">Warning #1</div>
+        <button class="btn-return" onclick="dismissFocusWarning()">
+            <i class="fa-solid fa-arrow-left"></i> Return to Quiz
+        </button>
+    </div>
 </div>
 
-{{-- ── Auto-submit countdown modal ─────────────────────────────────────────── --}}
+{{-- Auto-submit Modal --}}
 <div id="autoSubmitModal">
     <div class="modal-box">
         <div class="modal-icon">⏰</div>
-        <h3>Time's Up!</h3>
-        <p>Your quiz is being submitted automatically as per the quiz settings.</p>
-        <div class="countdown" id="autoCountdown">3</div>
-        <div class="countdown-label">Submitting in…</div>
+        <div class="modal-title">Time's Up!</div>
+        <div class="modal-text">Your quiz is being automatically submitted as per the quiz settings.</div>
+        <div class="modal-countdown" id="autoCountdown">3</div>
+        <div class="modal-countdown-label">Submitting in…</div>
     </div>
 </div>
 
-{{-- ── Sticky lockdown header ────────────────────────────────────────────────── --}}
+{{-- Header --}}
 <div class="quiz-header">
-    <div class="header-left">
-        <div class="quiz-title">{{ $quiz->title }}</div>
-        <div class="quiz-meta">
-            {{ $quiz->group->name }}
-            &nbsp;·&nbsp; {{ $quiz->questions->count() }} questions
-            &nbsp;·&nbsp; {{ $quiz->totalMarks() }} marks
-            @if($quiz->enforce_focus)
-                &nbsp;·&nbsp; 🔒 Lockdown Mode
-            @endif
+    <div class="header-brand">
+        <div class="brand-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+        <div>
+            <div class="quiz-title-text">{{ $quiz->title }}</div>
+            <div class="quiz-meta-text">
+                <span><i class="fa-solid fa-users"></i> {{ $quiz->group->name }}</span>
+                <span><i class="fa-solid fa-circle-question"></i> {{ $quiz->questions->count() }} questions</span>
+                <span><i class="fa-solid fa-star"></i> {{ $quiz->totalMarks() }} marks</span>
+                @if($quiz->enforce_focus)
+                <span class="lockdown-badge"><i class="fa-solid fa-lock"></i> Lockdown Mode</span>
+                @endif
+            </div>
         </div>
     </div>
     <div class="timer-box" id="timerBox">
-        <div class="time" id="timerDisplay">--:--</div>
-        <div class="lbl">Time Left</div>
+        <div class="timer-time" id="timerDisplay">--:--</div>
+        <div class="timer-label"><i class="fa-solid fa-stopwatch"></i> Time Left</div>
     </div>
 </div>
 
-{{-- ── Dual progress tracker (SDD Fig 6.6 — progress tracker) ─────────────── --}}
-<div class="progress-section">
-    <div class="progress-row">
-        <span class="progress-label">Answered</span>
-        <div class="progress-track">
-            <div class="progress-fill fill-answers" id="answerBar" style="width:0%"></div>
-        </div>
-        <span class="progress-val" id="answerVal">0 / {{ $quiz->questions->count() }}</span>
+{{-- Progress Strip --}}
+<div class="progress-strip">
+    <div class="prog-row">
+        <span class="prog-label"><i class="fa-solid fa-circle-check" style="color:#6366f1"></i> Answered</span>
+        <div class="prog-track"><div class="prog-fill fill-answers" id="answerBar" style="width:0%"></div></div>
+        <span class="prog-val" id="answerVal">0 / {{ $quiz->questions->count() }}</span>
     </div>
-    <div class="progress-row">
-        <span class="progress-label">Time</span>
-        <div class="progress-track">
-            <div class="progress-fill fill-time" id="timeBar" style="width:100%"></div>
-        </div>
-        <span class="progress-val" id="timeVal">{{ $quiz->duration_minutes }}m</span>
+    <div class="prog-row">
+        <span class="prog-label"><i class="fa-solid fa-clock" style="color:#10b981"></i> Time</span>
+        <div class="prog-track"><div class="prog-fill fill-time" id="timeBar" style="width:100%"></div></div>
+        <span class="prog-val" id="timeVal">{{ $quiz->duration_minutes }}m</span>
     </div>
 </div>
 
-{{-- ── Quiz form ─────────────────────────────────────────────────────────────── --}}
+{{-- Main Content --}}
 <div class="container">
+
+    {{-- Question Navigator --}}
+    <div class="q-nav">
+        <div class="q-nav-title"><i class="fa-solid fa-map"></i> Question Navigator</div>
+        <div class="q-nav-dots">
+            @foreach($quiz->questions as $i => $q)
+            <div class="q-dot" id="dot_{{ $q->id }}" onclick="scrollToQ({{ $q->id }})">{{ $i + 1 }}</div>
+            @endforeach
+        </div>
+    </div>
+
     <form action="{{ route('quizzes.submit', $quiz) }}" method="POST" id="quizForm">
         @csrf
 
         @foreach($quiz->questions as $i => $question)
-            <div class="question-card" id="qcard_{{ $question->id }}">
-                <div class="q-number">
-                    <span>Question {{ $i + 1 }} of {{ $quiz->questions->count() }}</span>
-                    <span class="q-answered-tag" id="qtag_{{ $question->id }}" style="display:none">✓ Answered</span>
-                </div>
-                <div class="q-text">{{ $question->question }}</div>
-                <div class="q-marks">{{ $question->marks }} mark{{ $question->marks > 1 ? 's' : '' }}</div>
-
-                <div class="options">
-                    @foreach($question->options as $oi => $opt)
-                        <label class="option-label" id="opt_{{ $question->id }}_{{ $oi }}">
-                            <input type="radio"
-                                   name="answers[{{ $question->id }}]"
-                                   value="{{ $oi }}"
-                                   onchange="onAnswer({{ $question->id }}, {{ $oi }})">
-                            {{ $opt }}
-                        </label>
-                    @endforeach
-                </div>
+        <div class="question-card" id="qcard_{{ $question->id }}">
+            <div class="q-number">
+                <span class="q-num-badge"><i class="fa-solid fa-circle-question"></i> Question {{ $i + 1 }} of {{ $quiz->questions->count() }}</span>
+                <span class="q-answered-tag" id="qtag_{{ $question->id }}"><i class="fa-solid fa-check"></i> Answered</span>
             </div>
+            <div class="q-text">{{ $question->question }}</div>
+            <div class="q-marks"><i class="fa-solid fa-star" style="color:#f59e0b"></i> {{ $question->marks }} mark{{ $question->marks > 1 ? 's' : '' }}</div>
+
+            <div class="options">
+                @foreach($question->options as $oi => $opt)
+                <label class="option-label" id="opt_{{ $question->id }}_{{ $oi }}">
+                    <input type="radio"
+                           name="answers[{{ $question->id }}]"
+                           value="{{ $oi }}"
+                           onchange="onAnswer({{ $question->id }}, {{ $oi }})">
+                    <div class="opt-letter">{{ chr(65+$oi) }}</div>
+                    {{ $opt }}
+                </label>
+                @endforeach
+            </div>
+        </div>
         @endforeach
 
-        {{-- ── Submit bar ──────────────────────────────────────────────────── --}}
         <div class="submit-bar">
             <div class="submit-info">
                 <strong id="answeredCount">0</strong> of {{ $quiz->questions->count() }} questions answered
             </div>
             <button type="submit" class="btn-submit" id="submitBtn">
-                Submit Quiz ✓
+                <i class="fa-solid fa-paper-plane"></i> Submit Quiz
             </button>
         </div>
-
     </form>
 </div>
 
 <script>
-// ── Configuration (passed from QuizController) ────────────────────────────
-const TIMER_SECONDS    = {{ $timerSeconds }};
-const AUTO_SUBMIT      = {{ $quiz->auto_submit ? 'true' : 'false' }};
-const ENFORCE_FOCUS    = {{ $enforceFocus ? 'true' : 'false' }};
-const TOTAL_QUESTIONS  = {{ $quiz->questions->count() }};
-const DEADLINE_MS      = {{ $deadlineEpoch ?? 'null' }};
+const TIMER_SECONDS   = {{ $timerSeconds }};
+const AUTO_SUBMIT     = {{ $quiz->auto_submit ? 'true' : 'false' }};
+const ENFORCE_FOCUS   = {{ $enforceFocus ? 'true' : 'false' }};
+const TOTAL_QUESTIONS = {{ $quiz->questions->count() }};
+const DEADLINE_MS     = {{ $deadlineEpoch ?? 'null' }};
 
-// ── State ─────────────────────────────────────────────────────────────────
-let secondsLeft    = TIMER_SECONDS;
+let secondsLeft   = TIMER_SECONDS;
 const totalSeconds = TIMER_SECONDS;
-let answered       = {};
-let focusWarnings  = 0;
-let submitted      = false;
+let answered      = {};
+let focusWarnings = 0;
+let submitted     = false;
 let timerInterval;
 
-// ── Timer ─────────────────────────────────────────────────────────────────
 function formatTime(s) {
-    const m   = Math.floor(s / 60).toString().padStart(2, '0');
-    const sec = (s % 60).toString().padStart(2, '0');
-    return m + ':' + sec;
+    return Math.floor(s/60).toString().padStart(2,'0') + ':' + (s%60).toString().padStart(2,'0');
 }
 
 function tick() {
-    // Sync with hard deadline if set
     if (DEADLINE_MS) {
         secondsLeft = Math.max(0, Math.floor((DEADLINE_MS - Date.now()) / 1000));
     } else {
@@ -248,21 +394,17 @@ function tick() {
 
     display.textContent = formatTime(secondsLeft);
 
-    // Timer colour states
     if (secondsLeft <= 60) {
         box.className = 'timer-box timer-danger';
-        timeBar.className = 'progress-fill fill-time danger';
+        timeBar.className = 'prog-fill fill-time danger';
     } else if (secondsLeft <= 180) {
         box.className = 'timer-box timer-warning';
-        timeBar.className = 'progress-fill fill-time warn';
+        timeBar.className = 'prog-fill fill-time warn';
     }
 
-    // Time progress bar
     const timePct = totalSeconds > 0 ? (secondsLeft / totalSeconds) * 100 : 0;
     timeBar.style.width = timePct + '%';
-    timeVal.textContent = secondsLeft < 60
-        ? secondsLeft + 's'
-        : Math.ceil(secondsLeft / 60) + 'm';
+    timeVal.textContent = secondsLeft < 60 ? secondsLeft + 's' : Math.ceil(secondsLeft / 60) + 'm';
 
     if (secondsLeft <= 0) {
         clearInterval(timerInterval);
@@ -273,7 +415,6 @@ function tick() {
 timerInterval = setInterval(tick, 1000);
 document.getElementById('timerDisplay').textContent = formatTime(secondsLeft);
 
-// ── Auto-submit (SDD Fig 6.6 — auto-submit on expiry) ────────────────────
 function triggerAutoSubmit() {
     submitted = true;
     window.onbeforeunload = null;
@@ -283,53 +424,39 @@ function triggerAutoSubmit() {
     const interval = setInterval(() => {
         c--;
         cd.textContent = c;
-        if (c <= 0) {
-            clearInterval(interval);
-            document.getElementById('quizForm').submit();
-        }
+        if (c <= 0) { clearInterval(interval); document.getElementById('quizForm').submit(); }
     }, 1000);
 }
 
-// ── Answer tracking + progress tracker (SDD Fig 6.6) ─────────────────────
 function onAnswer(qId, optIdx) {
-    const wasAnswered = answered.hasOwnProperty(qId);
     answered[qId] = optIdx;
 
-    // Highlight selected option, clear others for this question
     document.querySelectorAll(`[id^="opt_${qId}_"]`).forEach(el => el.classList.remove('selected'));
-    const sel = document.getElementById(`opt_${qId}_${optIdx}`);
-    if (sel) sel.classList.add('selected');
+    document.getElementById(`opt_${qId}_${optIdx}`)?.classList.add('selected');
+    document.getElementById(`qcard_${qId}`)?.classList.add('answered');
 
-    // Mark question card as answered
-    const card = document.getElementById(`qcard_${qId}`);
-    if (card) card.classList.add('answered');
-
-    // Show answered tag
     const tag = document.getElementById(`qtag_${qId}`);
-    if (tag) tag.style.display = 'inline-block';
+    if (tag) tag.style.display = 'inline-flex';
 
-    // Update answer progress bar
+    const dot = document.getElementById(`dot_${qId}`);
+    if (dot) dot.classList.add('answered');
+
     const count = Object.keys(answered).length;
     document.getElementById('answeredCount').textContent = count;
-    const pct = (count / TOTAL_QUESTIONS) * 100;
-    document.getElementById('answerBar').style.width = pct + '%';
+    document.getElementById('answerBar').style.width = (count / TOTAL_QUESTIONS * 100) + '%';
     document.getElementById('answerVal').textContent = count + ' / ' + TOTAL_QUESTIONS;
 }
 
-// ── Focused-window isolation (SDD Fig 6.6 — interface lockdown mode) ──────
-if (ENFORCE_FOCUS) {
-    document.addEventListener('visibilitychange', function () {
-        if (document.hidden && !submitted) {
-            focusWarnings++;
-            showFocusWarning();
-        }
-    });
+function scrollToQ(qId) {
+    document.getElementById(`qcard_${qId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 
-    window.addEventListener('blur', function () {
-        if (!submitted) {
-            focusWarnings++;
-            showFocusWarning();
-        }
+if (ENFORCE_FOCUS) {
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && !submitted) { focusWarnings++; showFocusWarning(); }
+    });
+    window.addEventListener('blur', () => {
+        if (!submitted) { focusWarnings++; showFocusWarning(); }
     });
 }
 
@@ -343,34 +470,27 @@ function dismissFocusWarning() {
     window.focus();
 }
 
-// ── Security: block dev tools, right-click, text selection ───────────────
 document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown', function (e) {
-    if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key)) ||
-        (e.ctrlKey && e.key === 'u') ||
-        (e.ctrlKey && e.key === 's')
-    ) {
+document.addEventListener('keydown', e => {
+    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key)) || (e.ctrlKey && ['u','s'].includes(e.key))) {
         e.preventDefault();
     }
 });
 
-// ── Warn before leaving mid-quiz ──────────────────────────────────────────
-window.addEventListener('beforeunload', function (e) {
+window.addEventListener('beforeunload', e => {
     if (secondsLeft > 0 && !submitted) {
         e.preventDefault();
         e.returnValue = 'Your quiz is in progress. Leaving will not submit your answers.';
     }
 });
 
-// ── Clear guards on intentional submit ───────────────────────────────────
-document.getElementById('quizForm').addEventListener('submit', function () {
+document.getElementById('quizForm').addEventListener('submit', () => {
     submitted = true;
     window.onbeforeunload = null;
     clearInterval(timerInterval);
-    document.getElementById('submitBtn').disabled = true;
-    document.getElementById('submitBtn').textContent = 'Submitting…';
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting…';
 });
 </script>
 </body>

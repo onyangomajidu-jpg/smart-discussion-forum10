@@ -1,300 +1,327 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Quiz — {{ $quiz->title }}</title>
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI',sans-serif;background:#f0f2ff;color:#333}
+@extends('layouts.app')
 
-        .navbar{background:linear-gradient(135deg,#667eea,#764ba2);padding:16px 28px;color:#fff;
-            display:flex;justify-content:space-between;align-items:center;
-            box-shadow:0 2px 12px rgba(0,0,0,.2)}
-        .navbar h1{font-size:19px;font-weight:700}
-        .navbar a{color:#fff;text-decoration:none;font-size:13px;opacity:.85;
-            padding:7px 14px;border:1px solid rgba(255,255,255,.35);border-radius:6px;transition:.2s}
-        .navbar a:hover{background:rgba(255,255,255,.15)}
+@section('title', $quiz->title . ' — Manage Quiz')
 
-        .container{max-width:980px;margin:32px auto;padding:0 20px}
+@push('styles')
+<style>
+.quiz-hero {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 8px 28px rgba(99,102,241,.3);
+    position: relative;
+    overflow: hidden;
+}
+.quiz-hero::before {
+    content: '';
+    position: absolute; top: -50px; right: -50px;
+    width: 180px; height: 180px;
+    background: rgba(255,255,255,.07);
+    border-radius: 50%;
+}
+.quiz-hero-title { font-size: 22px; font-weight: 900; margin-bottom: 6px; }
+.quiz-hero-meta { font-size: 13px; opacity: .8; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.quiz-hero-meta span { display: flex; align-items: center; gap: 5px; }
 
-        /* ── Lifecycle sequence bar (SDD Fig 3.12) ──────────────────────── */
-        .lifecycle{display:flex;align-items:stretch;margin-bottom:26px;
-            background:#fff;border-radius:14px;overflow:hidden;
-            box-shadow:0 2px 14px rgba(102,126,234,.1)}
-        .lc-step{flex:1;padding:14px 10px;text-align:center;position:relative;
-            border-right:1px solid #f0f2ff;transition:.2s}
-        .lc-step:last-child{border-right:none}
-        .lc-step .lc-icon{font-size:20px;display:block;margin-bottom:5px}
-        .lc-step .lc-title{font-size:11px;font-weight:700;text-transform:uppercase;
-            letter-spacing:.5px;color:#9ca3af}
-        .lc-step .lc-sub{font-size:10px;color:#c4c9d4;margin-top:2px}
-        .lc-step.done{background:#f0f2ff}
-        .lc-step.done .lc-title{color:#667eea}
-        .lc-step.active{background:linear-gradient(135deg,#667eea,#764ba2)}
-        .lc-step.active .lc-title,.lc-step.active .lc-sub{color:#fff}
-        .lc-step.active .lc-icon{filter:brightness(10)}
+.lifecycle-step {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+.lifecycle-step:last-child { border-bottom: none; }
+.step-icon {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+}
+.step-done  { background: #d1fae5; color: #065f46; }
+.step-active{ background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; box-shadow: 0 4px 12px rgba(99,102,241,.4); }
+.step-pending{ background: #f1f5f9; color: #94a3b8; }
+.step-info { flex: 1; }
+.step-label { font-size: 13px; font-weight: 600; }
+.step-label.done { color: #065f46; }
+.step-label.active { color: #6366f1; }
+.step-label.pending { color: #94a3b8; }
+.step-time { font-size: 11px; color: #94a3b8; margin-top: 2px; }
 
-        /* ── Cards ──────────────────────────────────────────────────────── */
-        .card{background:#fff;border-radius:14px;padding:28px 32px;
-            box-shadow:0 2px 14px rgba(102,126,234,.1);margin-bottom:22px}
-        .card-header{display:flex;justify-content:space-between;align-items:center;
-            margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #f0f2ff}
-        .card-header h2{font-size:17px;font-weight:700}
+.q-preview {
+    padding: 20px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+.q-preview:last-child { border-bottom: none; }
+.q-preview-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.q-preview-text { font-size: 14px; font-weight: 600; color: #0f172a; flex: 1; line-height: 1.5; }
+.q-options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.q-option {
+    padding: 9px 14px; border-radius: 9px; font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+    border: 1.5px solid #e2e8f0;
+}
+.q-option.correct {
+    background: #d1fae5; color: #065f46;
+    border-color: #6ee7b7; font-weight: 600;
+}
+.q-option.wrong { background: #f8fafc; color: #64748b; }
+.q-option-letter {
+    width: 22px; height: 22px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.correct .q-option-letter { background: #10b981; color: #fff; }
+.wrong .q-option-letter { background: #e2e8f0; color: #64748b; }
 
-        /* ── Status badge ───────────────────────────────────────────────── */
-        .badge{display:inline-block;padding:4px 14px;border-radius:12px;font-size:12px;font-weight:700}
-        .badge-draft{background:#fff3cd;color:#856404}
-        .badge-published{background:#d4edda;color:#155724}
-        .badge-closed{background:#f8d7da;color:#721c24}
+.action-btn-group { display: flex; flex-direction: column; gap: 10px; }
+</style>
+@endpush
 
-        /* ── Meta grid ──────────────────────────────────────────────────── */
-        .meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
-        .meta-item{background:#f8f9ff;border-radius:10px;padding:16px;text-align:center;
-            border:2px solid #f0f2ff}
-        .meta-item .val{font-size:24px;font-weight:700;color:#667eea}
-        .meta-item .lbl{font-size:11px;color:#9ca3af;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+@section('content')
 
-        /* ── Info table ─────────────────────────────────────────────────── */
-        .info-table{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px}
-        .info-table th{width:200px;padding:10px 14px;text-align:left;font-weight:600;
-            color:#667eea;background:#f8f9ff;border-bottom:1px solid #f0f2ff;font-size:12px;
-            text-transform:uppercase;letter-spacing:.4px}
-        .info-table td{padding:10px 14px;border-bottom:1px solid #f0f2ff;color:#444}
+<div class="breadcrumb">
+    <a href="{{ route('lecturer.dashboard') }}"><i class="fa-solid fa-house"></i> Dashboard</a>
+    <span class="sep"><i class="fa-solid fa-chevron-right" style="font-size:9px"></i></span>
+    <span>{{ $quiz->title }}</span>
+</div>
 
-        /* ── Action buttons ─────────────────────────────────────────────── */
-        .actions{display:flex;gap:12px;flex-wrap:wrap}
-        .btn{padding:11px 22px;border:none;border-radius:9px;font-size:14px;font-weight:600;
-            cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block}
-        .btn-success{background:#28a745;color:#fff;box-shadow:0 4px 12px rgba(40,167,69,.3)}
-        .btn-warning{background:#ffc107;color:#212529;box-shadow:0 4px 12px rgba(255,193,7,.3)}
-        .btn-info{background:#17a2b8;color:#fff;box-shadow:0 4px 12px rgba(23,162,184,.3)}
-        .btn:hover{opacity:.88;transform:translateY(-1px)}
-
-        /* ── Alerts ─────────────────────────────────────────────────────── */
-        .alert{padding:13px 18px;border-radius:10px;margin-bottom:18px;font-size:14px;font-weight:500}
-        .alert-success{background:#d4edda;color:#155724;border-left:4px solid #28a745}
-        .alert-info{background:#d1ecf1;color:#0c5460;border-left:4px solid #17a2b8}
-
-        /* ── Questions list ─────────────────────────────────────────────── */
-        .q-item{padding:16px 0;border-bottom:1px solid #f0f2ff}
-        .q-item:last-child{border-bottom:none}
-        .q-text{font-weight:600;font-size:15px;margin-bottom:10px;color:#333}
-        .q-marks-tag{font-size:11px;color:#667eea;font-weight:700;
-            background:#eef0ff;padding:2px 8px;border-radius:8px;margin-left:8px}
-        .options-preview{list-style:none;padding-left:12px;display:flex;flex-direction:column;gap:5px}
-        .options-preview li{font-size:13px;padding:5px 10px;border-radius:6px;color:#555}
-        .options-preview li.correct{background:#d4edda;color:#155724;font-weight:600}
-
-        /* ── Results table ──────────────────────────────────────────────── */
-        table.results{width:100%;border-collapse:collapse;font-size:14px}
-        table.results th{background:#f8f9ff;padding:11px 14px;text-align:left;
-            font-weight:600;color:#667eea;border-bottom:2px solid #f0f2ff;
-            font-size:12px;text-transform:uppercase;letter-spacing:.4px}
-        table.results td{padding:11px 14px;border-bottom:1px solid #f0f2ff}
-        table.results tr:hover td{background:#fafbff}
-        .grade-A{color:#155724;font-weight:700}
-        .grade-B{color:#0c5460;font-weight:700}
-        .grade-C{color:#856404;font-weight:700}
-        .grade-D{color:#e67e22;font-weight:700}
-        .grade-F{color:#dc3545;font-weight:700}
-        .pct-bar{background:#e9ecef;border-radius:4px;height:6px;width:80px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:8px}
-        .pct-fill{background:linear-gradient(90deg,#667eea,#764ba2);height:100%;border-radius:4px}
-    </style>
-</head>
-<body>
-
-<nav class="navbar">
-    <h1>🎓 Smart Discussion Forum</h1>
-    <a href="{{ route('lecturer.dashboard') }}">← Dashboard</a>
-</nav>
-
-<div class="container">
-
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-    @if(session('info'))
-        <div class="alert alert-info">{{ session('info') }}</div>
-    @endif
-
-    {{-- ── Quiz Lifecycle Sequence (SDD Fig 3.12) ───────────────────────── --}}
-    @php
-        $lcStep = match($quiz->status) {
-            'draft'     => 1,
-            'published' => $quiz->attempts->count() > 0 ? 4 : ($quiz->isOpen() ? 3 : 2),
-            'closed'    => 5,
-            default     => 1,
-        };
-    @endphp
-    <div class="lifecycle">
-        <div class="lc-step {{ $lcStep >= 1 ? ($lcStep == 1 ? 'active' : 'done') : '' }}">
-            <span class="lc-icon">✏️</span>
-            <div class="lc-title">1. Draft</div>
-            <div class="lc-sub">Quiz created</div>
-        </div>
-        <div class="lc-step {{ $lcStep >= 2 ? ($lcStep == 2 ? 'active' : 'done') : '' }}">
-            <span class="lc-icon">🚀</span>
-            <div class="lc-title">2. Published</div>
-            <div class="lc-sub">{{ $quiz->published_at?->format('d M H:i') ?? '—' }}</div>
-        </div>
-        <div class="lc-step {{ $lcStep >= 3 ? ($lcStep == 3 ? 'active' : 'done') : '' }}">
-            <span class="lc-icon">🔔</span>
-            <div class="lc-title">3. Reminder Sent</div>
-            <div class="lc-sub">sendQuizReminder()</div>
-        </div>
-        <div class="lc-step {{ $lcStep >= 4 ? ($lcStep == 4 ? 'active' : 'done') : '' }}">
-            <span class="lc-icon">📝</span>
-            <div class="lc-title">4. Attempts</div>
-            <div class="lc-sub">{{ $quiz->attempts->count() }} submitted</div>
-        </div>
-        <div class="lc-step {{ $lcStep >= 5 ? 'active' : '' }}">
-            <span class="lc-icon">📊</span>
-            <div class="lc-title">5. Results</div>
-            <div class="lc-sub">assignMarks()</div>
+<div class="quiz-hero">
+    <div>
+        <div class="quiz-hero-title">{{ $quiz->title }}</div>
+        <div class="quiz-hero-meta">
+            <span><i class="fa-solid fa-users"></i> {{ $quiz->group->name }}</span>
+            <span><i class="fa-solid fa-circle-question"></i> {{ $quiz->questions->count() }} questions</span>
+            <span><i class="fa-solid fa-star"></i> {{ $quiz->totalMarks() }} marks</span>
+            <span><i class="fa-solid fa-stopwatch"></i> {{ $quiz->duration_minutes }} min</span>
         </div>
     </div>
+    <span class="badge badge-{{ $quiz->status }}" style="font-size:13px;padding:8px 18px">
+        @if($quiz->status === 'published') <i class="fa-solid fa-circle-check"></i>
+        @elseif($quiz->status === 'draft')  <i class="fa-solid fa-pencil"></i>
+        @else                               <i class="fa-solid fa-lock"></i>
+        @endif
+        {{ strtoupper($quiz->status) }}
+    </span>
+</div>
 
-    {{-- ── Quiz Header Card ──────────────────────────────────────────────── --}}
-    <div class="card">
-        <div class="card-header">
-            <div>
-                <h2>{{ $quiz->title }}</h2>
-                <div style="margin-top:8px;display:flex;align-items:center;gap:10px">
-                    <span class="badge badge-{{ $quiz->status }}">{{ strtoupper($quiz->status) }}</span>
-                    <span style="font-size:13px;color:#9ca3af">Group: <strong style="color:#555">{{ $quiz->group->name }}</strong></span>
+{{-- Stats --}}
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-circle-question" style="color:#6366f1"></i></div>
+        <div class="val">{{ $quiz->questions->count() }}</div>
+        <div class="lbl">Questions</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-star" style="color:#f59e0b"></i></div>
+        <div class="val">{{ $quiz->totalMarks() }}</div>
+        <div class="lbl">Total Marks</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-stopwatch" style="color:#10b981"></i></div>
+        <div class="val">{{ $quiz->duration_minutes }}<span style="font-size:14px;font-weight:500">m</span></div>
+        <div class="lbl">Duration</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-users" style="color:#8b5cf6"></i></div>
+        <div class="val">{{ $quiz->attempts->count() }}</div>
+        <div class="lbl">Submissions</div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start">
+
+    {{-- LEFT --}}
+    <div>
+        {{-- Quiz Info --}}
+        <div class="card" style="margin-bottom:22px">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-circle-info"></i> Quiz Information</h2>
+            </div>
+            <div class="card-body">
+                @if($quiz->description)
+                    <p style="font-size:13px;color:#64748b;margin-bottom:20px;line-height:1.6;padding:14px;background:#f8fafc;border-radius:10px;border-left:3px solid #6366f1">
+                        <i class="fa-solid fa-quote-left" style="color:#6366f1;margin-right:6px"></i>{{ $quiz->description }}
+                    </p>
+                @endif
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                    <div style="padding:14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0">
+                        <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px"><i class="fa-solid fa-unlock" style="color:#10b981"></i> Unlock Date</div>
+                        <div style="font-size:13px;font-weight:600">{{ $quiz->unlock_date?->format('D d M Y, H:i') ?? 'Immediate on publish' }}</div>
+                    </div>
+                    <div style="padding:14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0">
+                        <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px"><i class="fa-solid fa-flag-checkered" style="color:#ef4444"></i> Hard Deadline</div>
+                        <div style="font-size:13px;font-weight:600">{{ $quiz->hard_deadline?->format('D d M Y, H:i') ?? 'No deadline set' }}</div>
+                    </div>
+                    <div style="padding:14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0">
+                        <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px"><i class="fa-solid fa-robot" style="color:#6366f1"></i> Auto-Submit</div>
+                        <div style="font-size:13px;font-weight:600">
+                            @if($quiz->auto_submit)
+                                <span style="color:#065f46"><i class="fa-solid fa-circle-check"></i> Enabled</span>
+                            @else
+                                <span style="color:#991b1b"><i class="fa-solid fa-circle-xmark"></i> Disabled</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div style="padding:14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0">
+                        <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px"><i class="fa-solid fa-lock" style="color:#8b5cf6"></i> Focus Lock</div>
+                        <div style="font-size:13px;font-weight:600">
+                            @if($quiz->enforce_focus)
+                                <span style="color:#5b21b6"><i class="fa-solid fa-lock"></i> Enforced</span>
+                            @else
+                                <span style="color:#64748b"><i class="fa-solid fa-lock-open"></i> Disabled</span>
+                            @endif
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="actions">
-                @if($quiz->status === 'draft')
-                    <form action="{{ route('lecturer.quizzes.publish', $quiz) }}" method="POST">
-                        @csrf
-                        <button type="submit" class="btn btn-success">🚀 Publish Quiz</button>
-                    </form>
-                @endif
-                @if($quiz->status === 'published')
-                    <form action="{{ route('lecturer.quizzes.remind', $quiz) }}" method="POST">
-                        @csrf
-                        <button type="submit" class="btn btn-warning">🔔 Send Reminder</button>
-                    </form>
-                @endif
-                <a href="{{ route('lecturer.quizzes.results', $quiz) }}" class="btn btn-info">📊 Full Results</a>
-            </div>
         </div>
 
-        <div class="meta-grid">
-            <div class="meta-item">
-                <div class="val">{{ $quiz->questions->count() }}</div>
-                <div class="lbl">Questions</div>
+        {{-- Questions Preview --}}
+        <div class="card" style="margin-bottom:22px">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-circle-question"></i> Questions Preview</h2>
+                <span style="font-size:12px;color:#64748b;font-weight:600">{{ $quiz->questions->count() }} total</span>
             </div>
-            <div class="meta-item">
-                <div class="val">{{ $quiz->totalMarks() }}</div>
-                <div class="lbl">Total Marks</div>
-            </div>
-            <div class="meta-item">
-                <div class="val">{{ $quiz->duration_minutes }} min</div>
-                <div class="lbl">Duration</div>
-            </div>
-            <div class="meta-item">
-                <div class="val">{{ $quiz->attempts->count() }}</div>
-                <div class="lbl">Submissions</div>
-            </div>
-        </div>
-
-        <table class="info-table">
-            <tr>
-                <th>Unlock Date</th>
-                <td>{{ $quiz->unlock_date?->format('D d M Y, H:i') ?? '— (opens on publish)' }}</td>
-            </tr>
-            <tr>
-                <th>Hard Deadline</th>
-                <td>{{ $quiz->hard_deadline?->format('D d M Y, H:i') ?? '— (no deadline)' }}</td>
-            </tr>
-            <tr>
-                <th>Auto-submit</th>
-                <td>{{ $quiz->auto_submit ? '✅ Enabled — answers submitted automatically on timer expiry' : '❌ Disabled' }}</td>
-            </tr>
-            <tr>
-                <th>Focused-window Isolation</th>
-                <td>{{ $quiz->enforce_focus ? '🔒 Enabled — students warned on tab/window switch' : '❌ Disabled' }}</td>
-            </tr>
-            <tr>
-                <th>Published At</th>
-                <td>{{ $quiz->published_at?->format('D d M Y, H:i') ?? '— (not yet published)' }}</td>
-            </tr>
-            @if($quiz->description)
-            <tr>
-                <th>Description</th>
-                <td>{{ $quiz->description }}</td>
-            </tr>
-            @endif
-        </table>
-    </div>
-
-    {{-- ── Questions Preview ─────────────────────────────────────────────── --}}
-    <div class="card">
-        <div class="card-header">
-            <h2>❓ Questions</h2>
-            <span style="font-size:13px;color:#9ca3af">{{ $quiz->questions->count() }} question(s) · {{ $quiz->totalMarks() }} total marks</span>
-        </div>
-        @forelse($quiz->questions as $i => $q)
-            <div class="q-item">
-                <div class="q-text">
-                    {{ $i + 1 }}. {{ $q->question }}
-                    <span class="q-marks-tag">{{ $q->marks }} mark{{ $q->marks > 1 ? 's' : '' }}</span>
+            <div class="card-body">
+                @forelse($quiz->questions as $i => $q)
+                <div class="q-preview">
+                    <div class="q-preview-header">
+                        <div class="q-preview-text">
+                            <span style="color:#6366f1;font-weight:800;margin-right:6px">Q{{ $i+1 }}.</span>{{ $q->question }}
+                        </div>
+                        <span class="badge badge-published" style="margin-left:12px;flex-shrink:0">
+                            <i class="fa-solid fa-star"></i> {{ $q->marks }} mark{{ $q->marks > 1 ? 's' : '' }}
+                        </span>
+                    </div>
+                    <div class="q-options-grid">
+                        @foreach($q->options as $oi => $opt)
+                        <div class="q-option {{ $oi == $q->correct_option ? 'correct' : 'wrong' }}">
+                            <div class="q-option-letter">{{ chr(65+$oi) }}</div>
+                            {{ $opt }}
+                            @if($oi == $q->correct_option) <i class="fa-solid fa-check" style="margin-left:auto"></i> @endif
+                        </div>
+                        @endforeach
+                    </div>
                 </div>
-                <ul class="options-preview">
-                    @foreach($q->options as $oi => $opt)
-                        <li class="{{ $oi == $q->correct_option ? 'correct' : '' }}">
-                            {{ $oi == $q->correct_option ? '✅' : '○' }} {{ $opt }}
-                        </li>
-                    @endforeach
-                </ul>
+                @empty
+                <div style="text-align:center;padding:40px;color:#94a3b8">
+                    <i class="fa-solid fa-circle-question" style="font-size:40px;margin-bottom:12px;display:block"></i>
+                    No questions added yet.
+                </div>
+                @endforelse
             </div>
-        @empty
-            <p style="color:#9ca3af;text-align:center;padding:20px">No questions added yet.</p>
-        @endforelse
-    </div>
-
-    {{-- ── Submissions Summary ───────────────────────────────────────────── --}}
-    <div class="card">
-        <div class="card-header">
-            <h2>👥 Submissions</h2>
-            <span style="font-size:13px;color:#9ca3af">{{ $quiz->attempts->count() }} of group members submitted</span>
         </div>
+
+        {{-- Submissions --}}
         @if($quiz->participationRecords->count())
-            <table class="results">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Student</th>
-                        <th>Score / {{ $quiz->totalMarks() }}</th>
-                        <th>Percentage</th>
-                        <th>Grade</th>
-                        <th>Submitted</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($quiz->participationRecords->sortByDesc('score') as $i => $rec)
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-users"></i> Recent Submissions</h2>
+                <a href="{{ route('lecturer.quizzes.results', $quiz) }}" class="btn btn-outline btn-sm">
+                    <i class="fa-solid fa-chart-bar"></i> Full Results
+                </a>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
                         <tr>
-                            <td style="color:#9ca3af">{{ $i + 1 }}</td>
-                            <td><strong>{{ $rec->user->name }}</strong></td>
-                            <td>
-                                {{ $rec->score }}
-                                <span class="pct-bar"><span class="pct-fill" style="width:{{ $rec->percentage }}%"></span></span>
-                            </td>
-                            <td>{{ $rec->percentage }}%</td>
-                            <td class="grade-{{ $rec->grade }}">{{ $rec->grade }}</td>
-                            <td style="color:#9ca3af;font-size:13px">{{ $rec->completed_at?->format('d M Y H:i') ?? '—' }}</td>
+                            <th><i class="fa-solid fa-user"></i> Student</th>
+                            <th><i class="fa-solid fa-star"></i> Score</th>
+                            <th><i class="fa-solid fa-percent"></i> Percentage</th>
+                            <th><i class="fa-solid fa-trophy"></i> Grade</th>
+                            <th><i class="fa-solid fa-clock"></i> Submitted</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @else
-            <p style="color:#9ca3af;text-align:center;padding:28px">No submissions yet.</p>
+                    </thead>
+                    <tbody>
+                        @foreach($quiz->participationRecords->sortByDesc('score')->take(5) as $rec)
+                        <tr>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:10px">
+                                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">
+                                        {{ strtoupper(substr($rec->user->name, 0, 1)) }}
+                                    </div>
+                                    <span style="font-weight:600">{{ $rec->user->name }}</span>
+                                </div>
+                            </td>
+                            <td style="font-weight:700">{{ $rec->score }} <span style="color:#94a3b8;font-weight:400">/ {{ $rec->max_score }}</span></td>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:8px">
+                                    <div class="progress" style="width:70px"><div class="progress-bar" style="width:{{ $rec->percentage }}%"></div></div>
+                                    <span style="font-weight:600">{{ $rec->percentage }}%</span>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-{{ $rec->grade }}">{{ $rec->grade }}</span></td>
+                            <td style="color:#64748b;font-size:12px">{{ $rec->completed_at?->format('d M H:i') }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
         @endif
     </div>
 
+    {{-- RIGHT --}}
+    <div>
+        {{-- Actions --}}
+        <div class="card" style="margin-bottom:18px">
+            <div class="card-header"><h2><i class="fa-solid fa-bolt"></i> Actions</h2></div>
+            <div class="card-body action-btn-group">
+                @if($quiz->status === 'draft')
+                <form action="{{ route('lecturer.quizzes.publish', $quiz) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="btn btn-success" style="width:100%;justify-content:center;padding:13px">
+                        <i class="fa-solid fa-rocket"></i> Publish Quiz
+                    </button>
+                </form>
+                <p style="font-size:11px;color:#64748b;text-align:center">Publishing makes this quiz visible to students.</p>
+                @endif
+
+                @if($quiz->status === 'published')
+                <form action="{{ route('lecturer.quizzes.remind', $quiz) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="btn btn-warning" style="width:100%;justify-content:center;padding:13px">
+                        <i class="fa-solid fa-bell"></i> Send Reminder
+                    </button>
+                </form>
+                <p style="font-size:11px;color:#64748b;text-align:center">Notifies all group members about this quiz.</p>
+                @endif
+
+                <a href="{{ route('lecturer.quizzes.results', $quiz) }}" class="btn btn-outline" style="width:100%;justify-content:center">
+                    <i class="fa-solid fa-chart-bar"></i> View Full Results
+                </a>
+            </div>
+        </div>
+
+        {{-- Lifecycle --}}
+        <div class="card">
+            <div class="card-header"><h2><i class="fa-solid fa-timeline"></i> Lifecycle</h2></div>
+            <div class="card-body">
+                @php
+                    $steps = [
+                        ['Draft Created',     true,                       'fa-pencil',        'done'],
+                        ['Published',         $quiz->status !== 'draft',  'fa-rocket',        $quiz->status !== 'draft' ? 'done' : 'pending'],
+                        ['Reminder Sent',     $quiz->reminder_sent_at,    'fa-bell',          $quiz->reminder_sent_at ? 'done' : 'pending'],
+                        ['Accepting Answers', $quiz->isOpen(),            'fa-circle-play',   $quiz->isOpen() ? 'active' : ($quiz->isPastDeadline() ? 'done' : 'pending')],
+                        ['Closed',            $quiz->isPastDeadline(),    'fa-lock',          $quiz->isPastDeadline() ? 'done' : 'pending'],
+                    ];
+                @endphp
+                @foreach($steps as [$label, $done, $icon, $state])
+                <div class="lifecycle-step">
+                    <div class="step-icon step-{{ $state }}">
+                        <i class="fa-solid fa-{{ $icon }}"></i>
+                    </div>
+                    <div class="step-info">
+                        <div class="step-label {{ $state }}">{{ $label }}</div>
+                    </div>
+                    @if($state === 'done') <i class="fa-solid fa-check" style="color:#10b981;font-size:12px"></i> @endif
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
 </div>
-</body>
-</html>
+
+@endsection

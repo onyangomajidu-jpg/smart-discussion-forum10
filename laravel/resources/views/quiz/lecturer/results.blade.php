@@ -1,178 +1,277 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Results — {{ $quiz->title }}</title>
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI',sans-serif;background:#f0f2ff;color:#333}
+@extends('layouts.app')
 
-        .navbar{background:linear-gradient(135deg,#667eea,#764ba2);padding:16px 28px;color:#fff;
-            display:flex;justify-content:space-between;align-items:center;
-            box-shadow:0 2px 12px rgba(0,0,0,.2)}
-        .navbar h1{font-size:19px;font-weight:700}
-        .navbar a{color:#fff;text-decoration:none;font-size:13px;opacity:.85;
-            padding:7px 14px;border:1px solid rgba(255,255,255,.35);border-radius:6px;transition:.2s}
-        .navbar a:hover{background:rgba(255,255,255,.15)}
+@section('title', 'Results — ' . $quiz->title)
 
-        .container{max-width:980px;margin:32px auto;padding:0 20px}
+@push('styles')
+<style>
+.results-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+    border-radius: 16px;
+    padding: 30px 36px;
+    margin-bottom: 28px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 8px 32px rgba(15,23,42,.4);
+    position: relative;
+    overflow: hidden;
+}
+.results-hero::before {
+    content: '';
+    position: absolute; top: -80px; right: -80px;
+    width: 260px; height: 260px;
+    background: rgba(99,102,241,.15);
+    border-radius: 50%;
+}
+.results-hero::after {
+    content: '\f080';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    right: 36px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 90px;
+    opacity: .08;
+}
 
-        .card{background:#fff;border-radius:14px;padding:28px 32px;
-            box-shadow:0 2px 14px rgba(102,126,234,.1);margin-bottom:22px}
-        .card-header{display:flex;justify-content:space-between;align-items:center;
-            margin-bottom:22px;padding-bottom:14px;border-bottom:2px solid #f0f2ff}
-        .card-header h2{font-size:17px;font-weight:700}
+.grade-bar-row { margin-bottom: 14px; }
+.grade-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.grade-pill { padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 800; }
+.grade-pill-A { background: #d1fae5; color: #065f46; }
+.grade-pill-B { background: #dbeafe; color: #1e40af; }
+.grade-pill-C { background: #fef3c7; color: #92400e; }
+.grade-pill-D { background: #ffedd5; color: #9a3412; }
+.grade-pill-F { background: #fee2e2; color: #991b1b; }
 
-        /* ── Stats grid ─────────────────────────────────────────────────── */
-        .stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:26px}
-        .stat{background:#f8f9ff;border-radius:12px;padding:18px;text-align:center;
-            border:2px solid #f0f2ff}
-        .stat .val{font-size:28px;font-weight:700;color:#667eea}
-        .stat .lbl{font-size:11px;color:#9ca3af;margin-top:5px;text-transform:uppercase;letter-spacing:.5px}
+.rank-badge {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; flex-shrink: 0;
+}
+.rank-1 { background: linear-gradient(135deg,#f59e0b,#d97706); color: #fff; box-shadow: 0 3px 10px rgba(245,158,11,.4); }
+.rank-2 { background: linear-gradient(135deg,#94a3b8,#64748b); color: #fff; }
+.rank-3 { background: linear-gradient(135deg,#cd7c2f,#b45309); color: #fff; }
+.rank-n { background: #f1f5f9; color: #64748b; }
 
-        /* ── Grade distribution ─────────────────────────────────────────── */
-        .grade-dist{display:flex;gap:10px;margin-bottom:26px}
-        .grade-bar-wrap{flex:1;text-align:center}
-        .grade-bar-outer{background:#f0f2ff;border-radius:8px;height:80px;
-            display:flex;align-items:flex-end;overflow:hidden;margin-bottom:6px}
-        .grade-bar-inner{width:100%;border-radius:8px 8px 0 0;transition:height .4s;min-height:4px}
-        .bar-A{background:#28a745}.bar-B{background:#17a2b8}
-        .bar-C{background:#ffc107}.bar-D{background:#fd7e14}.bar-F{background:#dc3545}
-        .grade-label{font-size:13px;font-weight:700}
-        .grade-count{font-size:11px;color:#9ca3af}
+.pass-fail-card {
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    flex: 1;
+}
+.pass-card { background: linear-gradient(135deg,#d1fae5,#a7f3d0); border: 1.5px solid #6ee7b7; }
+.fail-card { background: linear-gradient(135deg,#fee2e2,#fecaca); border: 1.5px solid #fca5a5; }
+.pass-fail-num { font-size: 36px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+.pass-num { color: #065f46; }
+.fail-num { color: #991b1b; }
+.pass-fail-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+.pass-label { color: #065f46; }
+.fail-label { color: #991b1b; }
+</style>
+@endpush
 
-        /* ── Results table ──────────────────────────────────────────────── */
-        table{width:100%;border-collapse:collapse;font-size:14px}
-        th{background:#f8f9ff;padding:11px 14px;text-align:left;font-weight:600;
-            color:#667eea;border-bottom:2px solid #f0f2ff;
-            font-size:12px;text-transform:uppercase;letter-spacing:.4px}
-        td{padding:11px 14px;border-bottom:1px solid #f0f2ff}
-        tr:hover td{background:#fafbff}
-        .grade-A{color:#155724;font-weight:700}
-        .grade-B{color:#0c5460;font-weight:700}
-        .grade-C{color:#856404;font-weight:700}
-        .grade-D{color:#e67e22;font-weight:700}
-        .grade-F{color:#dc3545;font-weight:700}
-        .pct-bar{background:#e9ecef;border-radius:4px;height:6px;width:80px;
-            overflow:hidden;display:inline-block;vertical-align:middle;margin-left:8px}
-        .pct-fill{background:linear-gradient(90deg,#667eea,#764ba2);height:100%;border-radius:4px}
-        .rank-1{color:#f59e0b;font-weight:700}
-        .rank-2{color:#9ca3af;font-weight:700}
-        .rank-3{color:#cd7f32;font-weight:700}
-    </style>
-</head>
-<body>
+@section('content')
 
-<nav class="navbar">
-    <h1>🎓 Smart Discussion Forum</h1>
-    <a href="{{ route('lecturer.quizzes.show', $quiz) }}">← Back to Quiz</a>
-</nav>
+<div class="breadcrumb">
+    <a href="{{ route('lecturer.dashboard') }}"><i class="fa-solid fa-house"></i> Dashboard</a>
+    <span class="sep"><i class="fa-solid fa-chevron-right" style="font-size:9px"></i></span>
+    <a href="{{ route('lecturer.quizzes.show', $quiz) }}">{{ $quiz->title }}</a>
+    <span class="sep"><i class="fa-solid fa-chevron-right" style="font-size:9px"></i></span>
+    <span>Results</span>
+</div>
 
-<div class="container">
-
-    {{-- ── Summary Stats ─────────────────────────────────────────────────── --}}
-    <div class="card">
-        <div class="card-header">
-            <h2>📊 Results: {{ $quiz->title }}</h2>
-            <span style="font-size:13px;color:#9ca3af">Group: {{ $quiz->group->name }}</span>
+<div class="results-hero">
+    <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:.6;margin-bottom:6px">
+            <i class="fa-solid fa-chart-bar"></i> Assessment Results
         </div>
-
-        @php
-            $total     = $records->count();
-            $avgScore  = $total ? round($records->avg('score'), 1) : 0;
-            $avgPct    = $total ? round($records->avg('percentage'), 1) : 0;
-            $passCount = $records->where('percentage', '>=', 50)->count();
-            $passRate  = $total ? round(($passCount / $total) * 100) : 0;
-            $highest   = $total ? $records->max('score') : 0;
-
-            $gradeCounts = ['A' => 0, 'B' => 0, 'C' => 0, 'D' => 0, 'F' => 0];
-            foreach ($records as $r) {
-                if (isset($gradeCounts[$r->grade])) $gradeCounts[$r->grade]++;
-            }
-            $maxGradeCount = max(array_values($gradeCounts)) ?: 1;
-        @endphp
-
-        <div class="stats-grid">
-            <div class="stat"><div class="val">{{ $total }}</div><div class="lbl">Submissions</div></div>
-            <div class="stat"><div class="val">{{ $avgScore }}</div><div class="lbl">Avg Score</div></div>
-            <div class="stat"><div class="val">{{ $avgPct }}%</div><div class="lbl">Avg Percentage</div></div>
-            <div class="stat"><div class="val">{{ $passRate }}%</div><div class="lbl">Pass Rate</div></div>
-            <div class="stat"><div class="val">{{ $highest }}</div><div class="lbl">Highest Score</div></div>
-        </div>
-
-        {{-- ── Grade Distribution Bar Chart ──────────────────────────────── --}}
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af;margin-bottom:12px">Grade Distribution</div>
-        <div class="grade-dist">
-            @foreach(['A','B','C','D','F'] as $g)
-                @php $cnt = $gradeCounts[$g]; $h = $maxGradeCount > 0 ? round(($cnt/$maxGradeCount)*80) : 0; @endphp
-                <div class="grade-bar-wrap">
-                    <div class="grade-bar-outer">
-                        <div class="grade-bar-inner bar-{{ $g }}" style="height:{{ max($h,4) }}px"></div>
-                    </div>
-                    <div class="grade-label grade-{{ $g }}">{{ $g }}</div>
-                    <div class="grade-count">{{ $cnt }}</div>
-                </div>
-            @endforeach
+        <div style="font-size:22px;font-weight:900;margin-bottom:6px">{{ $quiz->title }}</div>
+        <div style="font-size:13px;opacity:.7;display:flex;align-items:center;gap:14px">
+            <span><i class="fa-solid fa-users"></i> {{ $quiz->group->name }}</span>
+            <span><i class="fa-solid fa-star"></i> {{ $quiz->totalMarks() }} total marks</span>
         </div>
     </div>
+    <a href="{{ route('lecturer.quizzes.show', $quiz) }}" class="btn btn-secondary btn-sm">
+        <i class="fa-solid fa-arrow-left"></i> Back to Quiz
+    </a>
+</div>
 
-    {{-- ── Participation Records Table (SDD §4.2.5 — participationRecord) ── --}}
+@php
+    $total     = $records->count();
+    $avgScore  = $total ? round($records->avg('score'), 1) : 0;
+    $avgPct    = $total ? round($records->avg('percentage'), 1) : 0;
+    $passCount = $records->where('percentage', '>=', 50)->count();
+    $passRate  = $total ? round(($passCount / $total) * 100) : 0;
+    $highest   = $records->max('score') ?? 0;
+    $grades    = $records->groupBy('grade')->map->count();
+@endphp
+
+<div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:24px">
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-users" style="color:#6366f1"></i></div>
+        <div class="val">{{ $total }}</div>
+        <div class="lbl">Submissions</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-calculator" style="color:#8b5cf6"></i></div>
+        <div class="val">{{ $avgScore }}</div>
+        <div class="lbl">Avg Score</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-percent" style="color:#3b82f6"></i></div>
+        <div class="val">{{ $avgPct }}%</div>
+        <div class="lbl">Avg %</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-chart-line" style="color:#10b981"></i></div>
+        <div class="val">{{ $passRate }}%</div>
+        <div class="lbl">Pass Rate</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-trophy" style="color:#f59e0b"></i></div>
+        <div class="val">{{ $highest }}</div>
+        <div class="lbl">Highest</div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 290px;gap:22px;align-items:start">
+
+    {{-- Results Table --}}
     <div class="card">
         <div class="card-header">
-            <h2>🏆 Participation Records</h2>
-            <span style="font-size:12px;color:#9ca3af">assignMarks() · calculateMarks() · participationRecord()</span>
+            <h2><i class="fa-solid fa-ranking-star"></i> Student Rankings</h2>
+            <span style="font-size:12px;color:#64748b;font-weight:600">Sorted by score</span>
         </div>
-
         @if($records->count())
+        <div class="table-wrap">
             <table>
                 <thead>
                     <tr>
-                        <th>Rank</th>
-                        <th>Student</th>
-                        <th>Score / {{ $quiz->totalMarks() }}</th>
-                        <th>Percentage</th>
-                        <th>Grade</th>
-                        <th>Status</th>
-                        <th>Submitted At</th>
+                        <th><i class="fa-solid fa-hashtag"></i> Rank</th>
+                        <th><i class="fa-solid fa-user"></i> Student</th>
+                        <th><i class="fa-solid fa-star"></i> Score</th>
+                        <th><i class="fa-solid fa-percent"></i> %</th>
+                        <th><i class="fa-solid fa-trophy"></i> Grade</th>
+                        <th><i class="fa-solid fa-circle-check"></i> Status</th>
+                        <th><i class="fa-solid fa-clock"></i> Submitted</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($records as $i => $rec)
-                        <tr>
-                            <td class="{{ $i === 0 ? 'rank-1' : ($i === 1 ? 'rank-2' : ($i === 2 ? 'rank-3' : '')) }}">
-                                {{ $i === 0 ? '🥇' : ($i === 1 ? '🥈' : ($i === 2 ? '🥉' : $i + 1)) }}
-                            </td>
-                            <td><strong>{{ $rec->user->name }}</strong></td>
-                            <td>
-                                {{ $rec->score }}
-                                <span class="pct-bar">
-                                    <span class="pct-fill" style="width:{{ $rec->percentage }}%"></span>
-                                </span>
-                            </td>
-                            <td>{{ $rec->percentage }}%</td>
-                            <td class="grade-{{ $rec->grade }}">{{ $rec->grade }}</td>
-                            <td>
-                                @if($rec->percentage >= 50)
-                                    <span style="color:#155724;font-weight:600">✅ Pass</span>
-                                @else
-                                    <span style="color:#dc3545;font-weight:600">❌ Fail</span>
+                    <tr>
+                        <td>
+                            <div class="rank-badge {{ $i < 3 ? 'rank-'.($i+1) : 'rank-n' }}">
+                                @if($i === 0) <i class="fa-solid fa-crown"></i>
+                                @else {{ $i + 1 }}
                                 @endif
-                            </td>
-                            <td style="color:#9ca3af;font-size:13px">
-                                {{ $rec->completed_at?->format('d M Y H:i') ?? '—' }}
-                            </td>
-                        </tr>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px">
+                                <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">
+                                    {{ strtoupper(substr($rec->user->name, 0, 1)) }}
+                                </div>
+                                <div>
+                                    <div style="font-weight:600;font-size:13px">{{ $rec->user->name }}</div>
+                                    <div style="font-size:11px;color:#94a3b8">{{ $rec->user->email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span style="font-weight:800;font-size:15px;color:#0f172a">{{ $rec->score }}</span>
+                            <span style="color:#94a3b8"> / {{ $rec->max_score }}</span>
+                            <div class="progress" style="width:80px;margin-top:5px">
+                                <div class="progress-bar" style="width:{{ $rec->percentage }}%"></div>
+                            </div>
+                        </td>
+                        <td style="font-weight:700;font-size:14px">{{ $rec->percentage }}%</td>
+                        <td><span class="badge badge-{{ $rec->grade }}" style="font-size:13px;padding:5px 14px">{{ $rec->grade }}</span></td>
+                        <td>
+                            @if($rec->percentage >= 50)
+                                <span style="color:#065f46;font-weight:700;font-size:12px;display:flex;align-items:center;gap:4px">
+                                    <i class="fa-solid fa-circle-check"></i> Pass
+                                </span>
+                            @else
+                                <span style="color:#991b1b;font-weight:700;font-size:12px;display:flex;align-items:center;gap:4px">
+                                    <i class="fa-solid fa-circle-xmark"></i> Fail
+                                </span>
+                            @endif
+                        </td>
+                        <td style="color:#64748b;font-size:12px">{{ $rec->completed_at?->format('d M Y H:i') ?? '—' }}</td>
+                    </tr>
                     @endforeach
                 </tbody>
             </table>
+        </div>
         @else
-            <p style="color:#9ca3af;text-align:center;padding:36px;font-size:15px">
-                📭 No submissions yet.
-            </p>
+        <div class="card-body" style="text-align:center;padding:60px;color:#94a3b8">
+            <i class="fa-solid fa-inbox" style="font-size:48px;margin-bottom:16px;display:block;opacity:.4"></i>
+            <p style="font-size:15px;font-weight:600">No submissions yet</p>
+            <p style="font-size:13px;margin-top:4px">Results will appear here once students submit.</p>
+        </div>
         @endif
     </div>
 
+    {{-- Right Panel --}}
+    <div>
+        {{-- Pass / Fail --}}
+        <div class="card" style="margin-bottom:18px">
+            <div class="card-header"><h2><i class="fa-solid fa-scale-balanced"></i> Pass / Fail</h2></div>
+            <div class="card-body">
+                <div style="display:flex;gap:12px">
+                    <div class="pass-fail-card pass-card">
+                        <div class="pass-fail-num pass-num">{{ $passCount }}</div>
+                        <div class="pass-fail-label pass-label"><i class="fa-solid fa-circle-check"></i> Passed</div>
+                    </div>
+                    <div class="pass-fail-card fail-card">
+                        <div class="pass-fail-num fail-num">{{ $total - $passCount }}</div>
+                        <div class="pass-fail-label fail-label"><i class="fa-solid fa-circle-xmark"></i> Failed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Grade Distribution --}}
+        <div class="card" style="margin-bottom:18px">
+            <div class="card-header"><h2><i class="fa-solid fa-chart-pie"></i> Grade Distribution</h2></div>
+            <div class="card-body">
+                @foreach(['A','B','C','D','F'] as $g)
+                @php $cnt = $grades[$g] ?? 0; $pct = $total ? round(($cnt/$total)*100) : 0; @endphp
+                <div class="grade-bar-row">
+                    <div class="grade-bar-header">
+                        <span class="grade-pill grade-pill-{{ $g }}">{{ $g }}</span>
+                        <span style="font-size:12px;color:#64748b;font-weight:600">{{ $cnt }} <span style="opacity:.6">({{ $pct }}%)</span></span>
+                    </div>
+                    <div class="progress" style="height:10px">
+                        <div class="progress-bar" style="width:{{ $pct }}%"></div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- Quick Stats --}}
+        <div class="card">
+            <div class="card-header"><h2><i class="fa-solid fa-chart-simple"></i> Quick Stats</h2></div>
+            <div class="card-body">
+                @php $rows = [
+                    ['Highest Score', $records->max('score').' / '.$quiz->totalMarks(), 'fa-arrow-up', '#065f46'],
+                    ['Lowest Score',  $records->min('score').' / '.$quiz->totalMarks(), 'fa-arrow-down', '#991b1b'],
+                    ['Average Score', $avgScore.' / '.$quiz->totalMarks(),              'fa-minus',      '#1e40af'],
+                    ['Pass Rate',     $passRate.'%',                                    'fa-percent',    '#065f46'],
+                ]; @endphp
+                @foreach($rows as [$label, $val, $icon, $color])
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9">
+                    <span style="font-size:13px;color:#64748b;display:flex;align-items:center;gap:7px">
+                        <i class="fa-solid fa-{{ $icon }}" style="color:{{ $color }};width:14px"></i> {{ $label }}
+                    </span>
+                    <span style="font-weight:700;font-size:13px;color:{{ $color }}">{{ $val ?? '—' }}</span>
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
 </div>
-</body>
-</html>
+
+@endsection

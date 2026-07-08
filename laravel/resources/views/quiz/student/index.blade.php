@@ -1,163 +1,221 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Available Quizzes — Smart Discussion Forum</title>
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI',sans-serif;background:#f0f2ff;color:#333}
+@extends('layouts.app')
 
-        .navbar{background:linear-gradient(135deg,#667eea,#764ba2);padding:16px 28px;color:#fff;
-            display:flex;justify-content:space-between;align-items:center;
-            box-shadow:0 2px 12px rgba(0,0,0,.2)}
-        .navbar h1{font-size:19px;font-weight:700}
-        .navbar a{color:#fff;text-decoration:none;font-size:13px;opacity:.85;
-            padding:7px 14px;border:1px solid rgba(255,255,255,.35);border-radius:6px;transition:.2s}
-        .navbar a:hover{background:rgba(255,255,255,.15)}
+@section('title', 'My Quizzes — SmartForum')
 
-        .container{max-width:860px;margin:32px auto;padding:0 20px}
-        .page-title{font-size:22px;font-weight:700;margin-bottom:6px}
-        .page-sub{font-size:14px;color:#9ca3af;margin-bottom:24px}
+@push('styles')
+<style>
+.hero-banner {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 60%, #a78bfa 100%);
+    border-radius: 18px;
+    padding: 36px 40px;
+    margin-bottom: 32px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(99,102,241,.35);
+}
+.hero-banner::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    background: rgba(255,255,255,.08);
+    border-radius: 50%;
+}
+.hero-banner::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; right: 120px;
+    width: 140px; height: 140px;
+    background: rgba(255,255,255,.05);
+    border-radius: 50%;
+}
+.hero-title { font-size: 26px; font-weight: 900; margin-bottom: 6px; }
+.hero-sub { font-size: 14px; opacity: .8; }
+.hero-icon { font-size: 72px; opacity: .25; position: absolute; right: 40px; top: 50%; transform: translateY(-50%); }
 
-        /* ── Quiz card ──────────────────────────────────────────────────── */
-        .quiz-card{background:#fff;border-radius:14px;padding:22px 26px;
-            box-shadow:0 2px 14px rgba(102,126,234,.08);margin-bottom:16px;
-            display:flex;justify-content:space-between;align-items:center;gap:20px;
-            border-left:5px solid #e8eaf0;transition:.2s}
-        .quiz-card.open{border-left-color:#28a745}
-        .quiz-card.upcoming{border-left-color:#ffc107}
-        .quiz-card.closed{border-left-color:#dc3545}
-        .quiz-card.done{border-left-color:#17a2b8}
+.quiz-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1.5px solid #e2e8f0;
+    box-shadow: 0 2px 12px rgba(0,0,0,.05);
+    transition: all .25s;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+.quiz-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 36px rgba(99,102,241,.15);
+    border-color: #c7d2fe;
+}
+.quiz-card-inner { display: flex; align-items: stretch; }
+.quiz-card-accent {
+    width: 6px;
+    flex-shrink: 0;
+}
+.accent-open     { background: linear-gradient(180deg, #10b981, #059669); }
+.accent-upcoming { background: linear-gradient(180deg, #f59e0b, #d97706); }
+.accent-closed   { background: linear-gradient(180deg, #ef4444, #dc2626); }
+.accent-done     { background: linear-gradient(180deg, #6366f1, #8b5cf6); }
 
-        .quiz-info h3{font-size:16px;font-weight:700;margin-bottom:6px}
-        .quiz-info .meta{font-size:13px;color:#9ca3af;margin-bottom:8px;line-height:1.6}
-        .quiz-info .meta strong{color:#555}
+.quiz-card-body { flex: 1; padding: 22px 24px; display: flex; align-items: center; gap: 20px; }
+.quiz-icon-wrap {
+    width: 56px; height: 56px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; flex-shrink: 0;
+}
+.icon-open     { background: linear-gradient(135deg,#d1fae5,#a7f3d0); color: #065f46; }
+.icon-upcoming { background: linear-gradient(135deg,#fef3c7,#fde68a); color: #92400e; }
+.icon-closed   { background: linear-gradient(135deg,#fee2e2,#fecaca); color: #991b1b; }
+.icon-done     { background: linear-gradient(135deg,#ede9fe,#ddd6fe); color: #5b21b6; }
 
-        /* ── Badges ─────────────────────────────────────────────────────── */
-        .badge{display:inline-block;padding:4px 12px;border-radius:10px;
-            font-size:11px;font-weight:700;margin-right:6px}
-        .badge-open{background:#d4edda;color:#155724}
-        .badge-upcoming{background:#fff3cd;color:#856404}
-        .badge-closed{background:#f8d7da;color:#721c24}
-        .badge-done{background:#d1ecf1;color:#0c5460}
+.quiz-info { flex: 1; min-width: 0; }
+.quiz-title { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.quiz-meta { display: flex; gap: 18px; flex-wrap: wrap; }
+.quiz-meta-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #64748b; font-weight: 500; }
+.quiz-meta-item i { color: #6366f1; font-size: 11px; }
+.quiz-countdown { margin-top: 8px; font-size: 12px; font-weight: 700; color: #f59e0b; display: flex; align-items: center; gap: 5px; }
 
-        /* ── Countdown ──────────────────────────────────────────────────── */
-        .countdown-tag{font-size:12px;color:#856404;font-weight:600;
-            background:#fff3cd;padding:3px 10px;border-radius:8px;display:inline-block;margin-top:4px}
+.quiz-action { padding: 22px 24px; display: flex; align-items: center; flex-shrink: 0; }
 
-        /* ── Buttons ────────────────────────────────────────────────────── */
-        .btn{padding:10px 22px;border:none;border-radius:9px;font-size:14px;font-weight:600;
-            cursor:pointer;text-decoration:none;display:inline-block;transition:all .2s;white-space:nowrap}
-        .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;
-            box-shadow:0 4px 14px rgba(102,126,234,.35)}
-        .btn-primary:hover{opacity:.9;transform:translateY(-1px)}
-        .btn-secondary{background:#f0f2ff;color:#667eea;border:2px solid #e8eaf0}
-        .btn-secondary:hover{background:#e8eaf0}
-        .btn-disabled{background:#f0f2ff;color:#c4c9d4;border:2px solid #e8eaf0;cursor:not-allowed}
+.empty-state {
+    text-align: center;
+    padding: 80px 40px;
+    background: #fff;
+    border-radius: 18px;
+    border: 2px dashed #e2e8f0;
+}
+.empty-state .empty-icon { font-size: 64px; margin-bottom: 20px; opacity: .4; }
+.empty-state h3 { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+.empty-state p { font-size: 14px; color: #64748b; }
 
-        /* ── Alerts ─────────────────────────────────────────────────────── */
-        .alert{padding:13px 18px;border-radius:10px;margin-bottom:18px;font-size:14px}
-        .alert-info{background:#d1ecf1;color:#0c5460;border-left:4px solid #17a2b8}
+.filter-bar { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+.filter-btn { padding: 7px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: 5px; }
+.filter-btn:hover, .filter-btn.active { background: var(--grad); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(99,102,241,.3); }
+</style>
+@endpush
 
-        /* ── Empty state ────────────────────────────────────────────────── */
-        .empty{text-align:center;padding:60px 20px;color:#9ca3af}
-        .empty .icon{font-size:48px;margin-bottom:14px}
-        .empty p{font-size:15px}
-    </style>
-</head>
-<body>
+@section('content')
 
-<nav class="navbar">
-    <h1>🎓 Smart Discussion Forum</h1>
-    <a href="{{ route('dashboard') }}">← Dashboard</a>
-</nav>
+<div class="hero-banner">
+    <div>
+        <div class="hero-title"><i class="fa-solid fa-file-pen" style="margin-right:10px"></i>My Quizzes</div>
+        <div class="hero-sub">Track your assessments, deadlines, and results all in one place</div>
+    </div>
+    <i class="fa-solid fa-brain hero-icon"></i>
+</div>
 
-<div class="container">
+@if($quizzes->isEmpty())
+<div class="empty-state">
+    <div class="empty-icon"><i class="fa-solid fa-inbox"></i></div>
+    <h3>No Quizzes Available</h3>
+    <p>There are no published quizzes in your groups right now.<br>Check back later or contact your lecturer.</p>
+</div>
+@else
 
-    @if(session('info'))
-        <div class="alert alert-info">{{ session('info') }}</div>
-    @endif
+<div class="filter-bar">
+    <button class="filter-btn active" onclick="filterQuizzes('all', this)"><i class="fa-solid fa-border-all"></i> All</button>
+    <button class="filter-btn" onclick="filterQuizzes('open', this)"><i class="fa-solid fa-circle-play"></i> Open</button>
+    <button class="filter-btn" onclick="filterQuizzes('upcoming', this)"><i class="fa-solid fa-clock"></i> Upcoming</button>
+    <button class="filter-btn" onclick="filterQuizzes('done', this)"><i class="fa-solid fa-circle-check"></i> Completed</button>
+    <button class="filter-btn" onclick="filterQuizzes('closed', this)"><i class="fa-solid fa-lock"></i> Closed</button>
+</div>
 
-    <div class="page-title">📝 My Quizzes</div>
-    <div class="page-sub">Quizzes available in your groups</div>
+<div id="quizList">
+@foreach($quizzes as $quiz)
+@php
+    $done     = in_array($quiz->id, $attempted);
+    $isOpen   = $quiz->isOpen();
+    $upcoming = $quiz->isUpcoming();
+    $closed   = $quiz->isPastDeadline();
+    $state    = $done ? 'done' : ($isOpen ? 'open' : ($upcoming ? 'upcoming' : 'closed'));
+@endphp
 
-    @forelse($quizzes as $quiz)
-        @php
-            $done     = in_array($quiz->id, $attempted);
-            $isOpen   = $quiz->isOpen();
-            $upcoming = $quiz->isUpcoming();
-            $closed   = $quiz->isPastDeadline() && !$done;
-            $cardClass = $done ? 'done' : ($isOpen ? 'open' : ($upcoming ? 'upcoming' : 'closed'));
-        @endphp
-
-        <div class="quiz-card {{ $cardClass }}">
+<div class="quiz-card" data-state="{{ $state }}">
+    <div class="quiz-card-inner">
+        <div class="quiz-card-accent accent-{{ $state }}"></div>
+        <div class="quiz-card-body">
+            <div class="quiz-icon-wrap icon-{{ $state }}">
+                @if($done)        <i class="fa-solid fa-circle-check"></i>
+                @elseif($isOpen)  <i class="fa-solid fa-play"></i>
+                @elseif($upcoming)<i class="fa-solid fa-hourglass-half"></i>
+                @else             <i class="fa-solid fa-lock"></i>
+                @endif
+            </div>
             <div class="quiz-info">
-                <h3>{{ $quiz->title }}</h3>
-                <div class="meta">
-                    Group: <strong>{{ $quiz->group->name }}</strong> &nbsp;·&nbsp;
-                    Duration: <strong>{{ $quiz->duration_minutes }} min</strong> &nbsp;·&nbsp;
-                    Questions: <strong>{{ $quiz->questions_count ?? '—' }}</strong>
-                    <br>
-                    Opens: <strong>{{ $quiz->unlock_date?->format('d M Y, H:i') ?? 'Now' }}</strong>
-                    &nbsp;·&nbsp;
-                    Deadline: <strong>{{ $quiz->hard_deadline?->format('d M Y, H:i') ?? 'None' }}</strong>
-                </div>
-                <div>
+                <div class="quiz-title">
+                    {{ $quiz->title }}
                     @if($done)
-                        <span class="badge badge-done">✅ Submitted</span>
+                        <span class="badge badge-done"><i class="fa-solid fa-check"></i> Submitted</span>
                     @elseif($isOpen)
-                        <span class="badge badge-open">🟢 Open Now</span>
+                        <span class="badge badge-open"><i class="fa-solid fa-circle" style="font-size:7px"></i> Live Now</span>
                     @elseif($upcoming)
-                        <span class="badge badge-upcoming">⏳ Upcoming</span>
-                        @if($quiz->unlock_date)
-                            <span class="countdown-tag" data-unlock="{{ $quiz->unlock_date->timestamp }}">
-                                Opens in …
-                            </span>
-                        @endif
+                        <span class="badge badge-upcoming"><i class="fa-solid fa-clock"></i> Upcoming</span>
                     @else
-                        <span class="badge badge-closed">🔴 Closed</span>
+                        <span class="badge badge-closed"><i class="fa-solid fa-lock"></i> Closed</span>
                     @endif
                 </div>
-            </div>
-
-            <div style="flex-shrink:0">
-                @if($done)
-                    <a href="{{ route('quizzes.result', $quiz) }}" class="btn btn-secondary">View Result</a>
-                @elseif($isOpen)
-                    <a href="{{ route('quizzes.take', $quiz) }}" class="btn btn-primary">Start Quiz →</a>
-                @else
-                    <span class="btn btn-disabled">Unavailable</span>
+                <div class="quiz-meta">
+                    <span class="quiz-meta-item"><i class="fa-solid fa-users"></i> {{ $quiz->group->name }}</span>
+                    <span class="quiz-meta-item"><i class="fa-solid fa-stopwatch"></i> {{ $quiz->duration_minutes }} min</span>
+                    <span class="quiz-meta-item"><i class="fa-solid fa-circle-question"></i> {{ $quiz->questions_count }} questions</span>
+                    @if($quiz->unlock_date)
+                    <span class="quiz-meta-item"><i class="fa-solid fa-unlock"></i> Opens {{ $quiz->unlock_date->format('d M Y, H:i') }}</span>
+                    @endif
+                    @if($quiz->hard_deadline)
+                    <span class="quiz-meta-item"><i class="fa-solid fa-flag-checkered"></i> Due {{ $quiz->hard_deadline->format('d M Y, H:i') }}</span>
+                    @endif
+                </div>
+                @if($upcoming && $quiz->unlock_date)
+                <div class="quiz-countdown" data-countdown="{{ $quiz->unlock_date->timestamp }}" id="cd_{{ $quiz->id }}">
+                    <i class="fa-solid fa-timer"></i> Calculating…
+                </div>
                 @endif
             </div>
         </div>
-    @empty
-        <div class="empty">
-            <div class="icon">📭</div>
-            <p>No quizzes available in your groups right now.</p>
+        <div class="quiz-action">
+            @if($done)
+                <a href="{{ route('quizzes.result', $quiz) }}" class="btn btn-outline btn-sm"><i class="fa-solid fa-chart-bar"></i> View Result</a>
+            @elseif($isOpen)
+                <a href="{{ route('quizzes.take', $quiz) }}" class="btn btn-primary"><i class="fa-solid fa-play"></i> Start Quiz</a>
+            @else
+                <button class="btn btn-secondary btn-sm" disabled><i class="fa-solid fa-ban"></i> Unavailable</button>
+            @endif
         </div>
-    @endforelse
-
+    </div>
+</div>
+@endforeach
 </div>
 
+@endif
+
+@endsection
+
+@push('scripts')
 <script>
-// Live countdown for upcoming quizzes
-document.querySelectorAll('[data-unlock]').forEach(function(el) {
-    const unlockTs = parseInt(el.dataset.unlock) * 1000;
+document.querySelectorAll('[data-countdown]').forEach(el => {
+    const target = parseInt(el.dataset.countdown) * 1000;
     function update() {
-        const diff = unlockTs - Date.now();
-        if (diff <= 0) { el.textContent = 'Opening…'; location.reload(); return; }
+        const diff = target - Date.now();
+        if (diff <= 0) { el.innerHTML = '<i class="fa-solid fa-bolt"></i> Opening now — refresh!'; return; }
         const h = Math.floor(diff / 3600000);
         const m = Math.floor((diff % 3600000) / 60000);
         const s = Math.floor((diff % 60000) / 1000);
-        el.textContent = 'Opens in ' +
-            (h > 0 ? h + 'h ' : '') +
-            (m > 0 ? m + 'm ' : '') +
-            s + 's';
+        el.innerHTML = `<i class="fa-solid fa-timer"></i> Opens in: ${h}h ${m}m ${s}s`;
+        setTimeout(update, 1000);
     }
     update();
-    setInterval(update, 1000);
 });
+
+function filterQuizzes(state, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.quiz-card').forEach(card => {
+        card.style.display = (state === 'all' || card.dataset.state === state) ? '' : 'none';
+    });
+}
 </script>
-</body>
-</html>
+@endpush

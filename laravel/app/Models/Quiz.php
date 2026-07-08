@@ -17,6 +17,7 @@ class Quiz extends Model
         'group_id', 'created_by', 'title', 'description',
         'status', 'unlock_date', 'hard_deadline',
         'duration_minutes', 'auto_submit', 'enforce_focus', 'published_at',
+        'reminder_sent_at',
         // legacy columns kept for compatibility
         'starts_at', 'ends_at',
     ];
@@ -27,6 +28,7 @@ class Quiz extends Model
         'unlock_date'      => 'datetime',
         'hard_deadline'    => 'datetime',
         'published_at'     => 'datetime',
+        'reminder_sent_at' => 'datetime',
         'auto_submit'      => 'boolean',
         'enforce_focus'    => 'boolean',
         'duration_minutes' => 'integer',

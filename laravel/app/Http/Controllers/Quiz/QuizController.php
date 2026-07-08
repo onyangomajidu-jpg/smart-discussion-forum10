@@ -22,6 +22,17 @@ class QuizController extends Controller
 
     // ── LECTURER ──────────────────────────────────────────────────────────
 
+    /** GET /lecturer/quizzes — Lecturer quiz dashboard */
+    public function lecturerIndex()
+    {
+        $quizzes = Quiz::where('created_by', auth()->id())
+            ->with('group')
+            ->withCount('questions', 'attempts')
+            ->orderByDesc('created_at')
+            ->get();
+        return view('quiz.lecturer.index', compact('quizzes'));
+    }
+
     /** GET /lecturer/quizzes/create — Lecturer quiz creation screen (SDD Fig 6.4) */
     public function create()
     {
@@ -101,6 +112,7 @@ class QuizController extends Controller
         $quizzes = Quiz::published()
             ->whereHas('group.members', fn ($q) => $q->where('users.id', $user->id))
             ->with('group')
+            ->withCount('questions')
             ->orderBy('unlock_date')
             ->get();
 
