@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('images/forum-favicon.png') }}">
     <title>Register - Smart Discussion Forum</title>
     <style>
         * {
@@ -32,15 +33,23 @@
             margin-bottom: 40px;
         }
         
+        .logo img {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto 16px;
+        }
         .logo h1 {
             color: #667eea;
-            font-size: 32px;
+            font-size: 28px;
+            font-weight: 700;
             margin-bottom: 10px;
         }
         
         .logo p {
             color: #6c757d;
-            font-size: 16px;
+            font-size: 15px;
         }
         
         .form-row {
@@ -215,7 +224,8 @@
 <body>
     <div class="register-container">
         <div class="logo">
-            <h1>🎓 Smart Discussion Forum</h1>
+            <img src="{{ asset('images/forum.png') }}" alt="Smart Discussion Forum">
+            <h1>Smart Discussion Forum</h1>
             <p>Create your account to join our community</p>
         </div>
 
