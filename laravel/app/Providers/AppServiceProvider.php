@@ -2,26 +2,19 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use App\Contracts\IAssessment;
 use App\Contracts\IAuthentication;
+use App\Services\AssessmentService;
 use App\Services\AuthenticationService;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        // Bind IAuthentication interface to AuthenticationService
         $this->app->bind(IAuthentication::class, AuthenticationService::class);
+        $this->app->bind(IAssessment::class,     AssessmentService::class);
     }
 
-    /**
-     * Bootstrap any application services.
-     */
-    public function boot(): void
-    {
-        //
-    }
+    public function boot(): void {}
 }
