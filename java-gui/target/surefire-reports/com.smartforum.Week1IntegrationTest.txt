@@ -1,0 +1,37 @@
+-------------------------------------------------------------------------------
+Test set: com.smartforum.Week1IntegrationTest
+-------------------------------------------------------------------------------
+Tests run: 8, Failures: 1, Errors: 2, Skipped: 0, Time elapsed: 17.41 s <<< FAILURE! -- in com.smartforum.Week1IntegrationTest
+com.smartforum.Week1IntegrationTest.dashboardReturnsRequiredFields -- Time elapsed: 1.433 s <<< ERROR!
+java.io.IOException: HTTP 500
+	at com.smartforum.api.ApiClient.get(ApiClient.java:45)
+	at com.smartforum.Week1IntegrationTest.dashboardReturnsRequiredFields(Week1IntegrationTest.java:134)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+
+com.smartforum.Week1IntegrationTest.logoutRevokesToken -- Time elapsed: 2.633 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: Token should be valid before logout ==> Unexpected exception thrown: java.io.IOException: HTTP 500
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:152)
+	at org.junit.jupiter.api.AssertDoesNotThrow.createAssertionFailedError(AssertDoesNotThrow.java:84)
+	at org.junit.jupiter.api.AssertDoesNotThrow.assertDoesNotThrow(AssertDoesNotThrow.java:75)
+	at org.junit.jupiter.api.AssertDoesNotThrow.assertDoesNotThrow(AssertDoesNotThrow.java:62)
+	at org.junit.jupiter.api.Assertions.assertDoesNotThrow(Assertions.java:3280)
+	at com.smartforum.Week1IntegrationTest.logoutRevokesToken(Week1IntegrationTest.java:219)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+Caused by: java.io.IOException: HTTP 500
+	at com.smartforum.api.ApiClient.get(ApiClient.java:45)
+	at com.smartforum.Week1IntegrationTest.lambda$logoutRevokesToken$0(Week1IntegrationTest.java:219)
+	at org.junit.jupiter.api.AssertDoesNotThrow.assertDoesNotThrow(AssertDoesNotThrow.java:71)
+	... 6 more
+
+com.smartforum.Week1IntegrationTest.offlineFallbackReturnsCachedSession -- Time elapsed: 3.004 s <<< ERROR!
+com.smartforum.auth.AuthException: Invalid credentials.
+	at com.smartforum.auth.AuthService.login(AuthService.java:63)
+	at com.smartforum.Week1IntegrationTest.offlineFallbackReturnsCachedSession(Week1IntegrationTest.java:252)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+
