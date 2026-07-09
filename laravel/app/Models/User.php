@@ -44,7 +44,7 @@ class User extends Authenticatable
     // ── Forum relations ────────────────────────────────
     public function groups(): BelongsToMany
     {
-        return $this->belongsToMany(Group::class)->withPivot('role')->withTimestamps();
+        return $this->belongsToMany(Group::class)->withPivot('role');
     }
 
     public function topics(): HasMany        { return $this->hasMany(Topic::class); }
