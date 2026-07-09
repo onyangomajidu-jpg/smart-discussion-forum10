@@ -14,10 +14,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Register custom middleware aliases
         $middleware->alias([
-            'member' => \App\Http\Middleware\MemberMiddleware::class,
-            'lecturer' => \App\Http\Middleware\LecturerMiddleware::class,
+            'member'        => \App\Http\Middleware\MemberMiddleware::class,
+            'lecturer'      => \App\Http\Middleware\LecturerMiddleware::class,
             'administrator' => \App\Http\Middleware\AdministratorMiddleware::class,
+            'blacklist'     => \App\Http\Middleware\BlacklistMiddleware::class,
         ]);
+
+        $middleware->appendToGroup('web', \App\Http\Middleware\BlacklistMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
