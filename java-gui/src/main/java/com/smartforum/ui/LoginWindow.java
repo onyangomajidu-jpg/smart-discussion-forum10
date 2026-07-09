@@ -1,13 +1,14 @@
 package com.smartforum.ui;
 
+import com.smartforum.api.ApiClient;
 import com.smartforum.auth.AuthException;
 import com.smartforum.auth.AuthService;
+import com.smartforum.cache.LocalCacheDatabase;
 import com.smartforum.model.AuthUser;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.*;
 import java.io.IOException;
 
 /**
@@ -22,7 +23,6 @@ import java.io.IOException;
  */
 public class LoginWindow extends JFrame {
 
-    // ── Brand colours (match web CSS) ────────────────────────────────────
     private static final Color PRIMARY   = new Color(0x66, 0x7E, 0xEA);
     private static final Color SECONDARY = new Color(0x76, 0x4B, 0xA2);
     private static final Color BG_PANEL  = new Color(0xF8, 0xF9, 0xFA);
@@ -30,7 +30,9 @@ public class LoginWindow extends JFrame {
     private static final Color TEXT_MUTE = new Color(0x6C, 0x75, 0x7D);
     private static final Color ERROR_C   = new Color(0xDC, 0x35, 0x45);
 
-    private final AuthService authService;
+    private final AuthService        authService;
+    private final ApiClient          api;
+    private final LocalCacheDatabase cache;
 
     // Form fields
     private JTextField     emailField;
@@ -39,8 +41,10 @@ public class LoginWindow extends JFrame {
     private JButton        loginButton;
     private JLabel         statusLabel;
 
-    public LoginWindow(AuthService authService) {
+    public LoginWindow(AuthService authService, ApiClient api, LocalCacheDatabase cache) {
         this.authService = authService;
+        this.api         = api;
+        this.cache       = cache;
         buildUI();
     }
 
@@ -51,7 +55,6 @@ public class LoginWindow extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setResizable(false);
 
-        // Gradient background panel
         JPanel root = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
@@ -61,7 +64,6 @@ public class LoginWindow extends JFrame {
         };
         root.setBorder(new EmptyBorder(30, 30, 30, 30));
 
-        // White card
         JPanel card = new JPanel(new GridLayout(1, 2));
         card.setBackground(Color.WHITE);
         card.setBorder(BorderFactory.createLineBorder(BORDER_C));
@@ -84,7 +86,6 @@ public class LoginWindow extends JFrame {
         panel.setBackground(Color.WHITE);
         panel.setBorder(new EmptyBorder(40, 40, 40, 40));
 
-        // Logo
         JLabel logo = new JLabel("🎓 Smart Discussion Forum", SwingConstants.CENTER);
         logo.setFont(new Font("Segoe UI", Font.BOLD, 22));
         logo.setForeground(PRIMARY);
@@ -95,30 +96,25 @@ public class LoginWindow extends JFrame {
         sub.setForeground(TEXT_MUTE);
         sub.setAlignmentX(CENTER_ALIGNMENT);
 
-        // Status / error label
         statusLabel = new JLabel(" ", SwingConstants.CENTER);
         statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         statusLabel.setForeground(ERROR_C);
         statusLabel.setAlignmentX(CENTER_ALIGNMENT);
 
-        // Email
         JLabel emailLbl = fieldLabel("Email Address");
         emailField = new JTextField(20);
         styleField(emailField);
 
-        // Password
         JLabel passLbl = fieldLabel("Password");
         passwordField = new JPasswordField(20);
         styleField(passwordField);
 
-        // Remember me
         rememberMe = new JCheckBox("Remember me");
         rememberMe.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         rememberMe.setForeground(TEXT_MUTE);
         rememberMe.setBackground(Color.WHITE);
         rememberMe.setAlignmentX(LEFT_ALIGNMENT);
 
-        // Login button
         loginButton = new JButton("Login");
         loginButton.setFont(new Font("Segoe UI", Font.BOLD, 15));
         loginButton.setForeground(Color.WHITE);
@@ -131,17 +127,14 @@ public class LoginWindow extends JFrame {
         loginButton.setAlignmentX(LEFT_ALIGNMENT);
         loginButton.addActionListener(e -> attemptLogin());
 
-        // Allow Enter key to submit
         getRootPane().setDefaultButton(loginButton);
 
-        // Forgot password link
         JButton forgotLink = linkButton("Forgot your password?");
         forgotLink.addActionListener(e ->
             JOptionPane.showMessageDialog(this,
                 "Visit: http://localhost:8000/forgot-password",
                 "Reset Password", JOptionPane.INFORMATION_MESSAGE));
 
-        // Register link
         JButton registerLink = linkButton("Register here");
         registerLink.addActionListener(e ->
             JOptionPane.showMessageDialog(this,
@@ -157,7 +150,6 @@ public class LoginWindow extends JFrame {
         registerRow.add(noAccount);
         registerRow.add(registerLink);
 
-        // Assemble
         panel.add(logo);
         panel.add(Box.createVerticalStrut(4));
         panel.add(sub);
@@ -188,7 +180,7 @@ public class LoginWindow extends JFrame {
     // ── Right: forum rules ────────────────────────────────────────────────
 
     private JPanel buildRulesPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel panel = new JPanel(new BorderLayout(0, 12));
         panel.setBackground(BG_PANEL);
         panel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(0, 1, 0, 0, BORDER_C),
@@ -233,14 +225,7 @@ public class LoginWindow extends JFrame {
         scroll.setBackground(BG_PANEL);
 
         panel.add(title,  BorderLayout.NORTH);
-        panel.add(Box.createVerticalStrut(16), BorderLayout.CENTER);
-        panel.add(scroll, BorderLayout.SOUTH);
-
-        // Fix layout so scroll fills remaining space
-        panel.setLayout(new BorderLayout(0, 12));
-        panel.add(title,  BorderLayout.NORTH);
         panel.add(scroll, BorderLayout.CENTER);
-
         return panel;
     }
 
@@ -259,7 +244,6 @@ public class LoginWindow extends JFrame {
         loginButton.setText("Logging in…");
         statusLabel.setText(" ");
 
-        // Run on background thread to keep UI responsive
         SwingWorker<AuthUser, Void> worker = new SwingWorker<>() {
             @Override protected AuthUser doInBackground() throws Exception {
                 return authService.login(email, password);
@@ -269,8 +253,7 @@ public class LoginWindow extends JFrame {
                 loginButton.setEnabled(true);
                 loginButton.setText("Login");
                 try {
-                    AuthUser user = get();
-                    onLoginSuccess(user);
+                    onLoginSuccess(get());
                 } catch (java.util.concurrent.ExecutionException ex) {
                     Throwable cause = ex.getCause();
                     if (cause instanceof AuthException) {
@@ -290,8 +273,7 @@ public class LoginWindow extends JFrame {
 
     private void onLoginSuccess(AuthUser user) {
         dispose();
-        MainWindow mainWindow = new MainWindow(user, authService);
-        mainWindow.setVisible(true);
+        new MainWindow(user, authService, api, cache).setVisible(true);
     }
 
     private void showError(String msg) {

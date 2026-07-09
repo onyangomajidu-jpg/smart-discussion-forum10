@@ -1,0 +1,16 @@
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\api\ApiClient.java
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\auth\AuthException.java
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\auth\AuthService.java
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\cache\LocalCacheDatabase.java
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\Main.java
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\model\AuthUser.java
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\model\Post.java
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\model\Topic.java
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\sync\ForumWebSocketListener.java
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\sync\OfflineSyncManager.java
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\sync\RealtimeSyncService.java
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\sync\SyncService.java
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\ui\ConversationPanel.java
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\ui\LoginWindow.java
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\ui\MainWindow.java
+c:\xampp\htdocs\smart-discussion-forum10\java-gui\src\main\java\com\smartforum\ui\TopicListPanel.java
