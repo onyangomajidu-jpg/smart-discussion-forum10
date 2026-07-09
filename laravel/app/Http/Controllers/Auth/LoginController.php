@@ -87,6 +87,37 @@ class LoginController extends Controller
         return redirect()->route('login');
     }
 
+    // ── API endpoints for Java GUI (SDD §3.1 integration) ────────────
+
+    /** POST /api/login — stateless, returns Sanctum token + user payload. */
+    public function apiLogin(Request $request)
+    {
+        $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        // Use Auth::attempt directly — avoids session dependency on API routes
+        if (!\Illuminate\Support\Facades\Auth::attempt($request->only('email', 'password'))) {
+            return response()->json(['message' => 'Invalid credentials.'], 401);
+        }
+
+        $user  = \Illuminate\Support\Facades\Auth::user();
+        $token = $user->createToken('java-gui')->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user'  => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'role' => $user->role],
+        ]);
+    }
+
+    /** POST /api/logout — revokes the current Sanctum token. */
+    public function apiLogout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+        return response()->json(['message' => 'Logged out.']);
+    }
+
     /**
      * Redirect user based on their role
      */
