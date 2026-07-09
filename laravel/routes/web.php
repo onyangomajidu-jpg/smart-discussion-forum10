@@ -6,8 +6,11 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Quiz\QuizController;
 use App\Http\Controllers\ModerationController;
+<<<<<<< HEAD
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Api\DashboardApiController;
+=======
+>>>>>>> 5cbd8be8e44d54b17b700077709c132401e417d7
 
 // ── Guest Routes ───────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
@@ -32,7 +35,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     // Dashboard (All authenticated users)
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
 });
 
 // ── Member Routes ──────────────────────────────────────────────────
@@ -93,7 +98,6 @@ Route::middleware(['auth', App\Http\Middleware\AdministratorMiddleware::class])-
 Route::get('/', function () {
     return redirect()->route('login');
 });
-
 
 // ── Test Routes (Development Only - Remove in Production) ──────────
 Route::middleware('auth')->prefix('test')->group(function () {
