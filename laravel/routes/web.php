@@ -5,6 +5,12 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Quiz\QuizController;
+use App\Http\Controllers\ModerationController;
+<<<<<<< HEAD
+=======
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Api\DashboardApiController;
+>>>>>>> 3f17238eb6209669638281aea229659064021e76
 
 // ── Guest Routes ───────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
@@ -29,9 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     // Dashboard (All authenticated users)
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
 // ── Member Routes ──────────────────────────────────────────────────
@@ -77,6 +81,15 @@ Route::middleware(['auth', App\Http\Middleware\AdministratorMiddleware::class])-
     Route::get('/admin/dashboard', function () {
         return view('admin.dashboard');
     })->name('admin.dashboard');
+
+    Route::get('/admin/warnings',                [ModerationController::class, 'warnings'])->name('admin.warnings.index');
+    Route::post('/admin/warnings',               [ModerationController::class, 'issueWarning'])->name('admin.warnings.store');
+    Route::patch('/admin/warnings/{id}/resolve', [ModerationController::class, 'resolveWarning'])->name('admin.warnings.resolve');
+    Route::delete('/admin/warnings/{id}',        [ModerationController::class, 'destroyWarning'])->name('admin.warnings.destroy');
+
+    Route::get('/admin/blacklists',              [ModerationController::class, 'blacklists'])->name('admin.blacklists.index');
+    Route::post('/admin/blacklists',             [ModerationController::class, 'blacklistUser'])->name('admin.blacklists.store');
+    Route::delete('/admin/blacklists/{id}',      [ModerationController::class, 'destroyBlacklist'])->name('admin.blacklists.destroy');
 });
 
 // ── Public Routes ──────────────────────────────────────────────────

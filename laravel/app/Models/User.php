@@ -9,11 +9,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasApiTokens;
 
     protected $fillable = [
         'name', 'email', 'password', 'role', 'avatar', 'bio', 'is_active',
@@ -43,7 +44,7 @@ class User extends Authenticatable
     // ── Forum relations ────────────────────────────────
     public function groups(): BelongsToMany
     {
-        return $this->belongsToMany(Group::class)->withPivot('role')->withTimestamps();
+        return $this->belongsToMany(Group::class)->withPivot('role');
     }
 
     public function topics(): HasMany        { return $this->hasMany(Topic::class); }
