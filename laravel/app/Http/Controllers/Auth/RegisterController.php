@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\IAuthentication;
+use App\Mail\WelcomeMail;
 use App\Services\SessionManager;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
@@ -49,16 +51,16 @@ class RegisterController extends Controller
                 $request->boolean('accept_rules')
             );
 
-            // Auto-login after registration
-            $this->authService->login([
-                'email' => $request->email,
-                'password' => $request->password,
-            ], $request->boolean('remember'));
+            // Send welcome email (non-blocking)
+            try {
+                Mail::to($user->email)->send(new WelcomeMail($user));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Welcome email failed: ' . $e->getMessage());
+            }
 
-            // Store session info
-            $this->sessionManager->flash('success', 'Registration successful! Welcome to the forum.');
+            $this->sessionManager->flash('success', 'Registration successful! Please login to continue.');
 
-            return redirect()->route('dashboard');
+            return redirect()->route('login');
 
         } catch (\Exception $e) {
             return redirect()->back()
