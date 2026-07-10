@@ -5,6 +5,9 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Quiz\QuizController;
+use App\Http\Controllers\ModerationController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Api\DashboardApiController;
 
 // ── Guest Routes ───────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
