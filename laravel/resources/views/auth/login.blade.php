@@ -69,6 +69,34 @@
 
         .form-group input.error { border-color: #dc3545; }
 
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-wrapper input {
+            padding-right: 44px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .toggle-password:hover { color: #667eea; }
+
+        .checkbox-group input[type="checkbox"] {
+            accent-color: #667eea;
+        }
+
         .alert {
             padding: 12px;
             border-radius: 8px;
@@ -170,14 +198,19 @@
 
             <div class="form-group">
                 <label for="password">Password</label>
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    class="{{ $errors->has('password') ? 'error' : '' }}"
-                    required
-                    placeholder="Enter your password"
-                >
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        class="{{ $errors->has('password') ? 'error' : '' }}"
+                        required
+                        placeholder="Enter your password"
+                    >
+                    <button type="button" class="toggle-password" onclick="togglePassword('password', this)" tabindex="-1">
+                        <svg id="eye-password" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </button>
+                </div>
             </div>
 
             <div class="checkbox-group">
@@ -199,5 +232,13 @@
             </div>
         </form>
     </div>
+    <script>
+        function togglePassword(fieldId, btn) {
+            const input = document.getElementById(fieldId);
+            const isHidden = input.type === 'password';
+            input.type = isHidden ? 'text' : 'password';
+            btn.querySelector('svg').style.opacity = isHidden ? '0.5' : '1';
+        }
+    </script>
 </body>
 </html>
