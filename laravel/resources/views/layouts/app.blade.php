@@ -46,11 +46,18 @@
         }
         .topnav-brand { display:flex; align-items:center; gap:12px; color:#fff; text-decoration:none; }
         .topnav-brand .brand-icon {
-            width:40px; height:40px; border-radius:10px;
-            background:rgba(255,255,255,.2);
+            width:42px; height:42px; border-radius:10px;
+            background:rgba(255,255,255,.15);
             display:flex; align-items:center; justify-content:center;
-            font-size:20px; backdrop-filter:blur(4px);
+            backdrop-filter:blur(4px);
             border:1.5px solid rgba(255,255,255,.3);
+            overflow:hidden; flex-shrink:0;
+            padding:4px;
+        }
+        .topnav-brand .brand-icon img {
+            width:100%; height:100%;
+            object-fit:contain;
+            filter:drop-shadow(0 1px 3px rgba(0,0,0,.25));
         }
         .topnav-brand .name { font-size:16px; font-weight:800; letter-spacing:-.4px; }
         .topnav-brand .sub  { font-size:10px; opacity:.7; font-weight:500; letter-spacing:.3px; text-transform:uppercase; }
@@ -112,8 +119,7 @@
             border-right:1px solid var(--border);
             padding:20px 12px 0;
             flex-shrink:0;
-            position:sticky; top:64px; height:calc(100vh - 64px);
-            overflow-y:auto;
+            position:sticky; top:64px; height:calc(100vh - 64px); overflow-y:auto;
             display:flex; flex-direction:column;
         }
         .sidebar-nav { flex:1; }
@@ -265,9 +271,9 @@
 
 <nav class="topnav">
     <a href="{{ auth()->check() && auth()->user()->isLecturer() ? route('lecturer.dashboard') : (auth()->check() && auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard')) }}" class="topnav-brand">
-        <div class="brand-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+        <div class="brand-icon"><img src="{{ asset('images/forum.png') }}" alt="SmartForum Logo"></div>
         <div>
-            <div class="name">SmartForum</div>
+            <div class="name">Smart Discussion Forum</div>
             <div class="sub">Assessment Platform</div>
         </div>
     </a>
@@ -313,7 +319,6 @@
     <aside class="sidebar">
         @auth
         <div class="sidebar-nav">
-
         <div class="sidebar-divider" style="margin-top:4px"></div>
 
         @if(auth()->user()->isLecturer())

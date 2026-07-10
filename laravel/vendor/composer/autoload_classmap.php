@@ -24,6 +24,7 @@ return array(
     'App\\Http\\Middleware\\AdministratorMiddleware' => $baseDir . '/app/Http/Middleware/AdministratorMiddleware.php',
     'App\\Http\\Middleware\\LecturerMiddleware' => $baseDir . '/app/Http/Middleware/LecturerMiddleware.php',
     'App\\Http\\Middleware\\MemberMiddleware' => $baseDir . '/app/Http/Middleware/MemberMiddleware.php',
+    'App\\Mail\\WelcomeMail' => $baseDir . '/app/Mail/WelcomeMail.php',
     'App\\Models\\Admin' => $baseDir . '/app/Models/Admin.php',
     'App\\Models\\Blacklist' => $baseDir . '/app/Models/Blacklist.php',
     'App\\Models\\Group' => $baseDir . '/app/Models/Group.php',
