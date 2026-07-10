@@ -621,6 +621,7 @@ class ComposerStaticInit53b5d56b3b7e3cbac1713e68c8850f6c
         'App\\Http\\Middleware\\AdministratorMiddleware' => __DIR__ . '/../..' . '/app/Http/Middleware/AdministratorMiddleware.php',
         'App\\Http\\Middleware\\LecturerMiddleware' => __DIR__ . '/../..' . '/app/Http/Middleware/LecturerMiddleware.php',
         'App\\Http\\Middleware\\MemberMiddleware' => __DIR__ . '/../..' . '/app/Http/Middleware/MemberMiddleware.php',
+        'App\\Mail\\WelcomeMail' => __DIR__ . '/../..' . '/app/Mail/WelcomeMail.php',
         'App\\Models\\Admin' => __DIR__ . '/../..' . '/app/Models/Admin.php',
         'App\\Models\\Blacklist' => __DIR__ . '/../..' . '/app/Models/Blacklist.php',
         'App\\Models\\Group' => __DIR__ . '/../..' . '/app/Models/Group.php',
