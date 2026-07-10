@@ -9,8 +9,28 @@
 <div class="stats-grid">
     <div class="stat-card">
         <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+<<<<<<< HEAD
+        <div class="val">{{ $totalUsers ?? \App\Models\User::where('role','member')->count() }}</div>
+        <div class="lbl">Members</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-comments"></i></div>
+        <div class="val">{{ $totalTopics ?? '—' }}</div>
+        <div class="lbl">Topics</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-pen-to-square"></i></div>
+        <div class="val">{{ $totalPosts ?? '—' }}</div>
+        <div class="lbl">Posts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+        <div class="val">{{ $totalQuizzes ?? '—' }}</div>
+        <div class="lbl">Quizzes</div>
+=======
         <div class="val">{{ \App\Models\User::where('role','member')->count() }}</div>
         <div class="lbl">Members</div>
+>>>>>>> 5cbd8be8e44d54b17b700077709c132401e417d7
     </div>
     <div class="stat-card">
         <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
