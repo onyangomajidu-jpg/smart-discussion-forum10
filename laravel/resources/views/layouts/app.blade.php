@@ -270,7 +270,7 @@
 <body>
 
 <nav class="topnav">
-    <a href="{{ auth()->check() && auth()->user()->isLecturer() ? route('lecturer.dashboard') : route('dashboard') }}" class="topnav-brand">
+    <a href="{{ auth()->check() && auth()->user()->isLecturer() ? route('lecturer.dashboard') : (auth()->check() && auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard')) }}" class="topnav-brand">
         <div class="brand-icon"><img src="{{ asset('images/forum.png') }}" alt="SmartForum Logo"></div>
         <div>
             <div class="name">Smart Discussion Forum</div>
@@ -342,6 +342,21 @@
             </a>
             <a href="{{ route('quizzes.index') }}" class="sidebar-link {{ request()->routeIs('quizzes.*') ? 'active' : '' }}">
                 <span class="ico"><i class="fa-solid fa-file-pen"></i></span> My Quizzes
+            </a>
+        </div>
+        @elseif(auth()->user()->isAdmin())
+        <div class="sidebar-section">
+            <div class="sidebar-label"><i class="fa-solid fa-shield-halved"></i> Admin</div>
+            <a href="{{ route('admin.dashboard') }}" class="sidebar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-house"></i></span> Dashboard
+            </a>
+            <a href="{{ route('admin.warnings.index') }}" class="sidebar-link {{ request()->routeIs('admin.warnings.*') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-triangle-exclamation"></i></span> Warnings
+                @php $openWarnings = \App\Models\Warning::whereNull('resolved_at')->count(); @endphp
+                @if($openWarnings > 0)<span class="sidebar-badge">{{ $openWarnings }}</span>@endif
+            </a>
+            <a href="{{ route('admin.blacklists.index') }}" class="sidebar-link {{ request()->routeIs('admin.blacklists.*') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-ban"></i></span> Blacklist Log
             </a>
         </div>
         @endif
