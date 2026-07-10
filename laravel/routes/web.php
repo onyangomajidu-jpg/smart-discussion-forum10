@@ -6,8 +6,11 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Quiz\QuizController;
 use App\Http\Controllers\ModerationController;
+<<<<<<< HEAD
+=======
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Api\DashboardApiController;
+>>>>>>> 3f17238eb6209669638281aea229659064021e76
 
 // ── Guest Routes ───────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
