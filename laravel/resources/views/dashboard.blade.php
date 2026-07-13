@@ -1,137 +1,284 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Smart Discussion Forum</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f8f9fa;
-        }
-        
-        .navbar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
-            color: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .navbar-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .navbar h1 {
-            font-size: 24px;
-        }
-        
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        
-        .btn-logout {
-            background: rgba(255,255,255,0.2);
-            padding: 10px 20px;
-            border: 2px solid white;
-            border-radius: 8px;
-            color: white;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        
-        .btn-logout:hover {
-            background: white;
-            color: #667eea;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-        
-        .welcome-card {
-            background: white;
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-        
-        .welcome-card h2 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        
-        .role-badge {
-            display: inline-block;
-            padding: 6px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            margin-top: 10px;
-        }
-        
-        .role-member { background: #d4edda; color: #155724; }
-        .role-lecturer { background: #d1ecf1; color: #0c5460; }
-        .role-admin { background: #f8d7da; color: #721c24; }
-    </style>
-</head>
-<body>
-    <nav class="navbar">
-        <div class="navbar-content">
-            <h1>🎓 Smart Discussion Forum</h1>
-            <div class="user-info">
-                <span>{{ auth()->user()->name }}</span>
-                <form action="{{ route('logout') }}" method="POST" style="display: inline;">
-                    @csrf
-                    <button type="submit" class="btn-logout">Logout</button>
-                </form>
-            </div>
+@extends('layouts.app')
+
+@section('title', 'Dashboard — Smart Discussion Forum')
+
+@push('styles')
+<style>
+    :root {
+        --primary:   #4f46e5;
+        --primary-light: #e0e7ff;
+        --primary-mid:   #c7d2fe;
+        --danger:    #ef4444;
+    }
+
+    .dash-header { margin-bottom: 24px; }
+    .dash-header h1 { font-size: 22px; font-weight: 800; letter-spacing: -.4px; color: var(--text); }
+    .dash-header p  { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+    /* ── Stat cards ── */
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .dash-stat-card {
+        background: #fff; border: 1px solid var(--primary-mid);
+        border-radius: 12px; padding: 20px;
+        border-left: 4px solid var(--primary);
+        transition: box-shadow .2s, transform .2s;
+        text-decoration: none; display: block;
+    }
+    .dash-stat-card:hover { box-shadow: 0 4px 16px rgba(79,70,229,.15); transform: translateY(-2px); }
+    .dash-stat-card .stat-icon { font-size: 20px; margin-bottom: 10px; color: var(--primary); }
+    .dash-stat-card .value { font-size: 28px; font-weight: 800; letter-spacing: -.5px; color: var(--primary); }
+    .dash-stat-card .label { font-size: 11px; color: var(--muted); margin-top: 3px; font-weight: 500; }
+
+    /* ── Panel grid ── */
+    .panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .panel {
+        background: #fff; border: 1px solid #e2e8f0;
+        border-radius: 12px; overflow: hidden;
+        display: flex; flex-direction: column; min-height: 320px;
+        transition: box-shadow .2s;
+    }
+    .panel:hover { box-shadow: 0 4px 16px rgba(0,0,0,.07); }
+    .panel-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 18px; font-size: 14px; font-weight: 700;
+    }
+    .panel-header-left { display: flex; align-items: center; gap: 8px; }
+    .panel-view-all {
+        font-size: 11px; font-weight: 600;
+        color: rgba(255,255,255,.85); text-decoration: none;
+        background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.3);
+        border-radius: 6px; padding: 3px 10px; transition: background .15s;
+    }
+    .panel-view-all:hover { background: rgba(255,255,255,.3); color: #fff; }
+
+    .panel-topics  .panel-header { background: linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; }
+    .panel-quiz    .panel-header { background: linear-gradient(135deg,#0ea5e9,#06b6d4); color:#fff; }
+    .panel-stats   .panel-header { background: linear-gradient(135deg,#f59e0b,#ef4444); color:#fff; }
+    .panel-account .panel-header { background: linear-gradient(135deg,#10b981,#059669); color:#fff; }
+    .panel-topics  { border-top: 3px solid #8b5cf6; }
+    .panel-quiz    { border-top: 3px solid #06b6d4; }
+    .panel-stats   { border-top: 3px solid #ef4444; }
+    .panel-account { border-top: 3px solid #10b981; }
+
+    .panel-body { padding: 16px 18px; flex: 1; overflow-y: auto; }
+
+    /* list rows */
+    .list-row {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 13px;
+    }
+    .list-row:last-child { border-bottom: none; }
+    .list-dot { font-size: 10px; font-weight: 700; flex-shrink: 0; }
+    .dash-badge {
+        margin-left: auto; font-size: 11px; font-weight: 600;
+        padding: 2px 9px; border-radius: 10px;
+        background: #f1f5f9; color: #64748b;
+    }
+
+    /* progress */
+    .progress-row { margin-bottom: 18px; }
+    .progress-row:last-child { margin-bottom: 0; }
+    .progress-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+    .progress-label span:last-child { color: #64748b; }
+    .progress-track { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+    .progress-fill  { height: 100%; border-radius: 4px; background: var(--primary); transition: width .7s cubic-bezier(.4,0,.2,1); }
+
+    /* account info */
+    .info-row {
+        display: flex; align-items: center;
+        padding: 11px 0; border-bottom: 1px solid #e0e7ff; font-size: 13px;
+    }
+    .info-row:last-of-type { border-bottom: none; }
+    .info-row .key { color: var(--primary); font-weight: 600; width: 100px; flex-shrink: 0; font-size: 12px; }
+    .role-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .role-member   { background: var(--primary-light); color: #3730a3; }
+    .role-lecturer { background: var(--primary-light); color: #3730a3; }
+    .role-admin    { background: #fee2e2; color: #991b1b; }
+
+    .btn-signout-panel {
+        display: inline-flex; align-items: center; gap: 6px; margin-top: 16px;
+        background: var(--danger); color: #fff; border: none;
+        border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 600;
+        cursor: pointer; transition: opacity .2s; font-family: inherit;
+    }
+    .btn-signout-panel:hover { opacity: .88; }
+
+    .empty-state { text-align: center; color: #64748b; font-size: 13px; padding: 36px 0; }
+    .empty-state .icon { font-size: 28px; margin-bottom: 10px; }
+
+    .flash { background: #d1fae5; color: #065f46; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
+
+    @media (max-width: 900px) {
+        .stats-row { grid-template-columns: 1fr 1fr; }
+        .panel-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 540px) {
+        .stats-row { grid-template-columns: 1fr; }
+    }
+</style>
+@endpush
+
+@section('content')
+
+@if(session('success'))
+    <div class="flash">{{ session('success') }}</div>
+@endif
+
+<div class="dash-header">
+    <h1>Dashboard</h1>
+    <p>Welcome back, {{ auth()->user()->name }}! Here's your activity overview.</p>
+</div>
+
+{{-- Stat cards --}}
+<div class="stats-row">
+    <a href="{{ route('topics.index') }}" class="dash-stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-comments"></i></div>
+        <div class="value" id="sc-topics">—</div>
+        <div class="label">Topics Joined</div>
+    </a>
+    <a href="{{ route('topics.index') }}" class="dash-stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-pen-to-square"></i></div>
+        <div class="value" id="sc-posts">—</div>
+        <div class="label">Posts Made</div>
+    </a>
+    <a href="{{ auth()->user()->role === 'member' ? route('quizzes.index') : '#' }}" class="dash-stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-bullseye"></i></div>
+        <div class="value" id="sc-attempts">—</div>
+        <div class="label">Quiz Attempts</div>
+    </a>
+    <a href="{{ auth()->user()->role === 'member' ? route('quizzes.index') : '#' }}" class="dash-stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+        <div class="value" id="sc-avg">—</div>
+        <div class="label">Avg Quiz Score</div>
+    </a>
+</div>
+
+{{-- 2×2 Panel grid --}}
+<div class="panel-grid">
+
+    {{-- Panel 1: Topic Participation --}}
+    <div class="panel panel-topics">
+        <div class="panel-header">
+            <div class="panel-header-left"><i class="fa-solid fa-comments"></i> Topic Participation</div>
+            <a href="{{ route('topics.index') }}" class="panel-view-all">View All <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
         </div>
-    </nav>
-
-    <div class="container">
-        @if (session('success'))
-            <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                {{ session('success') }}
-            </div>
-        @endif
-
-        <div class="welcome-card">
-            <h2>Welcome, {{ auth()->user()->name }}! 👋</h2>
-            <p style="color: #6c757d; margin-top: 10px;">You are logged in as:</p>
-            <span class="role-badge role-{{ auth()->user()->role }}">
-                {{ ucfirst(auth()->user()->role) }}
-            </span>
-            
-            <div style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #e1e4e8;">
-                <p><strong>Email:</strong> {{ auth()->user()->email }}</p>
-                <p style="margin-top: 10px;"><strong>Account Created:</strong> {{ auth()->user()->created_at->format('F d, Y') }}</p>
-            </div>
-        </div>
-
-        <div style="background: white; border-radius: 12px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <h3 style="color: #333; margin-bottom: 20px;">Quick Links</h3>
-            <ul style="list-style: none; padding: 0;">
-                <li style="padding: 10px 0;"><a href="#" style="color: #667eea; text-decoration: none;">Browse Forums</a></li>
-                <li style="padding: 10px 0;"><a href="#" style="color: #667eea; text-decoration: none;">My Profile</a></li>
-                <li style="padding: 10px 0;"><a href="#" style="color: #667eea; text-decoration: none;">Settings</a></li>
-            </ul>
+        <div class="panel-body" id="topicsPanel">
+            <div class="empty-state"><div class="icon">💬</div>No topic participation yet.</div>
         </div>
     </div>
-</body>
-</html>
+
+    {{-- Panel 2: Quiz Attempts --}}
+    <div class="panel panel-quiz">
+        <div class="panel-header">
+            <div class="panel-header-left"><i class="fa-solid fa-bullseye"></i> Quiz Attempts</div>
+        </div>
+        <div class="panel-body" id="quizPanel">
+            <div class="empty-state"><div class="icon">📋</div>No quiz attempts yet.</div>
+        </div>
+    </div>
+
+    {{-- Panel 3: Statistics Review --}}
+    <div class="panel panel-stats">
+        <div class="panel-header">
+            <div class="panel-header-left"><i class="fa-solid fa-chart-bar"></i> Statistics Review</div>
+        </div>
+        <div class="panel-body">
+            <div class="progress-row">
+                <div class="progress-label"><span>Forum Engagement</span><span id="pct-eng">0%</span></div>
+                <div class="progress-track"><div class="progress-fill" id="bar-eng" style="width:0%"></div></div>
+            </div>
+            <div class="progress-row">
+                <div class="progress-label"><span>Quiz Completion</span><span id="pct-comp">0%</span></div>
+                <div class="progress-track"><div class="progress-fill" id="bar-comp" style="width:0%"></div></div>
+            </div>
+            <div class="progress-row">
+                <div class="progress-label"><span>Average Score</span><span id="pct-avg">N/A</span></div>
+                <div class="progress-track"><div class="progress-fill" id="bar-avg" style="width:0%"></div></div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Panel 4: Account Management --}}
+    <div class="panel panel-account">
+        <div class="panel-header">
+            <div class="panel-header-left"><i class="fa-solid fa-gear"></i> Account Management</div>
+        </div>
+        <div class="panel-body">
+            <div class="info-row"><span class="key">Full Name</span><span>{{ auth()->user()->name }}</span></div>
+            <div class="info-row"><span class="key">Email</span><span>{{ auth()->user()->email }}</span></div>
+            <div class="info-row">
+                <span class="key">Role</span>
+                <span class="role-badge role-{{ auth()->user()->role }}">{{ ucfirst(auth()->user()->role) }}</span>
+            </div>
+            <div class="info-row"><span class="key">Joined</span><span>{{ auth()->user()->created_at->format('M d, Y') }}</span></div>
+            <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn-signout-panel"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out</button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+fetch('/api/dashboard', {
+    headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? ''
+    },
+    credentials: 'same-origin'
+})
+    .then(r => r.json())
+    .then(({ stats: s }) => {
+        document.getElementById('sc-topics').textContent   = s.topicsParticipated;
+        document.getElementById('sc-posts').textContent    = s.totalPosts;
+        document.getElementById('sc-attempts').textContent = s.quizAttempts;
+        document.getElementById('sc-avg').textContent      = s.avgScore != null ? Math.round(s.avgScore) + '%' : '—';
+
+        const engPct  = Math.min(s.totalPosts * 5, 100);
+        const total   = s.quizAttempts + s.availableQuizzes;
+        const compPct = total > 0 ? Math.round(s.quizAttempts * 100 / total) : 0;
+        const avgPct  = s.avgScore != null ? Math.round(s.avgScore) : 0;
+
+        setBar('eng',  engPct,  engPct + '%');
+        setBar('comp', compPct, compPct + '%');
+        setBar('avg',  avgPct,  s.avgScore != null ? avgPct + '%' : 'N/A');
+
+        const tp = document.getElementById('topicsPanel');
+        if (s.recentTopics.length) {
+            tp.innerHTML = s.recentTopics.map(t =>
+                `<a href="/topics/${t.id}" style="text-decoration:none;color:inherit">
+                    <div class="list-row">
+                        <span class="list-dot" style="color:#8b5cf6">●</span>
+                        <span style="flex:1">${esc(t.title)}</span>
+                        <i class="fa-solid fa-arrow-right" style="font-size:10px;color:#c4b5fd"></i>
+                    </div>
+                </a>`
+            ).join('');
+        }
+
+        const qp = document.getElementById('quizPanel');
+        if (s.recentAttempts.length) {
+            qp.innerHTML = s.recentAttempts.map(a =>
+                `<a href="/quizzes" style="text-decoration:none;color:inherit">
+                    <div class="list-row">
+                        <span class="list-dot" style="color:#06b6d4">✓</span>
+                        <span style="flex:1">${esc(a.title)}</span>
+                        <span class="dash-badge">${a.score != null ? Math.round(a.score) + '%' : '—'}</span>
+                    </div>
+                </a>`
+            ).join('');
+        }
+    })
+    .catch(() => {});
+
+function setBar(id, pct, label) {
+    document.getElementById('bar-' + id).style.width = pct + '%';
+    document.getElementById('pct-' + id).textContent = label;
+}
+function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+@endsection
