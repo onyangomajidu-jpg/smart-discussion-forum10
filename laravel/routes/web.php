@@ -8,18 +8,16 @@ use App\Http\Controllers\Quiz\QuizController;
 use App\Http\Controllers\ModerationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Api\DashboardApiController;
+use App\Http\Controllers\StatisticsController;
 
 // ── Guest Routes ───────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
-    // Login
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login']);
 
-    // Register
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
     Route::post('/register', [RegisterController::class, 'register']);
 
-    // Password Reset
     Route::get('/forgot-password', [PasswordResetController::class, 'showForgotPasswordForm'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->name('password.email');
     Route::get('/reset-password/{token}', [PasswordResetController::class, 'showResetPasswordForm'])->name('password.reset');
@@ -28,20 +26,23 @@ Route::middleware('guest')->group(function () {
 
 // ── Authenticated Routes ───────────────────────────────────────────
 Route::middleware('auth')->group(function () {
-    // Logout
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-
-    // Dashboard (All authenticated users)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Reports export — available to all authenticated users
+    Route::get('/reports/export', [StatisticsController::class, 'export'])->name('reports.export');
 });
 
 // ── Member Routes ──────────────────────────────────────────────────
 Route::middleware(['auth', App\Http\Middleware\MemberMiddleware::class])->group(function () {
     // Student quiz routes (SDD §4.2 — Student quiz screen Fig 6.6)
-    Route::get('/quizzes',                  [QuizController::class, 'index'])->name('quizzes.index');
-    Route::get('/quizzes/{quiz}',           [QuizController::class, 'take'])->name('quizzes.take');
-    Route::post('/quizzes/{quiz}/submit',   [QuizController::class, 'submit'])->name('quizzes.submit');
-    Route::get('/quizzes/{quiz}/result',    [QuizController::class, 'result'])->name('quizzes.result');
+    Route::get('/quizzes',                [QuizController::class, 'index'])->name('quizzes.index');
+    Route::get('/quizzes/{quiz}',         [QuizController::class, 'take'])->name('quizzes.take');
+    Route::post('/quizzes/{quiz}/submit', [QuizController::class, 'submit'])->name('quizzes.submit');
+    Route::get('/quizzes/{quiz}/result',  [QuizController::class, 'result'])->name('quizzes.result');
+
+    // Analytics — Statistics screen (SDD §4.3 / Fig 6.5)
+    Route::get('/analytics', [StatisticsController::class, 'index'])->name('analytics.index');
 });
 
 // ── Topics / Content Management Routes ────────────────────────────
@@ -62,6 +63,9 @@ Route::middleware(['auth', App\Http\Middleware\LecturerMiddleware::class])->grou
     Route::get('/lecturer/dashboard', function () {
         return view('lecturer.dashboard');
     })->name('lecturer.dashboard');
+
+    // Lecturer analytics — evaluation roster + compliance (SDD §4.3 / Fig 6.4)
+    Route::get('/lecturer/analytics', [StatisticsController::class, 'lecturerAnalytics'])->name('lecturer.analytics');
 
     // Lecturer quiz management routes (SDD §4.2 — Lecturer quiz screen Fig 6.4)
     Route::get('/lecturer/quizzes',                 [QuizController::class, 'lecturerIndex'])->name('lecturer.quizzes.index');
@@ -97,9 +101,9 @@ Route::get('/', function () {
 // ── Test Routes (Development Only - Remove in Production) ──────────
 Route::middleware('auth')->prefix('test')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\TestAuthController::class, 'dashboard']);
-    Route::get('/register', [\App\Http\Controllers\TestAuthController::class, 'testRegister']);
-    Route::get('/session', [\App\Http\Controllers\TestAuthController::class, 'testSession']);
-    Route::get('/roles', [\App\Http\Controllers\TestAuthController::class, 'testRoles']);
+    Route::get('/register',  [\App\Http\Controllers\TestAuthController::class, 'testRegister']);
+    Route::get('/session',   [\App\Http\Controllers\TestAuthController::class, 'testSession']);
+    Route::get('/roles',     [\App\Http\Controllers\TestAuthController::class, 'testRoles']);
 });
 
 Route::middleware(['auth', App\Http\Middleware\MemberMiddleware::class])->group(function () {
