@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartforum.api.ApiClient;
 import com.smartforum.auth.AuthService;
+import com.smartforum.cache.LocalCacheDatabase;
 import com.smartforum.model.AuthUser;
 
 import javax.swing.*;
@@ -35,10 +36,11 @@ public class MainWindow extends JFrame {
     private static final int SIDEBAR_W = 220;
     private static final int NAV_H     = 64;
 
-    private final AuthUser    user;
-    private final AuthService authService;
-    private final ApiClient   api;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final AuthUser           user;
+    private final AuthService         authService;
+    private final ApiClient           api;
+    private final LocalCacheDatabase  cache;
+    private final ObjectMapper        mapper = new ObjectMapper();
 
     // Live stat labels
     private JLabel lblTopics, lblPosts, lblAttempts, lblAvgScore;
@@ -46,9 +48,18 @@ public class MainWindow extends JFrame {
     private JLabel lblEngPct, lblCompPct, lblAvgPct;
     private JProgressBar barEng, barComp, barAvg;
 
-    public MainWindow(AuthUser user, AuthService authService) {
+    // Content switcher
+    private JPanel contentArea;
+    private JScrollPane dashboardView;
+    private StatisticsPanel statisticsView;
+
+    // Sidebar nav items for toggling active state
+    private JPanel navDashboard, navStatistics;
+
+    public MainWindow(AuthUser user, AuthService authService, LocalCacheDatabase cache) {
         this.user        = user;
         this.authService = authService;
+        this.cache       = cache;
         this.api         = new ApiClient();
         this.api.setToken(user.getToken());
 
@@ -63,10 +74,38 @@ public class MainWindow extends JFrame {
         root.setBackground(BG);
         root.add(buildNavBar(),  BorderLayout.NORTH);
         root.add(buildSidebar(), BorderLayout.WEST);
-        root.add(buildContent(), BorderLayout.CENTER);
+
+        contentArea = new JPanel(new CardLayout());
+        contentArea.setBackground(BG);
+        dashboardView   = buildContent();
+        statisticsView  = new StatisticsPanel(api, cache);
+        contentArea.add(dashboardView,  "dashboard");
+        contentArea.add(statisticsView, "statistics");
+        root.add(contentArea, BorderLayout.CENTER);
         setContentPane(root);
 
         loadDashboardData();
+    }
+
+    private void showView(String name) {
+        ((CardLayout) contentArea.getLayout()).show(contentArea, name);
+        boolean isDash = "dashboard".equals(name);
+        setNavActive(navDashboard,  isDash);
+        setNavActive(navStatistics, !isDash);
+        if (!isDash) statisticsView.loadData();
+    }
+
+    private void setNavActive(JPanel item, boolean active) {
+        if (item == null) return;
+        item.setBackground(active ? SIDEBAR_ACTIVE_BG : SURFACE);
+        for (Component c : item.getComponents()) {
+            if (c instanceof JLabel) {
+                JLabel lbl = (JLabel) c;
+                if (lbl.getFont().isBold()) {
+                    lbl.setForeground(active ? PRIMARY : MUTED);
+                }
+            }
+        }
     }
 
     // ── Top navbar ────────────────────────────────────────────────────────
@@ -128,12 +167,22 @@ public class MainWindow extends JFrame {
 
         // ── Main section ──
         sidebar.add(sidebarSection("Main"));
-        sidebar.add(sidebarItem("🏠", "Dashboard",     true));
+        navDashboard = sidebarItem("🏠", "Dashboard", true);
+        navDashboard.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) { showView("dashboard"); }
+        });
+        sidebar.add(navDashboard);
         sidebar.add(sidebarItem("💬", "Topics",        false));
         if ("member".equals(user.getRole())) {
             sidebar.add(sidebarItem("🎯", "Quizzes",   false));
         }
         sidebar.add(sidebarItem("🔔", "Notifications", false));
+
+        navStatistics = sidebarItem("📊", "Statistics", false);
+        navStatistics.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) { showView("statistics"); }
+        });
+        sidebar.add(navStatistics);
 
         // ── Role-specific sections ──
         if ("lecturer".equals(user.getRole())) {
@@ -559,7 +608,7 @@ public class MainWindow extends JFrame {
     private void doLogout() {
         authService.logout();
         dispose();
-        new LoginWindow(authService).setVisible(true);
+        new LoginWindow(authService, cache).setVisible(true);
     }
 
     private JButton navButton(String text) {

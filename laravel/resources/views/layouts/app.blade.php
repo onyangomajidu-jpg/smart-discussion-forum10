@@ -333,6 +333,9 @@
             <a href="{{ route('lecturer.quizzes.create') }}" class="sidebar-link {{ request()->routeIs('lecturer.quizzes.create') ? 'active' : '' }}">
                 <span class="ico"><i class="fa-solid fa-circle-plus"></i></span> Create Quiz
             </a>
+            <a href="{{ route('lecturer.analytics') }}" class="sidebar-link {{ request()->routeIs('lecturer.analytics') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-chart-mixed"></i></span> Analytics
+            </a>
         </div>
         @elseif(auth()->user()->isMember())
         <div class="sidebar-section">
@@ -342,6 +345,9 @@
             </a>
             <a href="{{ route('quizzes.index') }}" class="sidebar-link {{ request()->routeIs('quizzes.*') ? 'active' : '' }}">
                 <span class="ico"><i class="fa-solid fa-file-pen"></i></span> My Quizzes
+            </a>
+            <a href="{{ route('analytics.index') }}" class="sidebar-link {{ request()->routeIs('analytics.index') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-chart-line"></i></span> Analytics
             </a>
         </div>
         @elseif(auth()->user()->isAdmin())

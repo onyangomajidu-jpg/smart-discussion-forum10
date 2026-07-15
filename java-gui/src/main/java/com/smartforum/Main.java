@@ -47,7 +47,7 @@ public class Main {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             } catch (Exception ignored) { /* fall back to default L&F */ }
 
-            LoginWindow loginWindow = new LoginWindow(authService);
+            LoginWindow loginWindow = new LoginWindow(authService, cache);
             loginWindow.setVisible(true);
         });
     }
