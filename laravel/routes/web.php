@@ -31,6 +31,9 @@ Route::middleware('auth')->group(function () {
     // Logout
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+    // AI Recommendations — displayRecommendation() (AI sequence, Fig 3.13)
+    Route::get('/recommendations', [App\Http\Controllers\Api\RecommendationController::class, 'index'])->name('recommendations');
+
     // Dashboard (All authenticated users)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
@@ -50,6 +53,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/topics', [App\Http\Controllers\TopicController::class, 'store'])->name('topics.store');
     Route::get('/topics/{topic}', [App\Http\Controllers\TopicController::class, 'show'])->name('topics.show');
     Route::delete('/topics/{topic}', [App\Http\Controllers\TopicController::class, 'destroy'])->name('topics.destroy');
+    Route::delete('/topics/{topic}/users/{userId}', [App\Http\Controllers\TopicController::class, 'removeUser'])->name('topics.removeUser');
+    Route::post('/topics/{topic}/users/{userId}/block', [App\Http\Controllers\TopicController::class, 'blockUser'])->name('topics.blockUser');
+    Route::post('/topics/{topic}/users/{userId}/unblock', [App\Http\Controllers\TopicController::class, 'unblockUser'])->name('topics.unblockUser');
     Route::post('/topics/{topicId}/participate', [App\Http\Controllers\TopicController::class, 'participate'])->name('topics.participate');
     Route::post('/posts/{postId}/answer', [App\Http\Controllers\TopicController::class, 'answer'])->name('topics.answer');
     Route::put('/posts/{id}', [App\Http\Controllers\PostController::class, 'update'])->name('posts.update');

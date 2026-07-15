@@ -28,11 +28,13 @@
             <div style="font-size:12px;color:#64748b">Build a new assessment</div>
         </div>
     </a>
-    <div class="card" style="padding:24px;text-align:center">
-        <div style="font-size:36px;margin-bottom:10px">📊</div>
-        <div style="font-size:16px;font-weight:800;color:#0f172a;margin-bottom:4px">Analytics</div>
-        <div style="font-size:12px;color:#64748b">Coming soon</div>
-    </div>
+    <a href="{{ route('topics.index') }}" style="text-decoration:none">
+        <div class="card" style="padding:24px;text-align:center;transition:all .2s;cursor:pointer" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 32px rgba(99,102,241,.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <div style="font-size:36px;margin-bottom:10px">💬</div>
+            <div style="font-size:16px;font-weight:800;color:#0f172a;margin-bottom:4px">Discussions</div>
+            <div style="font-size:12px;color:#64748b">View and create topics</div>
+        </div>
+    </a>
 </div>
 
 @endsection

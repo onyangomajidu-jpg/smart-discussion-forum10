@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Api\DashboardApiController;
+use App\Http\Controllers\Api\RecommendationController;
 
 // Connectivity probe — no auth required
 Route::get('/ping', fn() => response()->json(['status' => 'ok']));
@@ -12,3 +13,5 @@ Route::post('/logout', [LoginController::class, 'apiLogout'])->middleware('auth:
 
 // Dashboard stats — accepts Bearer token (Java GUI) or web session
 Route::middleware('auth:sanctum')->get('/dashboard', [DashboardApiController::class, 'index']);
+
+

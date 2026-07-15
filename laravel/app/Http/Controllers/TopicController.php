@@ -26,7 +26,7 @@ class TopicController extends Controller
         $posts = collect();
 
         if ($request->filled('topic')) {
-            $activeTopic = Topic::with(['author', 'posts.author', 'posts.replies.author'])
+            $activeTopic = Topic::with(['author', 'posts.author', 'posts.replies.author', 'participants', 'blockedParticipants'])
                 ->findOrFail($request->topic);
             $posts = $activeTopic->posts()->with(['author', 'replies.author'])->get();
             $activeTopic->increment('views');
@@ -62,7 +62,7 @@ class TopicController extends Controller
 
     public function show(Topic $topic)
     {
-        $topic->load(['author', 'posts.author', 'posts.replies.author']);
+        $topic->load(['author', 'posts.author', 'posts.replies.author', 'participants', 'blockedParticipants']);
         $topic->increment('views');
         return view('topics', [
             'topics'      => Topic::withCount('posts')->latest()->get(),
@@ -117,5 +117,41 @@ class TopicController extends Controller
         } catch (\RuntimeException $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    // removeUserFromTopic() — only topic creator can remove participants
+    public function removeUser(Topic $topic, int $userId)
+    {
+        if (auth()->id() !== $topic->user_id && !auth()->user()->isAdmin()) {
+            abort(403);
+        }
+        if ($userId === $topic->user_id) {
+            return back()->withErrors(['error' => 'Cannot remove the topic creator.']);
+        }
+        $topic->participants()->detach($userId);
+        return back()->with('success', 'User removed from topic.');
+    }
+
+    // blockUser() — only topic creator can block participants
+    public function blockUser(Topic $topic, int $userId)
+    {
+        if (auth()->id() !== $topic->user_id && !auth()->user()->isAdmin()) {
+            abort(403);
+        }
+        if ($userId === $topic->user_id) {
+            return back()->withErrors(['error' => 'Cannot block the topic creator.']);
+        }
+        $topic->allParticipants()->updateExistingPivot($userId, ['is_blocked' => true]);
+        return back()->with('success', 'User blocked from topic.');
+    }
+
+    // unblockUser() — only topic creator can unblock
+    public function unblockUser(Topic $topic, int $userId)
+    {
+        if (auth()->id() !== $topic->user_id && !auth()->user()->isAdmin()) {
+            abort(403);
+        }
+        $topic->allParticipants()->updateExistingPivot($userId, ['is_blocked' => false]);
+        return back()->with('success', 'User unblocked.');
     }
 }
