@@ -2,8 +2,14 @@
 
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Auth\LoginController;
+<<<<<<< HEAD
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+=======
+use App\Http\Controllers\Api\DashboardApiController;
+use App\Http\Controllers\Api\RecommendationController;
+use App\Http\Controllers\Api\StatisticsApiController;
+>>>>>>> main
 
 // ── Auth (no middleware — Java client logs in here) ────────────────────
 Route::post('/login', function (Request $request) {
@@ -16,6 +22,7 @@ Route::post('/login', function (Request $request) {
         return response()->json(['message' => 'Invalid credentials.'], 401);
     }
 
+<<<<<<< HEAD
     $user  = auth()->user();
     $token = $user->createToken('java-desktop')->plainTextToken;
 
@@ -40,3 +47,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/topics/updates',       [PostController::class, 'updates']);
     Route::get('/topics/{topic}/posts', [PostController::class, 'index']);
 });
+=======
+// Dashboard stats — accepts Bearer token (Java GUI) or web session
+Route::middleware('auth:sanctum')->get('/dashboard',  [DashboardApiController::class,  'index']);
+Route::middleware('auth:sanctum')->get('/statistics', [StatisticsApiController::class, 'index']);
+>>>>>>> main

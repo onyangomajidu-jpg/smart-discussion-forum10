@@ -16,7 +16,26 @@ class Topic extends Model
 
     protected $casts = ['is_pinned' => 'boolean', 'is_locked' => 'boolean'];
 
-    public function group(): BelongsTo  { return $this->belongsTo(Group::class); }
-    public function author(): BelongsTo { return $this->belongsTo(User::class, 'user_id'); }
-    public function posts(): HasMany    { return $this->hasMany(Post::class); }
+    public function group(): BelongsTo      { return $this->belongsTo(Group::class); }
+    public function author(): BelongsTo     { return $this->belongsTo(User::class, 'user_id'); }
+    public function posts(): HasMany        { return $this->hasMany(Post::class); }
+    public function participants(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'topic_user')
+            ->withPivot('is_blocked')->withTimestamps()
+            ->wherePivot('is_blocked', false);
+    }
+
+    public function allParticipants(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'topic_user')
+            ->withPivot('is_blocked')->withTimestamps();
+    }
+
+    public function blockedParticipants(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'topic_user')
+            ->withPivot('is_blocked')->withTimestamps()
+            ->wherePivot('is_blocked', true);
+    }
 }
