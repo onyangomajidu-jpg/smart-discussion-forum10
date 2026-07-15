@@ -167,32 +167,27 @@ public class MainWindow extends JFrame {
 
         // ── Main section ──
         sidebar.add(sidebarSection("Main"));
-        navDashboard = sidebarItem("🏠", "Dashboard", true);
-        navDashboard.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent e) { showView("dashboard"); }
-        });
+        navDashboard = sidebarItem("🏠", "Dashboard", true, () -> showView("dashboard"));
         sidebar.add(navDashboard);
-        sidebar.add(sidebarItem("💬", "Topics",        false));
+        sidebar.add(sidebarItem("💬", "Topics",        false, null));
+        sidebar.add(sidebarItem("📄", "Export & Share", false, () -> new ExportWindow(api).setVisible(true)));
         if ("member".equals(user.getRole())) {
-            sidebar.add(sidebarItem("🎯", "Quizzes",   false));
+            sidebar.add(sidebarItem("🎯", "Quizzes",   false, null));
         }
-        sidebar.add(sidebarItem("🔔", "Notifications", false));
+        sidebar.add(sidebarItem("🔔", "Notifications", false, null));
 
-        navStatistics = sidebarItem("📊", "Statistics", false);
-        navStatistics.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent e) { showView("statistics"); }
-        });
+        navStatistics = sidebarItem("📊", "Statistics", false, () -> showView("statistics"));
         sidebar.add(navStatistics);
 
         // ── Role-specific sections ──
         if ("lecturer".equals(user.getRole())) {
             sidebar.add(sidebarSection("Lecturer"));
-            sidebar.add(sidebarItem("📊", "Lecturer Panel",  false));
-            sidebar.add(sidebarItem("📝", "Manage Quizzes",  false));
+            sidebar.add(sidebarItem("📊", "Lecturer Panel",  false, null));
+            sidebar.add(sidebarItem("📝", "Manage Quizzes",  false, null));
         }
         if ("admin".equals(user.getRole())) {
             sidebar.add(sidebarSection("Admin"));
-            sidebar.add(sidebarItem("⚙️", "Admin Panel", false));
+            sidebar.add(sidebarItem("⚙️", "Admin Panel", false, null));
         }
 
         sidebar.add(Box.createVerticalGlue());
@@ -251,7 +246,7 @@ public class MainWindow extends JFrame {
         return lbl;
     }
 
-    private JPanel sidebarItem(String icon, String label, boolean active) {
+    private JPanel sidebarItem(String icon, String label, boolean active, Runnable onClick) {
         JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         item.setBackground(active ? SIDEBAR_ACTIVE_BG : SURFACE);
         item.setBorder(new EmptyBorder(2, 8, 2, 8));
@@ -275,6 +270,9 @@ public class MainWindow extends JFrame {
             }
             @Override public void mouseExited(MouseEvent e) {
                 if (!active) { item.setBackground(SURFACE); txt.setForeground(MUTED); }
+            }
+            @Override public void mouseClicked(MouseEvent e) {
+                if (onClick != null) onClick.run();
             }
         });
 
