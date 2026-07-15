@@ -35,4 +35,18 @@ return [
         ],
     ],
 
+    'twitter' => [
+        'bearer_token' => env('TWITTER_BEARER_TOKEN'),
+    ],
+
+    'linkedin' => [
+        'access_token' => env('LINKEDIN_ACCESS_TOKEN'),
+        'author_urn'   => env('LINKEDIN_AUTHOR_URN'),
+    ],
+
+    'facebook' => [
+        'page_access_token' => env('FACEBOOK_PAGE_ACCESS_TOKEN'),
+        'page_id'           => env('FACEBOOK_PAGE_ID'),
+    ],
+
 ];
