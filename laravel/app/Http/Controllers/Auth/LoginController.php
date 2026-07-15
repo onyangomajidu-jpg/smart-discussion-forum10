@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\IAuthentication;
+use App\Console\Commands\GenerateRecommendations;
 use App\Services\SessionManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -61,6 +62,9 @@ class LoginController extends Controller
             // Store success message
             $this->sessionManager->flash('success', 'Welcome back!');
 
+            // Dispatch async AI recommendation job (non-blocking)
+            GenerateRecommendations::dispatch(auth()->id());
+
             // Redirect based on role
             return $this->redirectBasedOnRole();
 
@@ -104,6 +108,9 @@ class LoginController extends Controller
 
         $user  = \Illuminate\Support\Facades\Auth::user();
         $token = $user->createToken('java-gui')->plainTextToken;
+
+        // Dispatch async AI recommendation job for API login too
+        GenerateRecommendations::dispatch($user->id);
 
         return response()->json([
             'token' => $token,
