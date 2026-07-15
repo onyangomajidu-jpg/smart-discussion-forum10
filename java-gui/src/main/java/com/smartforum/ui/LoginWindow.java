@@ -2,6 +2,7 @@ package com.smartforum.ui;
 
 import com.smartforum.auth.AuthException;
 import com.smartforum.auth.AuthService;
+import com.smartforum.cache.LocalCacheDatabase;
 import com.smartforum.model.AuthUser;
 
 import javax.swing.*;
@@ -30,7 +31,8 @@ public class LoginWindow extends JFrame {
     private static final Color TEXT_MUTE = new Color(0x6C, 0x75, 0x7D);
     private static final Color ERROR_C   = new Color(0xDC, 0x35, 0x45);
 
-    private final AuthService authService;
+    private final AuthService        authService;
+    private final LocalCacheDatabase  cache;
 
     // Form fields
     private JTextField     emailField;
@@ -39,8 +41,9 @@ public class LoginWindow extends JFrame {
     private JButton        loginButton;
     private JLabel         statusLabel;
 
-    public LoginWindow(AuthService authService) {
+    public LoginWindow(AuthService authService, LocalCacheDatabase cache) {
         this.authService = authService;
+        this.cache       = cache;
         buildUI();
     }
 
@@ -290,7 +293,7 @@ public class LoginWindow extends JFrame {
 
     private void onLoginSuccess(AuthUser user) {
         dispose();
-        MainWindow mainWindow = new MainWindow(user, authService);
+        MainWindow mainWindow = new MainWindow(user, authService, cache);
         mainWindow.setVisible(true);
     }
 
