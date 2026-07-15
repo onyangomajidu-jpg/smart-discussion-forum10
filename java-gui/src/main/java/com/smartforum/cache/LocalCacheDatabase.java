@@ -1,18 +1,10 @@
 package com.smartforum.cache;
 
 import java.io.File;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 /**
  * SQLite local desktop cache (SDD §3.1.1 — Local Desktop Cache).
- *
- * Stores offline data such as unsent messages and recently accessed
- * discussions. Synchronises with the central MySQL database on
- * connectivity restoration.
- *
  * DB file location: java-gui/data/local_cache.db
  */
 public class LocalCacheDatabase {
@@ -29,15 +21,10 @@ public class LocalCacheDatabase {
         return instance;
     }
 
-    /** Opens a connection to the SQLite file. Caller must close it. */
     public Connection connect() throws SQLException {
         return DriverManager.getConnection(JDBC_URL);
     }
 
-    /**
-     * Creates the data/ directory and all cache tables if they do not
-     * already exist.  Safe to call on every startup.
-     */
     public void initialise() {
         new File("data").mkdirs();
         try (Connection conn = connect(); Statement st = conn.createStatement()) {
@@ -52,7 +39,6 @@ public class LocalCacheDatabase {
 
     private void createTables(Statement st) throws SQLException {
 
-        // ── Pending outbound messages (unsent while offline) ──────────────
         st.execute("""
             CREATE TABLE IF NOT EXISTS pending_messages (
                 id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,7 +50,6 @@ public class LocalCacheDatabase {
             )
             """);
 
-        // ── Cached topics (recently accessed, read offline) ───────────────
         st.execute("""
             CREATE TABLE IF NOT EXISTS cached_topics (
                 id           INTEGER PRIMARY KEY,
@@ -79,7 +64,6 @@ public class LocalCacheDatabase {
             )
             """);
 
-        // ── Cached posts for offline reading ──────────────────────────────
         st.execute("""
             CREATE TABLE IF NOT EXISTS cached_posts (
                 id              INTEGER PRIMARY KEY,
@@ -94,7 +78,6 @@ public class LocalCacheDatabase {
             )
             """);
 
-        // ── Pending quiz answers (submitted offline, sync later) ──────────
         st.execute("""
             CREATE TABLE IF NOT EXISTS pending_quiz_answers (
                 id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -106,7 +89,6 @@ public class LocalCacheDatabase {
             )
             """);
 
-        // ── Sync log — tracks what was pushed / pulled each session ───────
         st.execute("""
             CREATE TABLE IF NOT EXISTS sync_log (
                 id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -119,7 +101,6 @@ public class LocalCacheDatabase {
             )
             """);
 
-        // ── Cached user session (avoids re-login after reconnect) ─────────
         st.execute("""
             CREATE TABLE IF NOT EXISTS session_cache (
                 id           INTEGER PRIMARY KEY CHECK (id = 1),
@@ -131,25 +112,56 @@ public class LocalCacheDatabase {
                 saved_at     TEXT    NOT NULL DEFAULT (datetime('now'))
             )
             """);
+
+        // ── Offline statistics cache (Days 17-18) ─────────────────────────
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS statistics_cache (
+                id           INTEGER PRIMARY KEY CHECK (id = 1),
+                stats_json   TEXT    NOT NULL,
+                cached_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+            )
+            """);
     }
 
-    /** Marks all pending_messages and pending_quiz_answers as synced. */
+    /** Persists the latest stats JSON for offline viewing. */
+    public void saveStatistics(String statsJson) {
+        try (Connection conn = connect(); Statement st = conn.createStatement()) {
+            String escaped = statsJson.replace("'", "''");
+            st.execute("INSERT OR REPLACE INTO statistics_cache(id, stats_json) VALUES(1, '" + escaped + "')");
+        } catch (SQLException e) {
+            System.err.println("[LocalCache] saveStatistics failed: " + e.getMessage());
+        }
+    }
+
+    /** Returns the last cached stats JSON, or null if none. */
+    public String loadStatistics() {
+        try (Connection conn = connect();
+             ResultSet rs = conn.createStatement().executeQuery(
+                 "SELECT stats_json, cached_at FROM statistics_cache WHERE id = 1")) {
+            if (rs.next()) {
+                System.out.println("[LocalCache] Loaded offline stats cached at " + rs.getString("cached_at"));
+                return rs.getString("stats_json");
+            }
+        } catch (SQLException e) {
+            System.err.println("[LocalCache] loadStatistics failed: " + e.getMessage());
+        }
+        return null;
+    }
+
     public void markAllSynced() {
         String[] tables = {"pending_messages", "pending_quiz_answers"};
         try (Connection conn = connect(); Statement st = conn.createStatement()) {
-            for (String table : tables) {
+            for (String table : tables)
                 st.execute("UPDATE " + table + " SET synced = 1 WHERE synced = 0");
-            }
         } catch (SQLException e) {
             throw new RuntimeException("markAllSynced failed: " + e.getMessage(), e);
         }
     }
 
-    /** Drops and recreates all tables — use only in tests. */
     public void resetForTesting() {
         String[] tables = {
             "pending_messages", "cached_topics", "cached_posts",
-            "pending_quiz_answers", "sync_log", "session_cache"
+            "pending_quiz_answers", "sync_log", "session_cache", "statistics_cache"
         };
         try (Connection conn = connect(); Statement st = conn.createStatement()) {
             conn.setAutoCommit(false);

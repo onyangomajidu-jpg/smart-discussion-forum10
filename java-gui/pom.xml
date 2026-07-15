@@ -45,6 +45,13 @@
             <version>${okhttp.version}</version>
         </dependency>
 
+        <!-- JFreeChart — bar/pie charts in Statistics panel (Days 17-18) -->
+        <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>jfreechart</artifactId>
+            <version>1.5.4</version>
+        </dependency>
+
         <!-- JUnit 5 for unit tests -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
