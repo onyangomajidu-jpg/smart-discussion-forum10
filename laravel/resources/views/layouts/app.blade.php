@@ -46,11 +46,18 @@
         }
         .topnav-brand { display:flex; align-items:center; gap:12px; color:#fff; text-decoration:none; }
         .topnav-brand .brand-icon {
-            width:40px; height:40px; border-radius:10px;
-            background:rgba(255,255,255,.2);
+            width:42px; height:42px; border-radius:10px;
+            background:rgba(255,255,255,.15);
             display:flex; align-items:center; justify-content:center;
-            font-size:20px; backdrop-filter:blur(4px);
+            backdrop-filter:blur(4px);
             border:1.5px solid rgba(255,255,255,.3);
+            overflow:hidden; flex-shrink:0;
+            padding:4px;
+        }
+        .topnav-brand .brand-icon img {
+            width:100%; height:100%;
+            object-fit:contain;
+            filter:drop-shadow(0 1px 3px rgba(0,0,0,.25));
         }
         .topnav-brand .name { font-size:16px; font-weight:800; letter-spacing:-.4px; }
         .topnav-brand .sub  { font-size:10px; opacity:.7; font-weight:500; letter-spacing:.3px; text-transform:uppercase; }
@@ -110,29 +117,31 @@
             width:230px; min-height:calc(100vh - 64px);
             background:var(--surface);
             border-right:1px solid var(--border);
-            padding:20px 12px;
+            padding:20px 12px 0;
             flex-shrink:0;
             position:sticky; top:64px; height:calc(100vh - 64px); overflow-y:auto;
+            display:flex; flex-direction:column;
         }
+        .sidebar-nav { flex:1; }
 
-        /* Sidebar user profile block */
-        .sidebar-user {
-            display:flex; align-items:center; gap:10px;
-            padding:12px 10px;
-            background:linear-gradient(135deg,rgba(99,102,241,.07),rgba(139,92,246,.04));
-            border-radius:12px;
-            border:1px solid rgba(99,102,241,.12);
-            margin-bottom:4px;
+        /* Sidebar bottom footer */
+        .sidebar-footer {
+            background: #4f46e5;
+            margin: 0 -12px;
+            padding: 14px 16px;
+            display: flex; align-items: center; gap: 10px;
+            flex-shrink: 0;
         }
-        .sidebar-user-avatar {
-            width:38px; height:38px; border-radius:10px;
-            background:var(--grad);
-            display:flex; align-items:center; justify-content:center;
-            font-weight:800; font-size:15px; color:#fff;
-            flex-shrink:0;
+        .sidebar-footer-avatar {
+            width: 38px; height: 38px; border-radius: 10px;
+            background: rgba(255,255,255,.2);
+            border: 1.5px solid rgba(255,255,255,.3);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 15px; color: #fff;
+            flex-shrink: 0;
         }
-        .sidebar-user-name { font-size:13px; font-weight:700; color:var(--text); line-height:1.2; }
-        .sidebar-user-role { font-size:11px; color:var(--primary); font-weight:600; display:flex; align-items:center; gap:4px; margin-top:2px; }
+        .sidebar-footer-name { font-size: 13px; font-weight: 700; color: #fff; line-height: 1.2; }
+        .sidebar-footer-role { font-size: 11px; color: rgba(255,255,255,.65); margin-top: 2px; display:flex; align-items:center; gap:4px; }
         .sidebar-section { margin-bottom:20px; }
         .sidebar-label { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:1px; padding:0 10px; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
         .sidebar-link {
@@ -261,10 +270,10 @@
 <body>
 
 <nav class="topnav">
-    <a href="{{ auth()->check() && auth()->user()->isLecturer() ? route('lecturer.dashboard') : route('dashboard') }}" class="topnav-brand">
-        <div class="brand-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+    <a href="{{ auth()->check() && auth()->user()->isLecturer() ? route('lecturer.dashboard') : (auth()->check() && auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard')) }}" class="topnav-brand">
+        <div class="brand-icon"><img src="{{ asset('images/forum.png') }}" alt="SmartForum Logo"></div>
         <div>
-            <div class="name">SmartForum</div>
+            <div class="name">Smart Discussion Forum</div>
             <div class="sub">Assessment Platform</div>
         </div>
     </a>
@@ -309,24 +318,8 @@
 <div class="app-body">
     <aside class="sidebar">
         @auth
-        {{-- Sidebar user mini-profile --}}
-        <div class="sidebar-user">
-            <div class="sidebar-user-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
-            <div class="sidebar-user-info">
-                <div class="sidebar-user-name">{{ auth()->user()->name }}</div>
-                <div class="sidebar-user-role">
-                    @if(auth()->user()->isLecturer())
-                        <i class="fa-solid fa-chalkboard-user"></i> Lecturer
-                    @elseif(auth()->user()->isMember())
-                        <i class="fa-solid fa-user-graduate"></i> Student
-                    @else
-                        <i class="fa-solid fa-shield-halved"></i> Admin
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <div class="sidebar-divider"></div>
+        <div class="sidebar-nav">
+        <div class="sidebar-divider" style="margin-top:4px"></div>
 
         @if(auth()->user()->isLecturer())
         <div class="sidebar-section">
@@ -340,6 +333,9 @@
             <a href="{{ route('lecturer.quizzes.create') }}" class="sidebar-link {{ request()->routeIs('lecturer.quizzes.create') ? 'active' : '' }}">
                 <span class="ico"><i class="fa-solid fa-circle-plus"></i></span> Create Quiz
             </a>
+            <a href="{{ route('lecturer.analytics') }}" class="sidebar-link {{ request()->routeIs('lecturer.analytics') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-chart-mixed"></i></span> Analytics
+            </a>
         </div>
         @elseif(auth()->user()->isMember())
         <div class="sidebar-section">
@@ -350,8 +346,46 @@
             <a href="{{ route('quizzes.index') }}" class="sidebar-link {{ request()->routeIs('quizzes.*') ? 'active' : '' }}">
                 <span class="ico"><i class="fa-solid fa-file-pen"></i></span> My Quizzes
             </a>
+            <a href="{{ route('analytics.index') }}" class="sidebar-link {{ request()->routeIs('analytics.index') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-chart-line"></i></span> Analytics
+            </a>
+        </div>
+        @elseif(auth()->user()->isAdmin())
+        <div class="sidebar-section">
+            <div class="sidebar-label"><i class="fa-solid fa-shield-halved"></i> Admin</div>
+            <a href="{{ route('admin.dashboard') }}" class="sidebar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-house"></i></span> Dashboard
+            </a>
+            <a href="{{ route('admin.warnings.index') }}" class="sidebar-link {{ request()->routeIs('admin.warnings.*') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-triangle-exclamation"></i></span> Warnings
+                @php $openWarnings = \App\Models\Warning::whereNull('resolved_at')->count(); @endphp
+                @if($openWarnings > 0)<span class="sidebar-badge">{{ $openWarnings }}</span>@endif
+            </a>
+            <a href="{{ route('admin.blacklists.index') }}" class="sidebar-link {{ request()->routeIs('admin.blacklists.*') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-ban"></i></span> Blacklist Log
+            </a>
         </div>
         @endif
+
+        </div>{{-- end .sidebar-nav --}}
+
+        {{-- Bottom footer --}}
+        <div class="sidebar-footer">
+            <div class="sidebar-footer-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
+            <div>
+                <div class="sidebar-footer-name">{{ auth()->user()->name }}</div>
+                <div class="sidebar-footer-role">
+                    @if(auth()->user()->isLecturer())
+                        <i class="fa-solid fa-chalkboard-user"></i> Lecturer
+                    @elseif(auth()->user()->isMember())
+                        <i class="fa-solid fa-user-graduate"></i> Student
+                    @else
+                        <i class="fa-solid fa-shield-halved"></i> Admin
+                    @endif
+                </div>
+            </div>
+        </div>
+
         @endauth
     </aside>
 

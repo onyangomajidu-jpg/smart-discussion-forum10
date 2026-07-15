@@ -4,7 +4,11 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
+<<<<<<< HEAD
     "content-hash": "19b21fff8d5a641822e8695dec1c544a",
+=======
+    "content-hash": "949fc6b4daddcdb1cbeaa2d24f2b20fa",
+>>>>>>> main
     "packages": [
         {
             "name": "brick/math",
@@ -227,7 +231,11 @@
         },
         {
             "name": "illuminate/bus",
+<<<<<<< HEAD
             "version": "v12.64.0",
+=======
+            "version": "v12.63.0",
+>>>>>>> main
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/bus.git",
@@ -280,7 +288,11 @@
         },
         {
             "name": "illuminate/collections",
+<<<<<<< HEAD
             "version": "v12.64.0",
+=======
+            "version": "v12.63.0",
+>>>>>>> main
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/collections.git",
@@ -340,7 +352,11 @@
         },
         {
             "name": "illuminate/conditionable",
+<<<<<<< HEAD
             "version": "v12.64.0",
+=======
+            "version": "v12.63.0",
+>>>>>>> main
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/conditionable.git",
@@ -386,7 +402,11 @@
         },
         {
             "name": "illuminate/console",
+<<<<<<< HEAD
             "version": "v12.64.0",
+=======
+            "version": "v12.63.0",
+>>>>>>> main
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/console.git",
@@ -452,7 +472,11 @@
         },
         {
             "name": "illuminate/container",
+<<<<<<< HEAD
             "version": "v12.64.0",
+=======
+            "version": "v12.63.0",
+>>>>>>> main
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/container.git",
@@ -514,7 +538,11 @@
         },
         {
             "name": "illuminate/contracts",
+<<<<<<< HEAD
             "version": "v12.64.0",
+=======
+            "version": "v12.63.0",
+>>>>>>> main
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/contracts.git",
@@ -562,7 +590,11 @@
         },
         {
             "name": "illuminate/database",
+<<<<<<< HEAD
             "version": "v12.64.0",
+=======
+            "version": "v12.63.0",
+>>>>>>> main
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/database.git",
@@ -635,7 +667,11 @@
         },
         {
             "name": "illuminate/events",
+<<<<<<< HEAD
             "version": "v12.64.0",
+=======
+            "version": "v12.63.0",
+>>>>>>> main
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/events.git",
@@ -690,7 +726,11 @@
         },
         {
             "name": "illuminate/filesystem",
+<<<<<<< HEAD
             "version": "v12.64.0",
+=======
+            "version": "v12.63.0",
+>>>>>>> main
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/filesystem.git",
@@ -757,7 +797,11 @@
         },
         {
             "name": "illuminate/macroable",
+<<<<<<< HEAD
             "version": "v12.64.0",
+=======
+            "version": "v12.63.0",
+>>>>>>> main
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/macroable.git",
@@ -803,7 +847,11 @@
         },
         {
             "name": "illuminate/pipeline",
+<<<<<<< HEAD
             "version": "v12.64.0",
+=======
+            "version": "v12.63.0",
+>>>>>>> main
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/pipeline.git",
@@ -855,7 +903,11 @@
         },
         {
             "name": "illuminate/reflection",
+<<<<<<< HEAD
             "version": "v12.64.0",
+=======
+            "version": "v12.63.0",
+>>>>>>> main
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/reflection.git",
@@ -906,6 +958,7 @@
         },
         {
             "name": "illuminate/support",
+<<<<<<< HEAD
             "version": "v12.64.0",
             "source": {
                 "type": "git",
@@ -916,6 +969,18 @@
                 "type": "zip",
                 "url": "https://api.github.com/repos/illuminate/support/zipball/bc7bc2db3e635697f81ea123511ae25b014a63fb",
                 "reference": "bc7bc2db3e635697f81ea123511ae25b014a63fb",
+=======
+            "version": "v12.63.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/illuminate/support.git",
+                "reference": "3a8772095ef7d6b1961a77f2f0b8921c056c48ea"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/illuminate/support/zipball/3a8772095ef7d6b1961a77f2f0b8921c056c48ea",
+                "reference": "3a8772095ef7d6b1961a77f2f0b8921c056c48ea",
+>>>>>>> main
                 "shasum": ""
             },
             "require": {
@@ -982,11 +1047,19 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
+<<<<<<< HEAD
             "time": "2026-07-13T16:08:36+00:00"
         },
         {
             "name": "illuminate/view",
             "version": "v12.64.0",
+=======
+            "time": "2026-05-31T22:10:17+00:00"
+        },
+        {
+            "name": "illuminate/view",
+            "version": "v12.63.0",
+>>>>>>> main
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/view.git",
@@ -1223,6 +1296,7 @@
         },
         {
             "name": "nesbot/carbon",
+<<<<<<< HEAD
             "version": "3.13.1",
             "source": {
                 "type": "git",
@@ -1233,6 +1307,18 @@
                 "type": "zip",
                 "url": "https://api.github.com/repos/CarbonPHP/carbon/zipball/2937ad3d1d2c506fd2bc97d571438a95641f44e2",
                 "reference": "2937ad3d1d2c506fd2bc97d571438a95641f44e2",
+=======
+            "version": "3.13.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/CarbonPHP/carbon.git",
+                "reference": "40f6618f052df16b545f626fbf9a878e6497d16a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/CarbonPHP/carbon/zipball/40f6618f052df16b545f626fbf9a878e6497d16a",
+                "reference": "40f6618f052df16b545f626fbf9a878e6497d16a",
+>>>>>>> main
                 "shasum": ""
             },
             "require": {
@@ -1324,7 +1410,11 @@
                     "type": "tidelift"
                 }
             ],
+<<<<<<< HEAD
             "time": "2026-07-09T18:23:49+00:00"
+=======
+            "time": "2026-06-18T13:49:15+00:00"
+>>>>>>> main
         },
         {
             "name": "nunomaduro/termwind",
