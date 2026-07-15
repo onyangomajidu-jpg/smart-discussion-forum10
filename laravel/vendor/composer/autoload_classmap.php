@@ -22,6 +22,7 @@ return array(
     'App\\Http\\Controllers\\Auth\\RegisterController' => $baseDir . '/app/Http/Controllers/Auth/RegisterController.php',
     'App\\Http\\Controllers\\Controller' => $baseDir . '/app/Http/Controllers/Controller.php',
     'App\\Http\\Controllers\\DashboardController' => $baseDir . '/app/Http/Controllers/DashboardController.php',
+    'App\\Http\\Controllers\\ExportController' => $baseDir . '/app/Http/Controllers/ExportController.php',
     'App\\Http\\Controllers\\ModerationController' => $baseDir . '/app/Http/Controllers/ModerationController.php',
     'App\\Http\\Controllers\\PostController' => $baseDir . '/app/Http/Controllers/PostController.php',
     'App\\Http\\Controllers\\Quiz\\QuizController' => $baseDir . '/app/Http/Controllers/Quiz/QuizController.php',

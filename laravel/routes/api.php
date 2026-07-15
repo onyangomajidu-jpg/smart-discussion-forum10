@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DashboardApiController;
 use App\Http\Controllers\Api\RecommendationController;
 use App\Http\Controllers\Api\StatisticsApiController;
+use App\Http\Controllers\ExportController;
 
 
 // ── Auth (no middleware — Java client logs in here) ────────────────────
@@ -18,6 +19,7 @@ Route::post('/login', function (Request $request) {
         'password' => 'required|string',
     ]);
 
+<<<<<<< HEAD
     if (!auth()->attempt($credentials)) {
         return response()->json(['message' => 'Invalid credentials.'], 401);
     }
@@ -52,3 +54,19 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->get('/dashboard',  [DashboardApiController::class,  'index']);
 Route::middleware('auth:sanctum')->get('/statistics', [StatisticsApiController::class, 'index']);
 >>>>>>> main
+=======
+Route::middleware('auth:sanctum')->group(function () {
+    // Dashboard & statistics
+    Route::get('/dashboard',  [DashboardApiController::class,  'index']);
+    Route::get('/statistics', [StatisticsApiController::class, 'index']);
+
+    // Topics list — used by ExportWindow to populate topic picker
+    Route::get('/topics', fn() => \App\Models\Topic::withCount('posts')->latest()->get());
+
+    // exportDiscussionPDF(topicId) — streams PDF; Java GUI calls this
+    Route::get('/topics/{topicId}/export-pdf', [ExportController::class, 'exportDiscussionPDF']);
+
+    // forwardToSocialMedia(postId, platform)
+    Route::post('/posts/{postId}/share', [ExportController::class, 'forwardToSocialMedia']);
+});
+>>>>>>> origin
