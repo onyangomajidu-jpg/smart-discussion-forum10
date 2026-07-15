@@ -50,6 +50,24 @@
         .topic-item h4 { font-size: 14px; color: #2d3748; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .topic-meta { font-size: 12px; color: #718096; display: flex; justify-content: space-between; }
 
+        /* Participants Panel */
+        .participants-panel {
+            width: 230px; background: white; border-left: 1px solid #e2e8f0;
+            display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto;
+        }
+        .participants-panel h4 { padding: 14px 16px; font-size: 13px; font-weight: 700; color: #4a5568; border-bottom: 1px solid #e2e8f0; margin: 0; }
+        .section-label { padding: 8px 14px 4px; font-size: 11px; font-weight: 700; color: #a0aec0; text-transform: uppercase; letter-spacing: .5px; }
+        .participant-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; border-bottom: 1px solid #f0f2f5; font-size: 13px; color: #2d3748; gap: 6px; }
+        .participant-item.blocked-item { background: #fff5f5; color: #9b2c2c; }
+        .participant-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .participant-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .btn-remove-user { font-size: 11px; color: #e53e3e; background: none; border: 1px solid #e53e3e; border-radius: 4px; padding: 2px 6px; cursor: pointer; }
+        .btn-remove-user:hover { background: #fff5f5; }
+        .btn-block-user { font-size: 11px; color: #d69e2e; background: none; border: 1px solid #d69e2e; border-radius: 4px; padding: 2px 6px; cursor: pointer; }
+        .btn-block-user:hover { background: #fffff0; }
+        .btn-unblock-user { font-size: 11px; color: #38a169; background: none; border: 1px solid #38a169; border-radius: 4px; padding: 2px 6px; cursor: pointer; }
+        .btn-unblock-user:hover { background: #f0fff4; }
+
         /* Conversation Panel */
         .conversation { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .conv-header {
@@ -146,9 +164,11 @@
                 <input type="text" name="search" class="search-bar" placeholder="🔍 Search topics..."
                     value="{{ request('search') }}" oninput="this.form.submit()">
             </form>
+            @if(auth()->user()->isMember() || auth()->user()->isLecturer() || auth()->user()->isAdmin())
             <button class="btn-create" onclick="document.getElementById('createModal').classList.add('open')">
                 + Create Topic
             </button>
+            @endif
         </div>
         <div class="topic-list">
             @forelse($topics as $topic)
@@ -174,7 +194,7 @@
     </aside>
 
     {{-- Conversation Panel --}}
-    <main class="conversation">
+    <main class="conversation" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
         @if(isset($activeTopic))
             <div class="conv-header">
                 <div>
@@ -276,6 +296,55 @@
             </div>
         @endif
     </main>
+
+    {{-- Participants Panel --}}
+    @if(isset($activeTopic))
+    <aside class="participants-panel">
+        <h4>👥 Participants</h4>
+
+        {{-- Active participants --}}
+        <div class="section-label">Active</div>
+        @forelse($activeTopic->participants as $participant)
+            <div class="participant-item">
+                <span class="participant-name">{{ $participant->name }}</span>
+                @if($participant->id === $activeTopic->user_id)
+                    <span style="font-size:11px;color:#667eea;">creator</span>
+                @elseif(auth()->id() === $activeTopic->user_id)
+                    <div class="participant-actions">
+                        <form action="{{ route('topics.blockUser', [$activeTopic, $participant->id]) }}" method="POST"
+                              onsubmit="return confirm('Block {{ addslashes($participant->name) }}?')">
+                            @csrf
+                            <button type="submit" class="btn-block-user">Block</button>
+                        </form>
+                        <form action="{{ route('topics.removeUser', [$activeTopic, $participant->id]) }}" method="POST"
+                              onsubmit="return confirm('Remove {{ addslashes($participant->name) }}?')">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="btn-remove-user">Remove</button>
+                        </form>
+                    </div>
+                @endif
+            </div>
+        @empty
+            <div style="padding:10px 14px;font-size:13px;color:#a0aec0;">No active participants.</div>
+        @endforelse
+
+        {{-- Blocked participants --}}
+        @if(auth()->id() === $activeTopic->user_id)
+            <div class="section-label" style="margin-top:8px;">🚫 Blocked</div>
+            @forelse($activeTopic->blockedParticipants as $blocked)
+                <div class="participant-item blocked-item">
+                    <span class="participant-name">{{ $blocked->name }}</span>
+                    <form action="{{ route('topics.unblockUser', [$activeTopic, $blocked->id]) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="btn-unblock-user">Unblock</button>
+                    </form>
+                </div>
+            @empty
+                <div style="padding:10px 14px;font-size:13px;color:#a0aec0;">No blocked users.</div>
+            @endforelse
+        @endif
+    </aside>
+    @endif
 </div>
 
 {{-- Create Topic Modal --}}

@@ -62,6 +62,19 @@ public class ApiClient {
         }
     }
 
+    /** GET request — returns raw bytes (for binary responses like PDF). */
+    public byte[] getBytes(String endpoint) throws IOException {
+        Request request = new Request.Builder()
+            .url(BASE_URL + endpoint)
+            .header("Accept", "application/pdf")
+            .header("Authorization", bearerToken != null ? "Bearer " + bearerToken : "")
+            .build();
+        try (Response response = http.newCall(request).execute()) {
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
+            return response.body() != null ? response.body().bytes() : new byte[0];
+        }
+    }
+
     /** Returns true if the Laravel server is reachable. */
     public boolean isOnline() {
         try {

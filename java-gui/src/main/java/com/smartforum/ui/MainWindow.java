@@ -1,198 +1,192 @@
 package com.smartforum.ui;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartforum.api.ApiClient;
 import com.smartforum.auth.AuthService;
 import com.smartforum.cache.LocalCacheDatabase;
 import com.smartforum.model.AuthUser;
+import com.smartforum.sync.ForumWebSocketListener;
+import com.smartforum.sync.OfflineSyncManager;
 
 import javax.swing.*;
-import javax.swing.border.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Main dashboard window — matches web dashboard layout exactly:
- *   TOP    : gradient navbar (brand + user chip + sign-out)
- *   LEFT   : sidebar (Main nav, role-specific nav, user footer)
- *   CENTER : stats row (4 cards) + 2×2 panel grid
+ * Main application window (SDD §3.1 — Days 8-10).
+ *
+ * Layout:
+ *   NORTH  — top bar (title, user info, connection badge, logout)
+ *   CENTER — JSplitPane: TopicListPanel (left) | ConversationPanel (right)
+ *
+ * Background thread polls api.isOnline() every 10 s; on reconnect it
+ * calls synchronizeOfflineData() and refreshes both panels.
  */
 public class MainWindow extends JFrame {
 
-    // ── Brand colours (mirror web CSS vars) ──────────────────────────────
-    private static final Color PRIMARY   = new Color(0x63, 0x66, 0xF1);
-    private static final Color SECONDARY = new Color(0x8B, 0x5C, 0xF6);
-    private static final Color SUCCESS   = new Color(0x10, 0xB9, 0x81);
-    private static final Color WARNING   = new Color(0xF5, 0x9E, 0x0B);
-    private static final Color BG        = new Color(0xF1, 0xF5, 0xF9);
-    private static final Color SURFACE   = Color.WHITE;
-    private static final Color BORDER_C  = new Color(0xE2, 0xE8, 0xF0);
-    private static final Color TEXT      = new Color(0x0F, 0x17, 0x2A);
-    private static final Color MUTED     = new Color(0x64, 0x74, 0x8B);
-    private static final Color SIDEBAR_ACTIVE_BG = new Color(0xED, 0xE9, 0xFE);
+    private static final Color PRIMARY = new Color(0x66, 0x7E, 0xEA);
 
-    private static final int SIDEBAR_W = 220;
-    private static final int NAV_H     = 64;
+    private final AuthUser               user;
+    private final AuthService            authService;
+    private final ApiClient              api;
+    private final LocalCacheDatabase     cache;
+    private final OfflineSyncManager     syncManager;
+    private final ForumWebSocketListener wsListener;
 
-    private final AuthUser           user;
-    private final AuthService         authService;
-    private final ApiClient           api;
-    private final LocalCacheDatabase  cache;
-    private final ObjectMapper        mapper = new ObjectMapper();
+    private final JLabel connectionBadge = new JLabel();
+    private boolean      wasOnline       = false;
 
-    // Live stat labels
-    private JLabel lblTopics, lblPosts, lblAttempts, lblAvgScore;
-    private JPanel topicsListPanel, quizListPanel;
-    private JLabel lblEngPct, lblCompPct, lblAvgPct;
-    private JProgressBar barEng, barComp, barAvg;
+    private final ScheduledExecutorService reconnectPoller =
+        Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "reconnect-poller");
+            t.setDaemon(true);
+            return t;
+        });
 
-    // Content switcher
-    private JPanel contentArea;
-    private JScrollPane dashboardView;
-    private StatisticsPanel statisticsView;
-
-    // Sidebar nav items for toggling active state
-    private JPanel navDashboard, navStatistics;
-
-    public MainWindow(AuthUser user, AuthService authService, LocalCacheDatabase cache) {
+    public MainWindow(AuthUser user, AuthService authService,
+                      ApiClient api, LocalCacheDatabase cache) {
         this.user        = user;
         this.authService = authService;
+        this.api         = api;
         this.cache       = cache;
-        this.api         = new ApiClient();
-        this.api.setToken(user.getToken());
+        this.syncManager = new OfflineSyncManager(api, cache);
 
+        // ── Panels ────────────────────────────────────────────────────────
+        ConversationPanel conversationPanel =
+            new ConversationPanel(cache, user, syncManager);
+
+        // ── WebSocket — must be created before TopicListPanel lambda ──────
+        wsListener = new ForumWebSocketListener(conversationPanel);
+        wsListener.connect();
+
+        TopicListPanel topicListPanel = new TopicListPanel(cache, topic -> {
+            conversationPanel.loadTopic(topic);
+            wsListener.subscribeTopic(topic.id);
+        });
+
+        // Refresh both panels after sync
+        syncManager.setSyncListener(() -> {
+            topicListPanel.refresh();
+            conversationPanel.refreshPosts();
+            conversationPanel.setStatus("✅ Sync complete");
+        });
+
+        // ── Layout ────────────────────────────────────────────────────────
         setTitle("Smart Discussion Forum — " + user.getName());
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(1200, 760);
-        setMinimumSize(new Dimension(960, 620));
+        setSize(1100, 700);
         setLocationRelativeTo(null);
 
-        // Root: navbar on top, sidebar left, content center
-        JPanel root = new JPanel(new BorderLayout());
-        root.setBackground(BG);
-        root.add(buildNavBar(),  BorderLayout.NORTH);
-        root.add(buildSidebar(), BorderLayout.WEST);
+        JSplitPane split = new JSplitPane(
+            JSplitPane.HORIZONTAL_SPLIT, topicListPanel, conversationPanel);
+        split.setDividerLocation(260);
+        split.setDividerSize(4);
+        split.setBorder(null);
 
-        contentArea = new JPanel(new CardLayout());
-        contentArea.setBackground(BG);
-        dashboardView   = buildContent();
-        statisticsView  = new StatisticsPanel(api, cache);
-        contentArea.add(dashboardView,  "dashboard");
-        contentArea.add(statisticsView, "statistics");
-        root.add(contentArea, BorderLayout.CENTER);
-        setContentPane(root);
+        getContentPane().setLayout(new BorderLayout());
+        getContentPane().add(buildTopBar(), BorderLayout.NORTH);
+        getContentPane().add(split,         BorderLayout.CENTER);
 
-        loadDashboardData();
-    }
+        // ── Reconnect poller ──────────────────────────────────────────────
+        reconnectPoller.scheduleAtFixedRate(this::checkConnectivity,
+            5, 10, TimeUnit.SECONDS);
 
-    private void showView(String name) {
-        ((CardLayout) contentArea.getLayout()).show(contentArea, name);
-        boolean isDash = "dashboard".equals(name);
-        setNavActive(navDashboard,  isDash);
-        setNavActive(navStatistics, !isDash);
-        if (!isDash) statisticsView.loadData();
-    }
-
-    private void setNavActive(JPanel item, boolean active) {
-        if (item == null) return;
-        item.setBackground(active ? SIDEBAR_ACTIVE_BG : SURFACE);
-        for (Component c : item.getComponents()) {
-            if (c instanceof JLabel) {
-                JLabel lbl = (JLabel) c;
-                if (lbl.getFont().isBold()) {
-                    lbl.setForeground(active ? PRIMARY : MUTED);
-                }
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override public void windowClosing(java.awt.event.WindowEvent e) {
+                wsListener.disconnect();
+                reconnectPoller.shutdownNow();
             }
-        }
+        });
     }
 
-    // ── Top navbar ────────────────────────────────────────────────────────
+    // ── Top bar ───────────────────────────────────────────────────────────
 
-    private JPanel buildNavBar() {
-        JPanel bar = new JPanel(new BorderLayout()) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setPaint(new GradientPaint(0, 0, PRIMARY, getWidth(), 0, SECONDARY));
-                g2.fillRect(0, 0, getWidth(), getHeight());
-                g2.dispose();
-            }
-        };
-        bar.setPreferredSize(new Dimension(0, NAV_H));
-        bar.setBorder(new EmptyBorder(0, 24, 0, 24));
-        bar.setOpaque(false);
+    private JPanel buildTopBar() {
+        JPanel bar = new JPanel(new BorderLayout());
+        bar.setBackground(PRIMARY);
+        bar.setBorder(new EmptyBorder(10, 20, 10, 20));
 
-        JLabel brand = new JLabel("🎓  SmartForum");
-        brand.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        brand.setForeground(Color.WHITE);
+        JLabel title = new JLabel("🎓 Smart Discussion Forum");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        title.setForeground(Color.WHITE);
+
+        connectionBadge.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        connectionBadge.setForeground(Color.WHITE);
+        updateBadge(api.isOnline());
+
+        JLabel userInfo = new JLabel(user.getName() + "  [" + user.getRole().toUpperCase() + "]");
+        userInfo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        userInfo.setForeground(Color.WHITE);
+
+        JButton logoutBtn = new JButton("Logout");
+        logoutBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        logoutBtn.setForeground(PRIMARY);
+        logoutBtn.setBackground(Color.WHITE);
+        logoutBtn.setBorderPainted(false);
+        logoutBtn.setFocusPainted(false);
+        logoutBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        logoutBtn.addActionListener(e -> {
+            wsListener.disconnect();
+            reconnectPoller.shutdownNow();
+            authService.logout();
+            dispose();
+            new LoginWindow(authService, api, cache).setVisible(true);
+        });
 
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
         right.setOpaque(false);
+        right.add(connectionBadge);
+        right.add(userInfo);
+        right.add(logoutBtn);
 
-        JLabel bell = new JLabel("🔔");
-        bell.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
-        bell.setForeground(Color.WHITE);
-        bell.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-        JLabel chip = new JLabel(user.getName() + "  ·  " + capitalize(user.getRole()));
-        chip.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        chip.setForeground(Color.WHITE);
-        chip.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 255, 255, 80), 1, true),
-            new EmptyBorder(4, 12, 4, 12)
-        ));
-
-        JButton signOut = navButton("Sign Out");
-        signOut.addActionListener(e -> doLogout());
-
-        right.add(bell);
-        right.add(chip);
-        right.add(signOut);
-
-        bar.add(brand, BorderLayout.WEST);
-        bar.add(right,  BorderLayout.EAST);
+        bar.add(title, BorderLayout.WEST);
+        bar.add(right, BorderLayout.EAST);
         return bar;
     }
 
-    // ── Left sidebar ──────────────────────────────────────────────────────
+    // ── Reconnect logic ───────────────────────────────────────────────────
 
-    private JPanel buildSidebar() {
-        JPanel sidebar = new JPanel();
-        sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
-        sidebar.setBackground(SURFACE);
-        sidebar.setPreferredSize(new Dimension(SIDEBAR_W, 0));
-        sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, BORDER_C));
+    private void checkConnectivity() {
+        boolean online = api.isOnline();
+        SwingUtilities.invokeLater(() -> updateBadge(online));
 
+<<<<<<< HEAD
+        if (online && !wasOnline) {
+            System.out.println("[MainWindow] Reconnected — running synchronizeOfflineData()");
+            syncManager.synchronizeOfflineData();
+            wsListener.connect();
+        }
+        wasOnline = online;
+    }
+
+    private void updateBadge(boolean online) {
+        connectionBadge.setText(online ? "🟢 Online" : "🔴 Offline");
+=======
         // ── Main section ──
         sidebar.add(sidebarSection("Main"));
-        navDashboard = sidebarItem("🏠", "Dashboard", true);
-        navDashboard.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent e) { showView("dashboard"); }
-        });
+        navDashboard = sidebarItem("🏠", "Dashboard", true, () -> showView("dashboard"));
         sidebar.add(navDashboard);
-        sidebar.add(sidebarItem("💬", "Topics",        false));
+        sidebar.add(sidebarItem("💬", "Topics",        false, null));
+        sidebar.add(sidebarItem("📄", "Export & Share", false, () -> new ExportWindow(api).setVisible(true)));
         if ("member".equals(user.getRole())) {
-            sidebar.add(sidebarItem("🎯", "Quizzes",   false));
+            sidebar.add(sidebarItem("🎯", "Quizzes",   false, null));
         }
-        sidebar.add(sidebarItem("🔔", "Notifications", false));
+        sidebar.add(sidebarItem("🔔", "Notifications", false, null));
 
-        navStatistics = sidebarItem("📊", "Statistics", false);
-        navStatistics.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent e) { showView("statistics"); }
-        });
+        navStatistics = sidebarItem("📊", "Statistics", false, () -> showView("statistics"));
         sidebar.add(navStatistics);
 
         // ── Role-specific sections ──
         if ("lecturer".equals(user.getRole())) {
             sidebar.add(sidebarSection("Lecturer"));
-            sidebar.add(sidebarItem("📊", "Lecturer Panel",  false));
-            sidebar.add(sidebarItem("📝", "Manage Quizzes",  false));
+            sidebar.add(sidebarItem("📊", "Lecturer Panel",  false, null));
+            sidebar.add(sidebarItem("📝", "Manage Quizzes",  false, null));
         }
         if ("admin".equals(user.getRole())) {
             sidebar.add(sidebarSection("Admin"));
-            sidebar.add(sidebarItem("⚙️", "Admin Panel", false));
+            sidebar.add(sidebarItem("⚙️", "Admin Panel", false, null));
         }
 
         sidebar.add(Box.createVerticalGlue());
@@ -251,7 +245,7 @@ public class MainWindow extends JFrame {
         return lbl;
     }
 
-    private JPanel sidebarItem(String icon, String label, boolean active) {
+    private JPanel sidebarItem(String icon, String label, boolean active, Runnable onClick) {
         JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         item.setBackground(active ? SIDEBAR_ACTIVE_BG : SURFACE);
         item.setBorder(new EmptyBorder(2, 8, 2, 8));
@@ -275,6 +269,9 @@ public class MainWindow extends JFrame {
             }
             @Override public void mouseExited(MouseEvent e) {
                 if (!active) { item.setBackground(SURFACE); txt.setForeground(MUTED); }
+            }
+            @Override public void mouseClicked(MouseEvent e) {
+                if (onClick != null) onClick.run();
             }
         });
 
@@ -626,5 +623,6 @@ public class MainWindow extends JFrame {
     private static String capitalize(String s) {
         if (s == null || s.isEmpty()) return s;
         return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+>>>>>>> origin
     }
 }

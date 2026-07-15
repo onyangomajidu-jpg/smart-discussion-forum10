@@ -5,6 +5,7 @@ import com.smartforum.auth.AuthService;
 import com.smartforum.cache.LocalCacheDatabase;
 import com.smartforum.sync.RealtimeSyncService;
 import com.smartforum.ui.LoginWindow;
+import com.smartforum.ui.MainWindow;
 
 import javax.swing.*;
 import java.io.InputStream;
@@ -31,6 +32,8 @@ public class Main {
         // ── 2. API client ─────────────────────────────────────────────────
         String baseUrl = props.getProperty("api.baseUrl", "http://localhost:8000/api");
         System.setProperty("api.baseUrl", baseUrl);
+        String wsUrl = props.getProperty("ws.url", "ws://localhost:8080/app/local");
+        System.setProperty("ws.url", wsUrl);
         ApiClient api = new ApiClient();
 
         // ── 3. Auth + sync services ───────────────────────────────────────
@@ -42,12 +45,15 @@ public class Main {
         syncService.start(syncInterval);
 
         // ── 4. GUI ────────────────────────────────────────────────────────
+        // Pass api + cache into LoginWindow so it can construct MainWindow
+        final ApiClient          apiFinal   = api;
+        final LocalCacheDatabase cacheFinal = cache;
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             } catch (Exception ignored) { /* fall back to default L&F */ }
 
-            LoginWindow loginWindow = new LoginWindow(authService, cache);
+            LoginWindow loginWindow = new LoginWindow(authService, apiFinal, cacheFinal);
             loginWindow.setVisible(true);
         });
     }
