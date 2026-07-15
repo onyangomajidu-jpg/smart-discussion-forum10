@@ -25,3 +25,12 @@ Thumbs.db
 
 # Java build output
 java-gui/target/
+
+# Java build files
+java-gui/target/
+**/target/
+
+# Laravel generated files
+laravel/vendor/
+laravel/node_modules/
+laravel/.env
