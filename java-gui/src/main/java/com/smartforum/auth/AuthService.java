@@ -58,8 +58,8 @@ public class AuthService {
             ));
         } catch (IOException e) {
             String msg = e.getMessage() != null ? e.getMessage() : "";
-            // HTTP 401 = invalid credentials (server reachable, creds wrong)
-            if (msg.contains("401")) {
+            // HTTP 401/422 = invalid credentials (server reachable, creds wrong)
+            if (msg.contains("401") || msg.contains("422")) {
                 throw new AuthException("Invalid credentials.");
             }
             // Any other HTTP error or network failure — try offline cache
