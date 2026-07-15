@@ -30,7 +30,7 @@
     .dash-stat-card .label { font-size: 11px; color: var(--muted); margin-top: 3px; font-weight: 500; }
 
     /* ── Panel grid ── */
-    .panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
     .panel {
         background: #fff; border: 1px solid #e2e8f0;
         border-radius: 12px; overflow: hidden;
@@ -59,7 +59,7 @@
     .panel-quiz    { border-top: 3px solid #06b6d4; }
     .panel-stats   { border-top: 3px solid #ef4444; }
     .panel-account { border-top: 3px solid #10b981; }
-    .panel-ai      { border-top: 3px solid #db2777; grid-column: 1 / -1; }
+    .panel-ai      { border-top: 3px solid #db2777; grid-column: 1 / -1; min-height: auto; }
     .panel-ai .panel-header { background: linear-gradient(135deg,#7c3aed,#db2777); color:#fff; }
     .ai-tag { display:inline-block; font-size:10px; font-weight:600; padding:2px 7px; border-radius:8px; background:#fdf4ff; color:#7c3aed; border:1px solid #e9d5ff; margin-right:3px; }
     .ai-score { font-size:10px; color:#db2777; font-weight:700; margin-left:auto; flex-shrink:0; }
@@ -157,10 +157,10 @@
     </a>
 </div>
 
-{{-- 2×2 Panel grid --}}
+{{-- Panel grid --}}
 <div class="panel-grid">
 
-    {{-- Panel 1: Topic Participation --}}
+    {{-- Row 1: Topic Participation + Quiz Attempts --}}
     <div class="panel panel-topics">
         <div class="panel-header">
             <div class="panel-header-left"><i class="fa-solid fa-comments"></i> Topic Participation</div>
@@ -171,17 +171,17 @@
         </div>
     </div>
 
-    {{-- Panel 2: Quiz Attempts --}}
     <div class="panel panel-quiz">
         <div class="panel-header">
             <div class="panel-header-left"><i class="fa-solid fa-bullseye"></i> Quiz Attempts</div>
+            <a href="{{ route('quizzes.index') }}" class="panel-view-all">View All <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
         </div>
         <div class="panel-body" id="quizPanel">
             <div class="empty-state"><div class="icon">📋</div>No quiz attempts yet.</div>
         </div>
     </div>
 
-    {{-- Panel 3: Statistics Review --}}
+    {{-- Row 2: Statistics + Account --}}
     <div class="panel panel-stats">
         <div class="panel-header">
             <div class="panel-header-left"><i class="fa-solid fa-chart-bar"></i> Statistics Review</div>
@@ -202,17 +202,6 @@
         </div>
     </div>
 
-    {{-- Panel 5: AI Recommendations (full width) --}}
-    <div class="panel panel-ai">
-        <div class="panel-header">
-            <div class="panel-header-left"><i class="fa-solid fa-robot"></i> AI Recommended Topics</div>
-        </div>
-        <div class="panel-body" id="aiPanel">
-            <div class="empty-state"><div class="icon">🤖</div>Generating personalised recommendations…</div>
-        </div>
-    </div>
-
-    {{-- Panel 4: Account Management --}}
     <div class="panel panel-account">
         <div class="panel-header">
             <div class="panel-header-left"><i class="fa-solid fa-gear"></i> Account Management</div>
@@ -229,6 +218,16 @@
                 @csrf
                 <button type="submit" class="btn-signout-panel"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out</button>
             </form>
+        </div>
+    </div>
+
+    {{-- Row 3: AI Recommendations (full width) --}}
+    <div class="panel panel-ai">
+        <div class="panel-header">
+            <div class="panel-header-left"><i class="fa-solid fa-robot"></i> AI Recommended Topics</div>
+        </div>
+        <div class="panel-body" id="aiPanel">
+            <div class="empty-state"><div class="icon">🤖</div>Generating personalised recommendations…</div>
         </div>
     </div>
 
