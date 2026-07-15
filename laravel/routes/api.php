@@ -2,14 +2,14 @@
 
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Auth\LoginController;
-<<<<<<< HEAD
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-=======
+
 use App\Http\Controllers\Api\DashboardApiController;
 use App\Http\Controllers\Api\RecommendationController;
 use App\Http\Controllers\Api\StatisticsApiController;
->>>>>>> main
+
 
 // ── Auth (no middleware — Java client logs in here) ────────────────────
 Route::post('/login', function (Request $request) {
