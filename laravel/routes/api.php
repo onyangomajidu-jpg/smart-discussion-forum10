@@ -24,7 +24,6 @@ Route::post('/login', function (Request $request) {
         return response()->json(['message' => 'Invalid credentials.'], 401);
     }
 
-<<<<<<< HEAD
     $user  = auth()->user();
     $token = $user->createToken('java-desktop')->plainTextToken;
 
@@ -48,6 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/posts',               [PostController::class, 'store']);
     Route::get('/topics/updates',       [PostController::class, 'updates']);
     Route::get('/topics/{topic}/posts', [PostController::class, 'index']);
+<<<<<<< HEAD
 });
 =======
 // Dashboard stats — accepts Bearer token (Java GUI) or web session
@@ -70,3 +70,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/posts/{postId}/share', [ExportController::class, 'forwardToSocialMedia']);
 });
 >>>>>>> origin
+=======
+
+    // Dashboard routes
+    Route::get('/dashboard',  [DashboardApiController::class, 'index']);
+    Route::get('/statistics', [StatisticsApiController::class, 'index']);
+});
+>>>>>>> a58ff2f7328a10d06f7284d8fa3d2ac4b0e79aac
