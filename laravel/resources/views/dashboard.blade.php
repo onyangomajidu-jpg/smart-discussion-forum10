@@ -30,7 +30,7 @@
     .dash-stat-card .label { font-size: 11px; color: var(--muted); margin-top: 3px; font-weight: 500; }
 
     /* ── Panel grid ── */
-    .panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
     .panel {
         background: #fff; border: 1px solid #e2e8f0;
         border-radius: 12px; overflow: hidden;
@@ -59,6 +59,10 @@
     .panel-quiz    { border-top: 3px solid #06b6d4; }
     .panel-stats   { border-top: 3px solid #ef4444; }
     .panel-account { border-top: 3px solid #10b981; }
+    .panel-ai      { border-top: 3px solid #db2777; grid-column: 1 / -1; min-height: auto; }
+    .panel-ai .panel-header { background: linear-gradient(135deg,#7c3aed,#db2777); color:#fff; }
+    .ai-tag { display:inline-block; font-size:10px; font-weight:600; padding:2px 7px; border-radius:8px; background:#fdf4ff; color:#7c3aed; border:1px solid #e9d5ff; margin-right:3px; }
+    .ai-score { font-size:10px; color:#db2777; font-weight:700; margin-left:auto; flex-shrink:0; }
 
     .panel-body { padding: 16px 18px; flex: 1; overflow-y: auto; }
 
@@ -153,10 +157,10 @@
     </a>
 </div>
 
-{{-- 2×2 Panel grid --}}
+{{-- Panel grid --}}
 <div class="panel-grid">
 
-    {{-- Panel 1: Topic Participation --}}
+    {{-- Row 1: Topic Participation + Quiz Attempts --}}
     <div class="panel panel-topics">
         <div class="panel-header">
             <div class="panel-header-left"><i class="fa-solid fa-comments"></i> Topic Participation</div>
@@ -167,17 +171,17 @@
         </div>
     </div>
 
-    {{-- Panel 2: Quiz Attempts --}}
     <div class="panel panel-quiz">
         <div class="panel-header">
             <div class="panel-header-left"><i class="fa-solid fa-bullseye"></i> Quiz Attempts</div>
+            <a href="{{ route('quizzes.index') }}" class="panel-view-all">View All <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
         </div>
         <div class="panel-body" id="quizPanel">
             <div class="empty-state"><div class="icon">📋</div>No quiz attempts yet.</div>
         </div>
     </div>
 
-    {{-- Panel 3: Statistics Review --}}
+    {{-- Row 2: Statistics + Account --}}
     <div class="panel panel-stats">
         <div class="panel-header">
             <div class="panel-header-left"><i class="fa-solid fa-chart-bar"></i> Statistics Review</div>
@@ -198,7 +202,6 @@
         </div>
     </div>
 
-    {{-- Panel 4: Account Management --}}
     <div class="panel panel-account">
         <div class="panel-header">
             <div class="panel-header-left"><i class="fa-solid fa-gear"></i> Account Management</div>
@@ -218,9 +221,43 @@
         </div>
     </div>
 
+    {{-- Row 3: AI Recommendations (full width) --}}
+    <div class="panel panel-ai">
+        <div class="panel-header">
+            <div class="panel-header-left"><i class="fa-solid fa-robot"></i> AI Recommended Topics</div>
+        </div>
+        <div class="panel-body" id="aiPanel">
+            <div class="empty-state"><div class="icon">🤖</div>Generating personalised recommendations…</div>
+        </div>
+    </div>
+
 </div>
 
 <script>
+fetch('/recommendations', {
+    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' },
+    credentials: 'same-origin'
+})
+    .then(r => r.json())
+    .then(({ recommendations }) => {
+        const panel = document.getElementById('aiPanel');
+        if (!recommendations.length) {
+            panel.innerHTML = '<div class="empty-state"><div class="icon">🤖</div>No recommendations yet — start participating in topics!</div>';
+            return;
+        }
+        panel.innerHTML = recommendations.map(r =>
+            `<a href="/topics/${r.id}" style="text-decoration:none;color:inherit">
+                <div class="list-row" style="flex-wrap:wrap;gap:6px">
+                    <span class="list-dot" style="color:#db2777">★</span>
+                    <span style="flex:1;min-width:120px">${esc(r.title)}</span>
+                    <span>${r.tags.map(t => `<span class="ai-tag">${esc(t)}</span>`).join('')}</span>
+                    <span class="ai-score">${Math.round(r.score * 100)}% match</span>
+                </div>
+            </a>`
+        ).join('');
+    })
+    .catch(() => { document.getElementById('aiPanel').innerHTML = '<div class="empty-state"><div class="icon">🤖</div>Recommendations loading in background…</div>'; });
+
 fetch('/api/dashboard', {
     headers: {
         'Accept': 'application/json',

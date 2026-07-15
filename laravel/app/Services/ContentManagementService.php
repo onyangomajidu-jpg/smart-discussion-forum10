@@ -8,6 +8,7 @@ use App\Events\NewReply;
 use App\Models\Post;
 use App\Models\Reply;
 use App\Models\Topic;
+use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 
@@ -44,6 +45,9 @@ class ContentManagementService implements IContentManagement
             'body'     => $data['body'],
         ]);
 
+        // Track creator as first participant
+        $topic->participants()->syncWithoutDetaching([Auth::id() => ['is_blocked' => false]]);
+
         broadcast(new NewPost($topic->id, Auth::id(), $data['body'], 'topic'))->toOthers();
 
         return $topic;
@@ -55,11 +59,27 @@ class ContentManagementService implements IContentManagement
             throw new \RuntimeException('Content flagged as spam.');
         }
 
+        // Check if user is blocked before creating the post
+        $topic = Topic::find($topicId);
+        if ($topic) {
+            $entry = $topic->belongsToMany(User::class, 'topic_user')
+                ->withPivot('is_blocked')
+                ->wherePivot('user_id', Auth::id())
+                ->first();
+            if ($entry && $entry->pivot->is_blocked) {
+                throw new \RuntimeException('You have been blocked from this topic.');
+            }
+        }
+
         $post = Post::create([
             'topic_id' => $topicId,
             'user_id'  => Auth::id(),
             'body'     => $data['body'],
         ]);
+
+        if ($topic) {
+            $topic->participants()->syncWithoutDetaching([Auth::id() => ['is_blocked' => false]]);
+        }
 
         broadcast(new NewPost($topicId, Auth::id(), $data['body'], 'post'))->toOthers();
 
@@ -121,7 +141,7 @@ class ContentManagementService implements IContentManagement
     private function authorizeOwner(int $ownerId): void
     {
         $user = Auth::user();
-        if ($user->id !== $ownerId && !$user->isAdmin()) {
+        if ($user->id !== $ownerId && !$user->isAdmin() && !$user->isLecturer()) {
             throw new \RuntimeException('Unauthorized.');
         }
     }
