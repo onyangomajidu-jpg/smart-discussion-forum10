@@ -9,10 +9,10 @@ use App\Http\Controllers\ExportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// Connectivity probe — no auth required
+// ── Public ping (used by Java GUI isOnline() check) ───────────────────
 Route::get('/ping', fn() => response()->json(['status' => 'ok']));
 
-// ── Auth ──────────────────────────────────────────────────────────────────
+// ── Auth (no middleware — Java client logs in here) ────────────────────
 Route::post('/login', function (Request $request) {
     $credentials = $request->validate([
         'email'    => 'required|email',
@@ -37,28 +37,37 @@ Route::post('/login', function (Request $request) {
     ]);
 });
 
-// ── Protected routes ──────────────────────────────────────────────────────
+// ── Token-only routes (Bearer token required — Java GUI logout) ─────────
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', function (Request $request) {
-        $request->user()->currentAccessToken()->delete();
+        $token = $request->user()->currentAccessToken();
+        // TransientToken (web session) has no delete() — delete by Bearer value instead
+        if ($token instanceof \Laravel\Sanctum\TransientToken) {
+            $bearerToken = $request->bearerToken();
+            if ($bearerToken) {
+                $hashed = hash('sha256', explode('|', $bearerToken, 2)[1] ?? $bearerToken);
+                \Laravel\Sanctum\PersonalAccessToken::where('token', $hashed)->delete();
+            }
+        } else {
+            $token->delete();
+        }
         return response()->json(['message' => 'Logged out.']);
     });
+});
+
+// ── Session or token routes (web dashboard + Java GUI) ──────────────────
+Route::middleware(['auth:sanctum,web'])->group(function () {
+    // Dashboard & statistics
+    Route::get('/dashboard',  [DashboardApiController::class,  'index']);
+    Route::get('/statistics', [StatisticsApiController::class, 'index']);
 
     // Posts & topics
     Route::post('/posts',               [PostController::class, 'store']);
     Route::get('/topics/updates',       [PostController::class, 'updates']);
     Route::get('/topics/{topic}/posts', [PostController::class, 'index']);
-
-    // Dashboard & statistics
-    Route::get('/dashboard',  [DashboardApiController::class,  'index']);
-    Route::get('/statistics', [StatisticsApiController::class, 'index']);
-
-    // Topics list — used by ExportWindow to populate topic picker
     Route::get('/topics', fn() => \App\Models\Topic::withCount('posts')->latest()->get());
 
-    // exportDiscussionPDF(topicId) — streams PDF; Java GUI calls this
+    // Export & social share
     Route::get('/topics/{topicId}/export-pdf', [ExportController::class, 'exportDiscussionPDF']);
-
-    // forwardToSocialMedia(postId, platform)
-    Route::post('/posts/{postId}/share', [ExportController::class, 'forwardToSocialMedia']);
+    Route::post('/posts/{postId}/share',        [ExportController::class, 'forwardToSocialMedia']);
 });
