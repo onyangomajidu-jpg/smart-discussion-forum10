@@ -63,6 +63,26 @@
     .panel-ai .panel-header { background: linear-gradient(135deg,#7c3aed,#db2777); color:#fff; }
     .ai-tag { display:inline-block; font-size:10px; font-weight:600; padding:2px 7px; border-radius:8px; background:#fdf4ff; color:#7c3aed; border:1px solid #e9d5ff; margin-right:3px; }
     .ai-score { font-size:10px; color:#db2777; font-weight:700; margin-left:auto; flex-shrink:0; }
+    .panel-groups  { border-top: 3px solid #6366f1; }
+    .panel-groups  .panel-header { background: linear-gradient(135deg,#6366f1,#4f46e5); color:#fff; }
+    .group-chip {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 12px; border-radius: 10px;
+        background: #f1f5f9; margin-bottom: 8px;
+        font-size: 13px; font-weight: 600; color: #1e293b;
+    }
+    .group-chip:last-child { margin-bottom: 0; }
+    .group-chip .g-icon {
+        width: 34px; height: 34px; border-radius: 8px;
+        background: linear-gradient(135deg,#6366f1,#8b5cf6);
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 14px; flex-shrink: 0;
+    }
+    .group-chip .g-role {
+        margin-left: auto; font-size: 11px; font-weight: 600;
+        padding: 2px 9px; border-radius: 10px;
+        background: #e0e7ff; color: #3730a3;
+    }
 
     .panel-body { padding: 16px 18px; flex: 1; overflow-y: auto; }
 
@@ -181,7 +201,30 @@
         </div>
     </div>
 
-    {{-- Row 2: Statistics + Account --}}
+    {{-- Panel 3: My Groups --}}
+    <div class="panel panel-groups">
+        <div class="panel-header">
+            <div class="panel-header-left"><i class="fa-solid fa-users"></i> My Groups</div>
+            @if(auth()->user()->isMember())
+            <a href="{{ route('groups.index') }}" class="panel-view-all">Browse <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+            @endif
+        </div>
+        <div class="panel-body">
+            @if($groups->isEmpty())
+                <div class="empty-state"><div class="icon">👥</div>You are not assigned to any group yet.</div>
+            @else
+                @foreach($groups as $group)
+                <div class="group-chip">
+                    <div class="g-icon"><i class="fa-solid fa-users"></i></div>
+                    <span>{{ $group->name }}</span>
+                    <span class="g-role">{{ ucfirst($group->pivot->role ?? 'member') }}</span>
+                </div>
+                @endforeach
+            @endif
+        </div>
+    </div>
+
+    {{-- Panel 4: Statistics Review --}}
     <div class="panel panel-stats">
         <div class="panel-header">
             <div class="panel-header-left"><i class="fa-solid fa-chart-bar"></i> Statistics Review</div>
