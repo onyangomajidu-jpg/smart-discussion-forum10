@@ -66,11 +66,15 @@ public class MainWindow extends JFrame {
             wsListener.subscribeTopic(topic.id);
         });
 
-        // Refresh both panels after sync
+        // ── Statistics panel ──────────────────────────────────────────────
+        StatisticsPanel statisticsPanel = new StatisticsPanel(api, cache);
+
+        // ── Sync listener (now statisticsPanel is in scope) ───────────────
         syncManager.setSyncListener(() -> {
             topicListPanel.refresh();
             conversationPanel.refreshPosts();
             conversationPanel.setStatus("✅ Sync complete");
+            statisticsPanel.loadData();
         });
 
         // ── Layout ────────────────────────────────────────────────────────
@@ -85,13 +89,27 @@ public class MainWindow extends JFrame {
         split.setDividerSize(4);
         split.setBorder(null);
 
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.addTab("💬  Forum",      split);
+        tabs.addTab("📊  Statistics", statisticsPanel);
+        tabs.addChangeListener(e -> {
+            if (tabs.getSelectedComponent() == statisticsPanel)
+                statisticsPanel.loadData();
+        });
+
         getContentPane().setLayout(new BorderLayout());
         getContentPane().add(buildTopBar(), BorderLayout.NORTH);
-        getContentPane().add(split,         BorderLayout.CENTER);
+        getContentPane().add(tabs,          BorderLayout.CENTER);
 
         // ── Reconnect poller ──────────────────────────────────────────────
         reconnectPoller.scheduleAtFixedRate(this::checkConnectivity,
             5, 10, TimeUnit.SECONDS);
+
+        // ── Initial sync on startup ───────────────────────────────────────
+        new Thread(() -> {
+            syncManager.synchronizeOfflineData();
+            SwingUtilities.invokeLater(topicListPanel::refresh);
+        }, "startup-sync").start();
 
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override public void windowClosing(java.awt.event.WindowEvent e) {
