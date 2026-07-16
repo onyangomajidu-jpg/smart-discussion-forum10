@@ -2,12 +2,12 @@
 
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Auth\LoginController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DashboardApiController;
 use App\Http\Controllers\Api\RecommendationController;
 use App\Http\Controllers\Api\StatisticsApiController;
 use App\Http\Controllers\ExportController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 // ── Public ping (used by Java GUI isOnline() check) ───────────────────
 Route::get('/ping', fn() => response()->json(['status' => 'ok']));
@@ -55,7 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
-// ── Session or token routes (web dashboard + Java GUI) ──────────────
+// ── Session or token routes (web dashboard + Java GUI) ──────────────────
 Route::middleware(['auth:sanctum,web'])->group(function () {
     // Dashboard & statistics
     Route::get('/dashboard',  [DashboardApiController::class,  'index']);
