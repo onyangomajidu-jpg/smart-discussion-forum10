@@ -131,10 +131,10 @@
     $isOpen   = $quiz->isOpen();
     $upcoming = $quiz->isUpcoming();
     $closed   = $quiz->isPastDeadline();
-    $state    = $done ? 'done' : ($isOpen ? 'open' : ($upcoming ? 'upcoming' : 'closed'));
+    $state    = $done ? 'done' : ($closed ? 'closed' : ($isOpen ? 'open' : ($upcoming ? 'upcoming' : 'closed')));
 @endphp
 
-<div class="quiz-card" data-state="{{ $state }}">
+<div class="quiz-card" data-state="{{ $state }}" data-quiz-id="{{ $quiz->id }}" @if($upcoming && $quiz->unlock_date) data-unlock="{{ $quiz->unlock_date->timestamp }}" @endif>
     <div class="quiz-card-inner">
         <div class="quiz-card-accent accent-{{ $state }}"></div>
         <div class="quiz-card-body">
@@ -170,7 +170,7 @@
                     @endif
                 </div>
                 @if($upcoming && $quiz->unlock_date)
-                <div class="quiz-countdown" data-countdown="{{ $quiz->unlock_date->timestamp }}" id="cd_{{ $quiz->id }}">
+                <div class="quiz-countdown" data-countdown="{{ $quiz->unlock_date->utc()->timestamp }}" id="cd_{{ $quiz->id }}">
                     <i class="fa-solid fa-timer"></i> Calculating…
                 </div>
                 @endif
@@ -196,11 +196,43 @@
 
 @push('scripts')
 <script>
+function filterQuizzes(state, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.quiz-card').forEach(card => {
+        card.style.display = (state === 'all' || card.dataset.state === state) ? '' : 'none';
+    });
+}
+
 document.querySelectorAll('[data-countdown]').forEach(el => {
     const target = parseInt(el.dataset.countdown) * 1000;
+    const card   = el.closest('.quiz-card');
+
+    function openQuiz() {
+        // Update card state visually
+        card.dataset.state = 'open';
+        card.querySelector('.quiz-card-accent').className = 'quiz-card-accent accent-open';
+        card.querySelector('.quiz-icon-wrap').className   = 'quiz-icon-wrap icon-open';
+        card.querySelector('.quiz-icon-wrap').innerHTML   = '<i class="fa-solid fa-play"></i>';
+
+        // Swap badge
+        const titleEl = card.querySelector('.quiz-title');
+        const badge   = titleEl.querySelector('.badge');
+        if (badge) badge.outerHTML = '<span class="badge badge-open"><i class="fa-solid fa-circle" style="font-size:7px"></i> Live Now</span>';
+
+        // Swap action button
+        const actionEl  = card.querySelector('.quiz-action');
+        const quizId    = card.dataset.quizId;
+        const startUrl  = `{{ url('/quizzes') }}/${quizId}`;
+        actionEl.innerHTML = `<a href="${startUrl}" class="btn btn-primary"><i class="fa-solid fa-play"></i> Start Quiz</a>`;
+
+        // Remove countdown
+        el.remove();
+    }
+
     function update() {
         const diff = target - Date.now();
-        if (diff <= 0) { el.innerHTML = '<i class="fa-solid fa-bolt"></i> Opening now — refresh!'; return; }
+        if (diff <= 0) { openQuiz(); return; }
         const h = Math.floor(diff / 3600000);
         const m = Math.floor((diff % 3600000) / 60000);
         const s = Math.floor((diff % 60000) / 1000);
@@ -209,13 +241,5 @@ document.querySelectorAll('[data-countdown]').forEach(el => {
     }
     update();
 });
-
-function filterQuizzes(state, btn) {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.quiz-card').forEach(card => {
-        card.style.display = (state === 'all' || card.dataset.state === state) ? '' : 'none';
-    });
-}
 </script>
 @endpush

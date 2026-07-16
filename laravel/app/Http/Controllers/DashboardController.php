@@ -8,10 +8,9 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $user = $request->user();
-        
-        return view('dashboard', [
-            'user' => $user,
-        ]);
+        $user   = $request->user();
+        $groups = $user->groups()->orderBy('name')->get();
+
+        return view('dashboard', compact('user', 'groups'));
     }
 }

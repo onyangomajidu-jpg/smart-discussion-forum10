@@ -349,6 +349,9 @@
             <a href="{{ route('analytics.index') }}" class="sidebar-link {{ request()->routeIs('analytics.index') ? 'active' : '' }}">
                 <span class="ico"><i class="fa-solid fa-chart-line"></i></span> Analytics
             </a>
+            <a href="{{ route('groups.index') }}" class="sidebar-link {{ request()->routeIs('groups.*') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-people-group"></i></span> Groups
+            </a>
         </div>
         @elseif(auth()->user()->isAdmin())
         <div class="sidebar-section">

@@ -27,7 +27,8 @@ class RegisterController extends Controller
      */
     public function showRegistrationForm()
     {
-        return view('auth.register');
+        $groups = \App\Models\Group::orderBy('name')->get();
+        return view('auth.register', compact('groups'));
     }
 
     /**
@@ -50,6 +51,11 @@ class RegisterController extends Controller
                 $request->all(),
                 $request->boolean('accept_rules')
             );
+
+            // Attach student to chosen group
+            if ($user->role === 'member' && $request->filled('group_id')) {
+                $user->groups()->attach($request->group_id, ['role' => 'member']);
+            }
 
             // Send welcome email (non-blocking)
             try {
@@ -92,6 +98,7 @@ class RegisterController extends Controller
                     $rules['student_id'] = ['nullable', 'string', 'unique:members'];
                     $rules['programme'] = ['nullable', 'string'];
                     $rules['year_of_study'] = ['nullable', 'integer', 'min:1', 'max:5'];
+                    $rules['group_id'] = ['nullable', 'exists:groups,id'];
                     break;
                     
                 case 'lecturer':
