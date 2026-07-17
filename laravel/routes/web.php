@@ -86,6 +86,8 @@ Route::middleware(['auth', App\Http\Middleware\LecturerMiddleware::class])->grou
     Route::get('/lecturer/quizzes/create',          [QuizController::class, 'create'])->name('lecturer.quizzes.create');
     Route::post('/lecturer/quizzes',                [QuizController::class, 'store'])->name('lecturer.quizzes.store');
     Route::get('/lecturer/quizzes/{quiz}',          [QuizController::class, 'show'])->name('lecturer.quizzes.show');
+    Route::get('/lecturer/quizzes/{quiz}/edit',     [QuizController::class, 'edit'])->name('lecturer.quizzes.edit');
+    Route::post('/lecturer/quizzes/{quiz}/update',  [QuizController::class, 'update'])->name('lecturer.quizzes.update');
     Route::post('/lecturer/quizzes/{quiz}/publish', [QuizController::class, 'publish'])->name('lecturer.quizzes.publish');
     Route::post('/lecturer/quizzes/{quiz}/remind',  [QuizController::class, 'remind'])->name('lecturer.quizzes.remind');
     Route::get('/lecturer/quizzes/{quiz}/results',  [QuizController::class, 'results'])->name('lecturer.quizzes.results');

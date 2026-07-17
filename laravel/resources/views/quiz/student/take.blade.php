@@ -418,6 +418,7 @@ document.getElementById('timerDisplay').textContent = formatTime(secondsLeft);
 function triggerAutoSubmit() {
     submitted = true;
     window.onbeforeunload = null;
+    document.getElementById('focusOverlay').style.display = 'none';
     document.getElementById('autoSubmitModal').style.display = 'flex';
     let c = 3;
     const cd = document.getElementById('autoCountdown');
