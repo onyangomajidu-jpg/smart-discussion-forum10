@@ -45,15 +45,21 @@ class QuizController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'group_id'         => 'required|exists:groups,id',
-            'title'            => 'required|string|max:255',
-            'description'      => 'nullable|string',
-            'unlock_date'      => 'nullable|date',
-            'hard_deadline'    => 'nullable|date|after_or_equal:unlock_date',
-            'duration_minutes' => 'required|integer|min:1|max:180',
-            'auto_submit'      => 'boolean',
-            'enforce_focus'    => 'boolean',
-            'questions'        => 'required|array|min:1',
+            'group_id'              => 'required|exists:groups,id',
+            'title'                 => 'required|string|max:255',
+            'description'           => 'nullable|string',
+            'unlock_date_date'      => 'nullable|date_format:Y-m-d',
+            'unlock_date_hour'      => 'nullable|integer|min:1|max:12',
+            'unlock_date_min'       => 'nullable|integer|min:0|max:59',
+            'unlock_date_ampm'      => 'nullable|in:AM,PM',
+            'hard_deadline_date'    => 'nullable|date_format:Y-m-d',
+            'hard_deadline_hour'    => 'nullable|integer|min:1|max:12',
+            'hard_deadline_min'     => 'nullable|integer|min:0|max:59',
+            'hard_deadline_ampm'    => 'nullable|in:AM,PM',
+            'duration_minutes'      => 'required|integer|min:1|max:180',
+            'auto_submit'           => 'boolean',
+            'enforce_focus'         => 'boolean',
+            'questions'             => 'required|array|min:1',
             'questions.*.question'       => 'required|string',
             'questions.*.options'        => 'required|array|min:2',
             'questions.*.correct_option' => 'required|integer|min:0',
@@ -63,12 +69,25 @@ class QuizController extends Controller
         $data['auto_submit']   = $request->boolean('auto_submit');
         $data['enforce_focus'] = $request->boolean('enforce_focus');
 
-        // Parse dates in app local timezone so they're stored correctly
-        if (!empty($data['unlock_date'])) {
-            $data['unlock_date'] = \Carbon\Carbon::createFromFormat('Y-m-d\TH:i', $data['unlock_date'], config('app.timezone'))->utc();
-        }
-        if (!empty($data['hard_deadline'])) {
-            $data['hard_deadline'] = \Carbon\Carbon::createFromFormat('Y-m-d\TH:i', $data['hard_deadline'], config('app.timezone'))->utc();
+        // Assemble 12hr fields into Carbon UTC datetimes
+        $assembleDateTime = function (string $prefix) use ($request): ?\Carbon\Carbon {
+            $date = $request->input($prefix . '_date');
+            $hour = $request->input($prefix . '_hour');
+            if (!$date || !$hour) return null;
+            $min  = str_pad((int) $request->input($prefix . '_min', 0), 2, '0', STR_PAD_LEFT);
+            $ampm = $request->input($prefix . '_ampm', 'AM');
+            return \Carbon\Carbon::createFromFormat(
+                'Y-m-d h:i A',
+                "$date " . str_pad($hour, 2, '0', STR_PAD_LEFT) . ":$min $ampm",
+                config('app.timezone')
+            );
+        };
+
+        $data['unlock_date']   = $assembleDateTime('unlock_date');
+        $data['hard_deadline'] = $assembleDateTime('hard_deadline');
+
+        if ($data['hard_deadline'] && $data['hard_deadline']->isPast()) {
+            return back()->withErrors(['hard_deadline_date' => 'The deadline must be a future time.'])->withInput();
         }
 
         $quiz = $this->assessment->createQuiz($data, auth()->id());
@@ -76,6 +95,95 @@ class QuizController extends Controller
         return redirect()
             ->route('lecturer.quizzes.show', $quiz)
             ->with('success', 'Quiz draft created successfully.');
+    }
+
+    /** GET /lecturer/quizzes/{quiz}/edit — Edit full draft quiz */
+    public function edit(Quiz $quiz)
+    {
+        $this->authoriseLecturer($quiz);
+        if ($quiz->status !== 'draft') {
+            return back()->with('error', 'Only draft quizzes can be edited.');
+        }
+        $quiz->load('questions');
+        $groups        = \App\Models\Group::orderBy('name')->get();
+        $unlockLocal   = $quiz->unlock_date;
+        $deadlineLocal = $quiz->hard_deadline;
+        return view('quiz.lecturer.edit', compact('quiz', 'groups', 'unlockLocal', 'deadlineLocal'));
+    }
+
+    /** POST /lecturer/quizzes/{quiz}/update — Save all draft quiz changes */
+    public function update(Request $request, Quiz $quiz)
+    {
+        $this->authoriseLecturer($quiz);
+        if ($quiz->status !== 'draft') {
+            return back()->with('error', 'Only draft quizzes can be edited.');
+        }
+
+        $request->validate([
+            'group_id'                   => 'required|exists:groups,id',
+            'title'                      => 'required|string|max:255',
+            'description'                => 'nullable|string',
+            'duration_minutes'           => 'required|integer|min:1|max:180',
+            'auto_submit'                => 'boolean',
+            'enforce_focus'              => 'boolean',
+            'unlock_date_date'           => 'nullable|date_format:Y-m-d',
+            'unlock_date_hour'           => 'nullable|integer|min:1|max:12',
+            'unlock_date_min'            => 'nullable|integer|min:0|max:59',
+            'unlock_date_ampm'           => 'nullable|in:AM,PM',
+            'hard_deadline_date'         => 'nullable|date_format:Y-m-d',
+            'hard_deadline_hour'         => 'nullable|integer|min:1|max:12',
+            'hard_deadline_min'          => 'nullable|integer|min:0|max:59',
+            'hard_deadline_ampm'         => 'nullable|in:AM,PM',
+            'questions'                  => 'required|array|min:1',
+            'questions.*.question'       => 'required|string',
+            'questions.*.options'        => 'required|array|min:2',
+            'questions.*.correct_option' => 'required|integer|min:0',
+            'questions.*.marks'          => 'required|integer|min:1',
+        ]);
+
+        $assembleDateTime = function (string $prefix) use ($request): ?\Carbon\Carbon {
+            $date = $request->input($prefix . '_date');
+            $hour = $request->input($prefix . '_hour');
+            if (!$date || !$hour) return null;
+            $min  = str_pad((int) $request->input($prefix . '_min', 0), 2, '0', STR_PAD_LEFT);
+            $ampm = $request->input($prefix . '_ampm', 'AM');
+            return \Carbon\Carbon::createFromFormat(
+                'Y-m-d h:i A',
+                "$date " . str_pad($hour, 2, '0', STR_PAD_LEFT) . ":$min $ampm",
+                config('app.timezone')
+            );
+        };
+
+        $deadline = $assembleDateTime('hard_deadline');
+        if ($deadline && $deadline->isPast()) {
+            return back()->withErrors(['hard_deadline_date' => 'The deadline must be a future time.'])->withInput();
+        }
+
+        $quiz->update([
+            'group_id'         => $request->group_id,
+            'title'            => $request->title,
+            'description'      => $request->description,
+            'duration_minutes' => $request->duration_minutes,
+            'auto_submit'      => $request->boolean('auto_submit'),
+            'enforce_focus'    => $request->boolean('enforce_focus'),
+            'unlock_date'      => $assembleDateTime('unlock_date'),
+            'hard_deadline'    => $deadline,
+        ]);
+
+        // Replace all questions
+        $quiz->questions()->delete();
+        foreach ($request->input('questions') as $q) {
+            \App\Models\QuizQuestion::create([
+                'quiz_id'        => $quiz->id,
+                'question'       => $q['question'],
+                'options'        => $q['options'],
+                'correct_option' => $q['correct_option'],
+                'marks'          => $q['marks'] ?? 1,
+            ]);
+        }
+
+        return redirect()->route('lecturer.quizzes.show', $quiz)
+            ->with('success', 'Quiz updated successfully.');
     }
 
     /** GET /lecturer/quizzes/{quiz} — View quiz draft / results */
@@ -99,7 +207,11 @@ class QuizController extends Controller
     public function remind(Quiz $quiz)
     {
         $this->authoriseLecturer($quiz);
-        $count = $this->assessment->sendQuizReminder($quiz->id);
+        try {
+            $count = $this->assessment->sendQuizReminder($quiz->id);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Reminder failed: ' . $e->getMessage());
+        }
 
         return back()->with('success', "Reminder sent to {$count} student(s).");
     }
@@ -175,7 +287,12 @@ class QuizController extends Controller
                 $request->input('answers')
             );
         } catch (ValidationException $e) {
-            return back()->withErrors($e->errors());
+            $messages = $e->errors();
+            // If already submitted, redirect to result instead of back()
+            if (isset($messages['quiz']) && str_contains($messages['quiz'][0], 'already submitted')) {
+                return redirect()->route('quizzes.result', $quiz);
+            }
+            return back()->withErrors($messages);
         }
 
         return redirect()

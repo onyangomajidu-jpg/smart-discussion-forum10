@@ -91,9 +91,15 @@
         <a href="{{ route('lecturer.quizzes.show', $quiz) }}" class="btn btn-outline btn-sm">
             <i class="fa-solid fa-eye"></i> View
         </a>
+        @if($quiz->status === 'draft')
+        <a href="{{ route('lecturer.quizzes.edit', $quiz) }}" class="btn btn-secondary btn-sm">
+            <i class="fa-solid fa-pen-to-square"></i> Edit Draft
+        </a>
+        @else
         <a href="{{ route('lecturer.quizzes.results', $quiz) }}" class="btn btn-secondary btn-sm">
             <i class="fa-solid fa-chart-bar"></i> Results
         </a>
+        @endif
     </div>
 </div>
 @endforeach
