@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Create Quiz — SmartForum')
+@section('title', 'Edit Quiz — ' . $quiz->title)
 
 @push('styles')
 <style>
 .create-hero {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    background: linear-gradient(135deg, #f59e0b, #d97706);
     border-radius: 16px;
     padding: 28px 32px;
     margin-bottom: 28px;
@@ -13,12 +13,12 @@
     display: flex;
     align-items: center;
     gap: 18px;
-    box-shadow: 0 8px 28px rgba(99,102,241,.3);
+    box-shadow: 0 8px 28px rgba(245,158,11,.3);
     position: relative;
     overflow: hidden;
 }
 .create-hero::after {
-    content: '\f303';
+    content: '\f044';
     font-family: 'Font Awesome 6 Free';
     font-weight: 900;
     position: absolute;
@@ -33,8 +33,6 @@
     font-size: 26px; flex-shrink: 0;
     border: 1.5px solid rgba(255,255,255,.3);
 }
-
-/* Question builder */
 .question-block {
     background: #fafbff;
     border: 2px solid #e2e8f0;
@@ -45,7 +43,6 @@
     transition: all .2s;
 }
 .question-block:hover { border-color: #c7d2fe; box-shadow: 0 4px 16px rgba(99,102,241,.08); }
-.question-block.focused { border-color: #6366f1; }
 .q-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .q-num-badge {
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
@@ -60,7 +57,6 @@
     display: flex; align-items: center; gap: 5px;
 }
 .remove-q:hover { background: #ef4444; color: #fff; }
-
 .option-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .option-letter {
     width: 30px; height: 30px; border-radius: 8px;
@@ -78,7 +74,6 @@
 }
 .option-row input[type=text]:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
 .correct-hint { font-size: 11px; color: #64748b; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
-
 .add-q-btn {
     border: 2px dashed #c7d2fe;
     background: linear-gradient(135deg, rgba(99,102,241,.03), rgba(139,92,246,.03));
@@ -89,8 +84,6 @@
     font-family: inherit;
 }
 .add-q-btn:hover { background: rgba(99,102,241,.08); border-color: #6366f1; transform: translateY(-1px); }
-
-/* Settings toggles */
 .toggle-card {
     background: #fafbff;
     border: 2px solid #e2e8f0;
@@ -109,15 +102,11 @@
 .toggle-icon { font-size: 22px; flex-shrink: 0; }
 .toggle-info h4 { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 3px; }
 .toggle-info p  { font-size: 12px; color: #64748b; line-height: 1.5; }
-
-/* Summary card */
 .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
 .summary-row:last-child { border-bottom: none; }
 .summary-row .s-label { font-size: 13px; color: #64748b; display: flex; align-items: center; gap: 7px; }
-.summary-row .s-val { font-size: 15px; font-weight: 800; color: #6366f1; }
-
+.summary-row .s-val { font-size: 15px; font-weight: 800; color: #f59e0b; }
 .marks-input { width: 90px !important; }
-.section-divider { height: 1px; background: linear-gradient(90deg, #6366f1, transparent); margin: 20px 0; opacity: .2; }
 </style>
 @endpush
 
@@ -126,18 +115,20 @@
 <div class="breadcrumb">
     <a href="{{ route('lecturer.dashboard') }}"><i class="fa-solid fa-house"></i> Dashboard</a>
     <span class="sep"><i class="fa-solid fa-chevron-right" style="font-size:9px"></i></span>
-    <span>Create Quiz</span>
+    <a href="{{ route('lecturer.quizzes.show', $quiz) }}">{{ $quiz->title }}</a>
+    <span class="sep"><i class="fa-solid fa-chevron-right" style="font-size:9px"></i></span>
+    <span>Edit Quiz</span>
 </div>
 
 <div class="create-hero">
     <div class="hero-icon-box"><i class="fa-solid fa-pen-to-square"></i></div>
     <div>
-        <div style="font-size:22px;font-weight:900;margin-bottom:4px">Create New Quiz</div>
-        <div style="font-size:13px;opacity:.8">Build your assessment with questions, settings, and deadlines</div>
+        <div style="font-size:22px;font-weight:900;margin-bottom:4px">Edit Draft Quiz</div>
+        <div style="font-size:13px;opacity:.8">Update questions, settings, and deadlines before publishing</div>
     </div>
 </div>
 
-<form action="{{ route('lecturer.quizzes.store') }}" method="POST" id="quizForm">
+<form action="{{ route('lecturer.quizzes.update', $quiz) }}" method="POST" id="quizForm">
 @csrf
 
 <div style="display:grid;grid-template-columns:1fr 380px;gap:22px;align-items:start">
@@ -156,7 +147,7 @@
                     <select name="group_id" class="form-control {{ $errors->has('group_id') ? 'is-invalid' : '' }}" required>
                         <option value="">— Select a group —</option>
                         @foreach($groups as $group)
-                            <option value="{{ $group->id }}" {{ old('group_id') == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
+                            <option value="{{ $group->id }}" {{ old('group_id', $quiz->group_id) == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
                         @endforeach
                     </select>
                     @error('group_id')<div class="invalid-feedback"><i class="fa-solid fa-circle-xmark"></i> {{ $message }}</div>@enderror
@@ -165,50 +156,58 @@
                 <div class="form-group">
                     <label class="form-label"><i class="fa-solid fa-heading" style="color:#6366f1;margin-right:5px"></i>Quiz Title <span style="color:#ef4444">*</span></label>
                     <input type="text" name="title" class="form-control {{ $errors->has('title') ? 'is-invalid' : '' }}"
-                           value="{{ old('title') }}" placeholder="e.g. Week 5 — OOP Fundamentals" required>
+                           value="{{ old('title', $quiz->title) }}" placeholder="e.g. Week 5 — OOP Fundamentals" required>
                     @error('title')<div class="invalid-feedback"><i class="fa-solid fa-circle-xmark"></i> {{ $message }}</div>@enderror
                 </div>
 
                 <div class="form-group">
                     <label class="form-label"><i class="fa-solid fa-align-left" style="color:#6366f1;margin-right:5px"></i>Description / Instructions</label>
                     <textarea name="description" class="form-control" rows="3"
-                              placeholder="Provide instructions or context for students…">{{ old('description') }}</textarea>
+                              placeholder="Provide instructions or context for students…">{{ old('description', $quiz->description) }}</textarea>
                 </div>
 
-                @php
-                    $nowLocal = now()->timezone(config('app.timezone'));
-                @endphp
+                @php $nowLocal = now()->timezone(config('app.timezone')); @endphp
                 <div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#854d0e;display:flex;align-items:center;gap:8px">
                     <i class="fa-solid fa-clock"></i>
                     <span>Now: <strong>{{ $nowLocal->format('h:i A') }}</strong> &mdash; set deadlines <u>after</u> this time.</span>
                 </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label"><i class="fa-solid fa-unlock" style="color:#10b981;margin-right:5px"></i>Unlock Date</label>
                         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-                            <input type="date" name="unlock_date_date" class="form-control" style="flex:1;min-width:130px" value="{{ old('unlock_date_date') }}">
-                            <input type="number" name="unlock_date_hour" class="form-control" style="width:64px" min="1" max="12" placeholder="hh" value="{{ old('unlock_date_hour') }}">
+                            <input type="date" name="unlock_date_date" class="form-control" style="flex:1;min-width:130px"
+                                   value="{{ old('unlock_date_date', $unlockLocal?->format('Y-m-d')) }}">
+                            <input type="number" name="unlock_date_hour" class="form-control" style="width:64px" min="1" max="12" placeholder="hh"
+                                   value="{{ old('unlock_date_hour', $unlockLocal?->format('g')) }}">
                             <span>:</span>
-                            <input type="number" name="unlock_date_min" class="form-control" style="width:64px" min="0" max="59" placeholder="mm" value="{{ old('unlock_date_min', '00') }}">
+                            <input type="number" name="unlock_date_min" class="form-control" style="width:64px" min="0" max="59" placeholder="mm"
+                                   value="{{ old('unlock_date_min', $unlockLocal?->format('i')) }}">
                             <select name="unlock_date_ampm" class="form-control" style="width:74px">
-                                <option value="AM" {{ old('unlock_date_ampm') === 'AM' ? 'selected' : '' }}>AM</option>
-                                <option value="PM" {{ old('unlock_date_ampm', 'PM') === 'PM' ? 'selected' : '' }}>PM</option>
+                                <option value="AM" {{ old('unlock_date_ampm', $unlockLocal?->format('A')) === 'AM' ? 'selected' : '' }}>AM</option>
+                                <option value="PM" {{ old('unlock_date_ampm', $unlockLocal?->format('A')) === 'PM' ? 'selected' : '' }}>PM</option>
                             </select>
                         </div>
-                        <p class="form-hint"><i class="fa-solid fa-circle-info"></i> Leave date blank to open immediately on publish.</p>
+                        <p class="form-hint"><i class="fa-solid fa-circle-info"></i> Leave blank to open immediately on publish.</p>
                     </div>
                     <div class="form-group">
                         <label class="form-label"><i class="fa-solid fa-flag-checkered" style="color:#ef4444;margin-right:5px"></i>Hard Deadline</label>
                         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-                            <input type="date" name="hard_deadline_date" class="form-control" style="flex:1;min-width:130px" value="{{ old('hard_deadline_date') }}">
-                            <input type="number" name="hard_deadline_hour" class="form-control" style="width:64px" min="1" max="12" placeholder="hh" value="{{ old('hard_deadline_hour') }}">
+                            <input type="date" name="hard_deadline_date" class="form-control" style="flex:1;min-width:130px"
+                                   value="{{ old('hard_deadline_date', $deadlineLocal?->format('Y-m-d')) }}">
+                            <input type="number" name="hard_deadline_hour" class="form-control" style="width:64px" min="1" max="12" placeholder="hh"
+                                   value="{{ old('hard_deadline_hour', $deadlineLocal?->format('g')) }}">
                             <span>:</span>
-                            <input type="number" name="hard_deadline_min" class="form-control" style="width:64px" min="0" max="59" placeholder="mm" value="{{ old('hard_deadline_min', '00') }}">
+                            <input type="number" name="hard_deadline_min" class="form-control" style="width:64px" min="0" max="59" placeholder="mm"
+                                   value="{{ old('hard_deadline_min', $deadlineLocal?->format('i')) }}">
                             <select name="hard_deadline_ampm" class="form-control" style="width:74px">
-                                <option value="AM" {{ old('hard_deadline_ampm') === 'AM' ? 'selected' : '' }}>AM</option>
-                                <option value="PM" {{ old('hard_deadline_ampm', 'PM') === 'PM' ? 'selected' : '' }}>PM</option>
+                                <option value="AM" {{ old('hard_deadline_ampm', $deadlineLocal?->format('A')) === 'AM' ? 'selected' : '' }}>AM</option>
+                                <option value="PM" {{ old('hard_deadline_ampm', $deadlineLocal?->format('A')) === 'PM' ? 'selected' : '' }}>PM</option>
                             </select>
                         </div>
+                        @error('hard_deadline_date')
+                            <div class="invalid-feedback" style="display:block"><i class="fa-solid fa-circle-xmark"></i> {{ $message }}</div>
+                        @enderror
                     </div>
                 </div>
 
@@ -216,7 +215,7 @@
                     <label class="form-label"><i class="fa-solid fa-stopwatch" style="color:#f59e0b;margin-right:5px"></i>Duration <span style="color:#ef4444">*</span></label>
                     <div style="display:flex;align-items:center;gap:12px">
                         <input type="number" name="duration_minutes" class="form-control"
-                               style="width:110px" value="{{ old('duration_minutes', 15) }}" min="1" max="180" required
+                               style="width:110px" value="{{ old('duration_minutes', $quiz->duration_minutes) }}" min="1" max="180" required
                                oninput="document.getElementById('sumD').textContent=this.value+' min'">
                         <span style="font-size:13px;color:#64748b">minutes per attempt</span>
                     </div>
@@ -231,40 +230,7 @@
                 <span id="qCount" style="font-size:12px;color:#64748b;font-weight:600">0 questions</span>
             </div>
             <div class="card-body">
-                <div id="questionsContainer">
-                    @if(old('questions'))
-                        @foreach(old('questions') as $qi => $q)
-                        <div class="question-block" id="qb_{{ $qi }}">
-                            <div class="q-header">
-                                <span class="q-num-badge"><i class="fa-solid fa-circle-question"></i> Question {{ $qi + 1 }}</span>
-                                <button type="button" class="remove-q" onclick="removeQ({{ $qi }})"><i class="fa-solid fa-trash"></i> Remove</button>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Question Text</label>
-                                <textarea name="questions[{{ $qi }}][question]" class="form-control" rows="2" required>{{ $q['question'] ?? '' }}</textarea>
-                            </div>
-                            <div class="form-group">
-                                <div class="correct-hint"><i class="fa-solid fa-circle-dot" style="color:#6366f1"></i> Click the radio button to mark the correct answer</div>
-                                @foreach($q['options'] ?? ['','','',''] as $oi => $opt)
-                                <div class="option-row">
-                                    <input type="radio" name="questions[{{ $qi }}][correct_option]" value="{{ $oi }}"
-                                           {{ ($q['correct_option'] ?? -1) == $oi ? 'checked' : '' }} required>
-                                    <div class="option-letter">{{ chr(65+$oi) }}</div>
-                                    <input type="text" name="questions[{{ $qi }}][options][]" value="{{ $opt }}"
-                                           placeholder="Option {{ chr(65+$oi) }}" required>
-                                </div>
-                                @endforeach
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;display:flex;align-items:center;gap:12px">
-                                <label class="form-label" style="margin-bottom:0;white-space:nowrap"><i class="fa-solid fa-star" style="color:#f59e0b"></i> Marks:</label>
-                                <input type="number" name="questions[{{ $qi }}][marks]" class="form-control marks-input"
-                                       value="{{ $q['marks'] ?? 1 }}" min="1" max="100" required oninput="updateSummary()">
-                            </div>
-                        </div>
-                        @endforeach
-                    @endif
-                </div>
-
+                <div id="questionsContainer"></div>
                 <button type="button" class="add-q-btn" onclick="addQuestion()">
                     <i class="fa-solid fa-circle-plus"></i> Add New Question
                 </button>
@@ -274,35 +240,28 @@
 
     {{-- RIGHT --}}
     <div>
-        {{-- Settings --}}
         <div class="card" style="margin-bottom:20px">
             <div class="card-header"><h2><i class="fa-solid fa-sliders"></i> Quiz Settings</h2></div>
             <div class="card-body">
-                <p style="font-size:12px;color:#64748b;margin-bottom:16px;line-height:1.6">
-                    Configure quiz behaviour and security options.
-                </p>
-
                 <label class="toggle-card">
-                    <input type="checkbox" name="auto_submit" value="1" {{ old('auto_submit', true) ? 'checked' : '' }}>
+                    <input type="checkbox" name="auto_submit" value="1" {{ old('auto_submit', $quiz->auto_submit) ? 'checked' : '' }}>
                     <div class="toggle-icon">⏱️</div>
                     <div class="toggle-info">
                         <h4>Auto-Submit on Expiry</h4>
-                        <p>Answers are automatically submitted when the timer reaches zero or the hard deadline passes.</p>
+                        <p>Answers are automatically submitted when the timer reaches zero.</p>
                     </div>
                 </label>
-
                 <label class="toggle-card">
-                    <input type="checkbox" name="enforce_focus" value="1" {{ old('enforce_focus', true) ? 'checked' : '' }}>
+                    <input type="checkbox" name="enforce_focus" value="1" {{ old('enforce_focus', $quiz->enforce_focus) ? 'checked' : '' }}>
                     <div class="toggle-icon">🔒</div>
                     <div class="toggle-info">
                         <h4>Focus Lock Mode</h4>
-                        <p>Students receive a warning if they switch tabs or windows. All violations are logged.</p>
+                        <p>Students receive a warning if they switch tabs or windows.</p>
                     </div>
                 </label>
             </div>
         </div>
 
-        {{-- Summary --}}
         <div class="card" style="margin-bottom:20px">
             <div class="card-header"><h2><i class="fa-solid fa-chart-pie"></i> Live Summary</h2></div>
             <div class="card-body">
@@ -316,18 +275,17 @@
                 </div>
                 <div class="summary-row">
                     <span class="s-label"><i class="fa-solid fa-stopwatch" style="color:#10b981"></i> Duration</span>
-                    <span class="s-val" id="sumD">15 min</span>
+                    <span class="s-val" id="sumD">{{ $quiz->duration_minutes }} min</span>
                 </div>
             </div>
         </div>
 
-        {{-- Actions --}}
         <div class="card">
             <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
                 <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:13px">
-                    <i class="fa-solid fa-floppy-disk"></i> Save as Draft
+                    <i class="fa-solid fa-floppy-disk"></i> Save Changes
                 </button>
-                <a href="{{ route('lecturer.dashboard') }}" class="btn btn-secondary" style="width:100%;justify-content:center">
+                <a href="{{ route('lecturer.quizzes.show', $quiz) }}" class="btn btn-secondary" style="width:100%;justify-content:center">
                     <i class="fa-solid fa-xmark"></i> Cancel
                 </a>
             </div>
@@ -340,17 +298,24 @@
 
 @push('scripts')
 <script>
-let qIdx = {{ old('questions') ? count(old('questions')) : 0 }};
+let qIdx = 0;
 
-function addQuestion() {
+const existingQuestions = @json($quiz->questions);
+
+function addQuestion(data = null) {
     const i = qIdx++;
     const letters = ['A','B','C','D'];
-    const opts = letters.map((l, j) => `
+    const opts = letters.map((l, j) => {
+        const val = data?.options?.[j] ?? '';
+        const checked = data && parseInt(data.correct_option) === j ? 'checked' : '';
+        return `
         <div class="option-row">
-            <input type="radio" name="questions[${i}][correct_option]" value="${j}" required>
+            <input type="radio" name="questions[${i}][correct_option]" value="${j}" ${checked} required>
             <div class="option-letter">${l}</div>
-            <input type="text" name="questions[${i}][options][]" placeholder="Option ${l}" required>
-        </div>`).join('');
+            <input type="text" name="questions[${i}][options][]" value="${val.replace(/"/g,'&quot;')}"
+                   placeholder="Option ${l}" required>
+        </div>`;
+    }).join('');
 
     const html = `
     <div class="question-block" id="qb_${i}">
@@ -361,7 +326,7 @@ function addQuestion() {
         <div class="form-group">
             <label class="form-label">Question Text</label>
             <textarea name="questions[${i}][question]" class="form-control" rows="2"
-                      placeholder="Type your question here…" required oninput="updateSummary()"></textarea>
+                      placeholder="Type your question here…" required oninput="updateSummary()">${data?.question ?? ''}</textarea>
         </div>
         <div class="form-group">
             <div class="correct-hint"><i class="fa-solid fa-circle-dot" style="color:#6366f1"></i> Click the radio button to mark the correct answer</div>
@@ -370,13 +335,12 @@ function addQuestion() {
         <div class="form-group" style="margin-bottom:0;display:flex;align-items:center;gap:12px">
             <label class="form-label" style="margin-bottom:0;white-space:nowrap"><i class="fa-solid fa-star" style="color:#f59e0b"></i> Marks:</label>
             <input type="number" name="questions[${i}][marks]" class="form-control marks-input"
-                   value="1" min="1" max="100" required oninput="updateSummary()">
+                   value="${data?.marks ?? 1}" min="1" max="100" required oninput="updateSummary()">
         </div>
     </div>`;
 
     document.getElementById('questionsContainer').insertAdjacentHTML('beforeend', html);
     updateSummary();
-    document.getElementById(`qb_${i}`).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function removeQ(i) {
@@ -396,6 +360,7 @@ function updateSummary() {
     document.getElementById('sumM').textContent = totalMarks;
 }
 
-updateSummary();
+// Load existing questions
+existingQuestions.forEach(q => addQuestion(q));
 </script>
 @endpush

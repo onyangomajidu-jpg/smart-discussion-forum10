@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\PostCreated;
 use App\Http\Controllers\Controller;
+use App\Models\Blacklist;
 use App\Models\Post;
 use App\Models\Topic;
 use Illuminate\Http\Request;
@@ -17,6 +18,21 @@ class PostController extends Controller
             'topic_id' => 'required|exists:topics,id',
             'body'     => 'required|string',
         ]);
+
+        // Check global admin ban
+        $banned = Blacklist::where('user_id', auth()->id())
+            ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->exists();
+        if ($banned) {
+            return response()->json(['message' => 'You have been banned from the forum.'], 403);
+        }
+
+        // Check topic-level block
+        $topic = Topic::find($data['topic_id']);
+        $entry = $topic->allParticipants()->wherePivot('user_id', auth()->id())->first();
+        if ($entry && $entry->pivot->is_blocked) {
+            return response()->json(['message' => 'You have been blocked from this topic.'], 403);
+        }
 
         $post = Post::create([
             'topic_id' => $data['topic_id'],
