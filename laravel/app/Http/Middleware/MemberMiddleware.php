@@ -23,6 +23,10 @@ class MemberMiddleware
             abort(403, 'Access denied. Members only.');
         }
 
+        if (auth()->user()->isBanned()) {
+            abort(403, 'Your account has been suspended.');
+        }
+
         return $next($request);
     }
 }
