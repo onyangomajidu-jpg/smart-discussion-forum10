@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Quiz;
 
 use App\Contracts\IAssessment;
 use App\Http\Controllers\Controller;
+use App\Models\Group;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use Illuminate\Http\Request;
@@ -36,7 +37,7 @@ class QuizController extends Controller
     /** GET /lecturer/quizzes/create — Lecturer quiz creation screen (SDD Fig 6.4) */
     public function create()
     {
-        $groups = auth()->user()->groups()->get();
+        $groups = Group::orderBy('name')->get();
         return view('quiz.lecturer.create', compact('groups'));
     }
 
@@ -47,8 +48,8 @@ class QuizController extends Controller
             'group_id'         => 'required|exists:groups,id',
             'title'            => 'required|string|max:255',
             'description'      => 'nullable|string',
-            'unlock_date'      => 'nullable|date|after:now',
-            'hard_deadline'    => 'nullable|date|after:unlock_date',
+            'unlock_date'      => 'nullable|date',
+            'hard_deadline'    => 'nullable|date|after_or_equal:unlock_date',
             'duration_minutes' => 'required|integer|min:1|max:180',
             'auto_submit'      => 'boolean',
             'enforce_focus'    => 'boolean',
@@ -61,6 +62,14 @@ class QuizController extends Controller
 
         $data['auto_submit']   = $request->boolean('auto_submit');
         $data['enforce_focus'] = $request->boolean('enforce_focus');
+
+        // Parse dates in app local timezone so they're stored correctly
+        if (!empty($data['unlock_date'])) {
+            $data['unlock_date'] = \Carbon\Carbon::createFromFormat('Y-m-d\TH:i', $data['unlock_date'], config('app.timezone'))->utc();
+        }
+        if (!empty($data['hard_deadline'])) {
+            $data['hard_deadline'] = \Carbon\Carbon::createFromFormat('Y-m-d\TH:i', $data['hard_deadline'], config('app.timezone'))->utc();
+        }
 
         $quiz = $this->assessment->createQuiz($data, auth()->id());
 

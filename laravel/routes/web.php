@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Quiz\QuizController;
 use App\Http\Controllers\ModerationController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GroupController;
 use App\Http\Controllers\Api\DashboardApiController;
 use App\Http\Controllers\StatisticsController;
 
@@ -48,6 +49,11 @@ Route::middleware(['auth', App\Http\Middleware\MemberMiddleware::class])->group(
 
     // Analytics — Statistics screen (SDD §4.3 / Fig 6.5)
     Route::get('/analytics', [StatisticsController::class, 'index'])->name('analytics.index');
+
+    // Student group routes
+    Route::get('/groups',                    [GroupController::class, 'studentIndex'])->name('groups.index');
+    Route::post('/groups/{group}/join',      [GroupController::class, 'join'])->name('groups.join');
+    Route::delete('/groups/{group}/leave',   [GroupController::class, 'leave'])->name('groups.leave');
 });
 
 // ── Topics / Content Management Routes ────────────────────────────
@@ -83,6 +89,11 @@ Route::middleware(['auth', App\Http\Middleware\LecturerMiddleware::class])->grou
     Route::post('/lecturer/quizzes/{quiz}/publish', [QuizController::class, 'publish'])->name('lecturer.quizzes.publish');
     Route::post('/lecturer/quizzes/{quiz}/remind',  [QuizController::class, 'remind'])->name('lecturer.quizzes.remind');
     Route::get('/lecturer/quizzes/{quiz}/results',  [QuizController::class, 'results'])->name('lecturer.quizzes.results');
+
+    // Lecturer group management
+    Route::get('/lecturer/groups',              [GroupController::class, 'index'])->name('lecturer.groups.index');
+    Route::post('/lecturer/groups',             [GroupController::class, 'store'])->name('lecturer.groups.store');
+    Route::delete('/lecturer/groups/{group}',   [GroupController::class, 'destroy'])->name('lecturer.groups.destroy');
 });
 
 // ── Administrator Routes ───────────────────────────────────────────
