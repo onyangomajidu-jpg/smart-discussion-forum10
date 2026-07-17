@@ -290,19 +290,27 @@
 
         {{-- User profile chip --}}
         <div class="topnav-profile">
-            <div class="topnav-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
-            <div class="topnav-user-info">
-                <div class="topnav-user-name">{{ auth()->user()->name }}</div>
-                <div class="topnav-user-role">
-                    @if(auth()->user()->isLecturer())
-                        <i class="fa-solid fa-chalkboard-user"></i> Lecturer
-                    @elseif(auth()->user()->isMember())
-                        <i class="fa-solid fa-user-graduate"></i> Student
+            <a href="{{ route('profile.edit') }}" style="display:flex;align-items:center;gap:0;text-decoration:none" title="Edit Profile">
+                <div class="topnav-avatar">
+                    @if(auth()->user()->avatar)
+                        <img src="{{ asset('storage/' . auth()->user()->avatar) }}" style="width:100%;height:100%;object-fit:cover;border-radius:7px" alt="">
                     @else
-                        <i class="fa-solid fa-shield-halved"></i> Admin
+                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                     @endif
                 </div>
-            </div>
+                <div class="topnav-user-info" style="padding-left:10px">
+                    <div class="topnav-user-name">{{ auth()->user()->name }}</div>
+                    <div class="topnav-user-role">
+                        @if(auth()->user()->isLecturer())
+                            <i class="fa-solid fa-chalkboard-user"></i> Lecturer
+                        @elseif(auth()->user()->isMember())
+                            <i class="fa-solid fa-user-graduate"></i> Student
+                        @else
+                            <i class="fa-solid fa-shield-halved"></i> Admin
+                        @endif
+                    </div>
+                </div>
+            </a>
             <form action="{{ route('logout') }}" method="POST" style="margin:0">
                 @csrf
                 <button type="submit" class="topnav-logout-btn" title="Sign Out">
@@ -335,6 +343,12 @@
             </a>
             <a href="{{ route('lecturer.analytics') }}" class="sidebar-link {{ request()->routeIs('lecturer.analytics') ? 'active' : '' }}">
                 <span class="ico"><i class="fa-solid fa-chart-mixed"></i></span> Analytics
+            </a>
+            <a href="{{ route('lecturer.topics.index') }}" class="sidebar-link {{ request()->routeIs('lecturer.topics.*') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-comments"></i></span> Topic Discussions
+            </a>
+            <a href="{{ route('lecturer.groups.index') }}" class="sidebar-link {{ request()->routeIs('lecturer.groups.*') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-people-group"></i></span> Groups
             </a>
         </div>
         @elseif(auth()->user()->isMember())
@@ -373,20 +387,29 @@
         </div>{{-- end .sidebar-nav --}}
 
         {{-- Bottom footer --}}
-        <div class="sidebar-footer">
-            <div class="sidebar-footer-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
-            <div>
-                <div class="sidebar-footer-name">{{ auth()->user()->name }}</div>
-                <div class="sidebar-footer-role">
-                    @if(auth()->user()->isLecturer())
-                        <i class="fa-solid fa-chalkboard-user"></i> Lecturer
-                    @elseif(auth()->user()->isMember())
-                        <i class="fa-solid fa-user-graduate"></i> Student
+        <div class="sidebar-footer" style="flex-direction:column;align-items:stretch;gap:0;padding:0">
+            <a href="{{ route('profile.edit') }}" style="display:flex;align-items:center;gap:10px;padding:12px 16px;text-decoration:none;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background=''">
+                <div class="sidebar-footer-avatar">
+                    @if(auth()->user()->avatar)
+                        <img src="{{ asset('storage/' . auth()->user()->avatar) }}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" alt="">
                     @else
-                        <i class="fa-solid fa-shield-halved"></i> Admin
+                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                     @endif
                 </div>
-            </div>
+                <div style="flex:1;min-width:0">
+                    <div class="sidebar-footer-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ auth()->user()->name }}</div>
+                    <div class="sidebar-footer-role">
+                        @if(auth()->user()->isLecturer())
+                            <i class="fa-solid fa-chalkboard-user"></i> Lecturer
+                        @elseif(auth()->user()->isMember())
+                            <i class="fa-solid fa-user-graduate"></i> Student
+                        @else
+                            <i class="fa-solid fa-shield-halved"></i> Admin
+                        @endif
+                    </div>
+                </div>
+                <i class="fa-solid fa-pen-to-square" style="color:rgba(255,255,255,.5);font-size:12px;flex-shrink:0"></i>
+            </a>
         </div>
 
         @endauth

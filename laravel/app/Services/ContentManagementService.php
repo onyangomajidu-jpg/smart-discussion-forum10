@@ -59,6 +59,14 @@ class ContentManagementService implements IContentManagement
             throw new \RuntimeException('Content flagged as spam.');
         }
 
+        // Check global admin ban
+        $banned = \App\Models\Blacklist::where('user_id', Auth::id())
+            ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->exists();
+        if ($banned) {
+            throw new \RuntimeException('You have been banned from the forum.');
+        }
+
         // Check if user is blocked before creating the post
         $topic = Topic::find($topicId);
         if ($topic) {
@@ -92,7 +100,23 @@ class ContentManagementService implements IContentManagement
             throw new \RuntimeException('Content flagged as spam.');
         }
 
+        // Check global admin ban
+        $banned = \App\Models\Blacklist::where('user_id', Auth::id())
+            ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->exists();
+        if ($banned) {
+            throw new \RuntimeException('You have been banned from the forum.');
+        }
+
         $post = Post::findOrFail($postId);
+
+        // Check topic-level block
+        $entry = $post->topic->allParticipants()
+            ->wherePivot('user_id', Auth::id())
+            ->first();
+        if ($entry && $entry->pivot->is_blocked) {
+            throw new \RuntimeException('You have been blocked from this topic.');
+        }
 
         $reply = Reply::create([
             'post_id'         => $postId,
