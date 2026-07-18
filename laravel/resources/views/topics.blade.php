@@ -203,6 +203,13 @@
                         Started by {{ $activeTopic->author->name }} · {{ $activeTopic->created_at->diffForHumans() }}
                     </div>
                 </div>
+                {{-- Export & Share actions --}}
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <a href="{{ route('topics.export-pdf', $activeTopic->id) }}"
+                       style="padding:7px 14px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border-radius:7px;font-size:13px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:5px;">
+                        📄 Export PDF
+                    </a>
+                </div>
             </div>
 
             <div class="messages" id="messages">
@@ -236,6 +243,7 @@
                                 <button class="btn-sm btn-edit" onclick="editPost({{ $post->id }}, `{{ addslashes($post->body) }}`)">✏ Edit</button>
                                 <button class="btn-sm btn-delete" onclick="deletePost({{ $post->id }})">🗑 Delete</button>
                             @endif
+                            <button class="btn-sm" onclick="openShareModal({{ $post->id }})" style="color:#1da1f2;border-color:#1da1f2;">🌐 Share</button>
                         </div>
 
                         {{-- Reply form (hidden) --}}
@@ -388,10 +396,60 @@
     </div>
 </div>
 
+{{-- Share Post Modal --}}
+<div class="modal-overlay" id="shareModal">
+    <div class="modal" style="width:400px;">
+        <h3>🌐 Share Post</h3>
+        <div class="form-group">
+            <label>Platform</label>
+            <select id="sharePlatform">
+                <option value="twitter">𝕏 Twitter / X</option>
+                <option value="linkedin">in LinkedIn</option>
+                <option value="facebook">f Facebook</option>
+            </select>
+        </div>
+        <div id="shareStatus" style="font-size:13px;min-height:20px;margin-top:6px;"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="document.getElementById('shareModal').classList.remove('open')">Cancel</button>
+            <button class="btn-submit" onclick="submitShare()">🚀 Share Now</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     let editingPostId = null;
+    let sharingPostId = null;
     let typingTimer = null;
+
+    function openShareModal(postId) {
+        sharingPostId = postId;
+        document.getElementById('shareStatus').textContent = '';
+        document.getElementById('shareModal').classList.add('open');
+    }
+
+    function submitShare() {
+        const platform = document.getElementById('sharePlatform').value;
+        const statusEl = document.getElementById('shareStatus');
+        statusEl.style.color = '#718096';
+        statusEl.textContent = '⏳ Sharing to ' + platform + '…';
+
+        fetch(`/posts/${sharingPostId}/share`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ platform })
+        })
+        .then(r => r.json())
+        .then(data => {
+            statusEl.style.color = data.shared ? '#276749' : '#9b2c2c';
+            statusEl.textContent = (data.shared ? '✅ ' : '❌ ') + data.message;
+        })
+        .catch(() => {
+            statusEl.style.color = '#9b2c2c';
+            statusEl.textContent = '❌ Request failed.';
+        });
+    }
+</script>
 
     // ── Reply form toggle ──────────────────────────────────────
     function toggleReplyForm(postId) {
