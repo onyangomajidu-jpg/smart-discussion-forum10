@@ -9,7 +9,7 @@ use App\Notifications\ModerationNotification;
 
 class ModerationService
 {
-    public function issueWarning(int $userId, string $reason, int $issuedBy): Warning
+    public function issueWarning(int $userId, string $reason, int $issuedBy, int $autoDays = 30): Warning
     {
         $warning = Warning::create([
             'user_id'   => $userId,
@@ -19,7 +19,7 @@ class ModerationService
 
         User::findOrFail($userId)->notify(new ModerationNotification('warning', $reason));
 
-        $this->blacklistIfNeeded($userId);
+        $this->blacklistIfNeeded($userId, $issuedBy, $autoDays);
 
         return $warning;
     }
@@ -45,7 +45,7 @@ class ModerationService
         return $warning;
     }
 
-    private function blacklistIfNeeded(int $userId): void
+    private function blacklistIfNeeded(int $userId, int $bannedBy, int $days): void
     {
         $unresolved = Warning::where('user_id', $userId)->whereNull('resolved_at')->count();
 
@@ -55,7 +55,7 @@ class ModerationService
                 ->exists();
 
             if (!$alreadyBanned) {
-                $this->blacklistUser($userId, 'Automatic: 2 unresolved warnings', 1);
+                $this->blacklistUser($userId, 'Automatic: 2 unresolved warnings', $bannedBy, $days);
             }
         }
     }
