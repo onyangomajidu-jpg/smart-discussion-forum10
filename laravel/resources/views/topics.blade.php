@@ -283,7 +283,8 @@
                         <div class="input-row">
                             <textarea name="body" id="postInput" class="msg-input" rows="2"
                                 placeholder="Write a message..." required
-                                oninput="handleTyping()"></textarea>
+                                oninput="handleTyping()"
+                                onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();document.getElementById('postForm').requestSubmit();}"></textarea>
                             <button type="submit" class="btn-send">Send</button>
                         </div>
                         <div class="syndicate-row">
@@ -433,7 +434,6 @@
         const statusEl = document.getElementById('shareStatus');
         statusEl.style.color = '#718096';
         statusEl.textContent = '⏳ Sharing to ' + platform + '…';
-
         fetch(`/posts/${sharingPostId}/share`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
@@ -449,15 +449,12 @@
             statusEl.textContent = '❌ Request failed.';
         });
     }
-</script>
 
-    // ── Reply form toggle ──────────────────────────────────────
     function toggleReplyForm(postId) {
         const form = document.getElementById('reply-form-' + postId);
         form.style.display = form.style.display === 'none' ? 'block' : 'none';
     }
 
-    // ── Edit post ──────────────────────────────────────────────
     function editPost(postId, body) {
         editingPostId = postId;
         document.getElementById('editBody').value = body;
@@ -481,7 +478,6 @@
         });
     }
 
-    // ── Delete post ────────────────────────────────────────────
     function deletePost(postId) {
         if (!confirm('Delete this post?')) return;
         fetch(`/posts/${postId}`, {
@@ -495,7 +491,6 @@
         });
     }
 
-    // ── Typing indicator ───────────────────────────────────────
     function handleTyping() {
         @if(isset($activeTopic))
         if (typeof window.Echo !== 'undefined') {
@@ -504,7 +499,6 @@
         @endif
     }
 
-    // ── Notifications ──────────────────────────────────────────
     function loadNotifications() {
         fetch('/notifications')
             .then(r => r.json())
@@ -515,14 +509,10 @@
             });
     }
 
-    // ── WebSocket (Laravel Echo + Reverb) ──────────────────────
     @if(isset($activeTopic))
     document.addEventListener('DOMContentLoaded', () => {
         if (typeof window.Echo === 'undefined') return;
-
         const topicChannel = window.Echo.channel('topic.{{ $activeTopic->id }}');
-
-        // Real-time new post
         topicChannel.listen('.new.post', (e) => {
             if (e.type !== 'post') return;
             const msgs = document.getElementById('messages');
@@ -532,8 +522,6 @@
             msgs.appendChild(div);
             msgs.scrollTop = msgs.scrollHeight;
         });
-
-        // Typing indicator
         topicChannel.listenForWhisper('typing', (e) => {
             const el = document.getElementById('typingIndicator');
             el.innerHTML = `${e.name} is typing <span class="typing-dots"><span></span><span></span><span></span></span>`;
@@ -543,12 +531,10 @@
     });
     @endif
 
-    // Close modals on overlay click
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
         overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
     });
 
-    // Auto-scroll messages
     const msgs = document.getElementById('messages');
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
 </script>
