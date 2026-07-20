@@ -206,7 +206,7 @@
                     </linearGradient>
                 </defs>
                 @php
-                    $maxVal = max(array_column($weekly, 'avg_score')) ?: 100;
+                    $maxVal = max(array_column($weekly->toArray(), 'avg_score')) ?: 100;
                     $maxVal = max($maxVal, 100);
                     $pts = [];
                     foreach ($weekly as $i => $w) {
