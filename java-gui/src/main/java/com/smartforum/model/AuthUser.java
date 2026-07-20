@@ -26,7 +26,7 @@ public final class AuthUser {
     public String getRole()   { return role;   }
     public String getToken()  { return token;  }
 
-    public boolean isAdmin()    { return "administrator".equalsIgnoreCase(role); }
+    public boolean isAdmin()    { return "admin".equalsIgnoreCase(role) || "administrator".equalsIgnoreCase(role); }
     public boolean isLecturer() { return "lecturer".equalsIgnoreCase(role);      }
     public boolean isMember()   { return "member".equalsIgnoreCase(role);        }
 

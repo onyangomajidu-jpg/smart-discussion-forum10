@@ -78,6 +78,38 @@ public class OfflineSyncManager {
         System.out.println("[OfflineSync] synchronizeOfflineData() complete.");
     }
 
+    // ── createTopic() ─────────────────────────────────────────────────────
+
+    public void createTopic(String title, String body, int userId) throws IOException {
+        api.post("/topics", Map.of(
+            "title",   title,
+            "body",    body,
+            "user_id", userId
+        ));
+        synchronizeOfflineData();
+    }
+
+    // ── editPost() ────────────────────────────────────────────────────────
+
+    public void editPost(int postId, String newBody) throws IOException {
+        api.put("/posts/" + postId, Map.of("body", newBody));
+        synchronizeOfflineData();
+    }
+
+    // ── deletePost() ──────────────────────────────────────────────────────
+
+    public void deletePost(int postId) throws IOException {
+        api.delete("/posts/" + postId);
+        synchronizeOfflineData();
+    }
+
+    // ── deleteTopic() ─────────────────────────────────────────────────────
+
+    public void deleteTopic(int topicId) throws IOException {
+        api.delete("/topics/" + topicId);
+        synchronizeOfflineData();
+    }
+
     // ── sendOrQueue() ─────────────────────────────────────────────────────
 
     /**
@@ -93,6 +125,7 @@ public class OfflineSyncManager {
                     "user_id",  userId,
                     "body",     body
                 ));
+                downloadMissing();
                 return true;
             } catch (IOException e) {
                 System.err.println("[OfflineSync] Live send failed, queuing: " + e.getMessage());
@@ -136,7 +169,7 @@ public class OfflineSyncManager {
 
     private void downloadMissing() {
         try {
-            String   json = api.get("/topics/updates?since=1970-01-01T00:00:00");
+            String   json = api.get("/topics/updates?since=1970-01-01+00:00:00");
             JsonNode root = mapper.readTree(json);
 
             try (Connection conn = cache.connect()) {
@@ -156,18 +189,19 @@ public class OfflineSyncManager {
     private void upsertTopic(Connection conn, JsonNode n) throws SQLException {
         String sql = """
             INSERT OR REPLACE INTO cached_topics
-                (id, group_id, title, body, author_name, is_pinned, is_locked, views, cached_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                (id, group_id, user_id, title, body, author_name, is_pinned, is_locked, views, cached_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
             """;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1,    n.path("id").asInt());
             ps.setInt(2,    n.path("group_id").asInt());
-            ps.setString(3, n.path("title").asText());
-            ps.setString(4, n.path("body").asText());
-            ps.setString(5, n.path("author_name").asText("Unknown"));
-            ps.setInt(6,    n.path("is_pinned").asInt(0));
-            ps.setInt(7,    n.path("is_locked").asInt(0));
-            ps.setInt(8,    n.path("views").asInt(0));
+            ps.setInt(3,    n.path("user_id").asInt(0));
+            ps.setString(4, n.path("title").asText());
+            ps.setString(5, n.path("body").asText());
+            ps.setString(6, n.path("author_name").asText("Unknown"));
+            ps.setInt(7,    n.path("is_pinned").asInt(0));
+            ps.setInt(8,    n.path("is_locked").asInt(0));
+            ps.setInt(9,    n.path("views").asInt(0));
             ps.executeUpdate();
         }
     }

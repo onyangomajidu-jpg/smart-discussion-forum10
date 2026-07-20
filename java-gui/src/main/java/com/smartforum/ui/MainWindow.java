@@ -10,20 +10,11 @@ import com.smartforum.sync.OfflineSyncManager;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.Component;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Main application window (SDD §3.1 — Days 8-10).
- *
- * Layout:
- *   NORTH  — top bar (title, user info, connection badge, logout)
- *   CENTER — JSplitPane: TopicListPanel (left) | ConversationPanel (right)
- *
- * Background thread polls api.isOnline() every 10 s; on reconnect it
- * calls synchronizeOfflineData() and refreshes both panels.
- */
 public class MainWindow extends JFrame {
 
     private static final Color PRIMARY = new Color(0x66, 0x7E, 0xEA);
@@ -57,45 +48,96 @@ public class MainWindow extends JFrame {
         ConversationPanel conversationPanel =
             new ConversationPanel(cache, user, syncManager);
 
-        // ── WebSocket — must be created before TopicListPanel lambda ──────
+        // ── WebSocket ─────────────────────────────────────────────────────
         wsListener = new ForumWebSocketListener(conversationPanel);
         wsListener.connect();
 
-        TopicListPanel topicListPanel = new TopicListPanel(cache, topic -> {
+        TopicListPanel topicListPanel = new TopicListPanel(cache, user, syncManager, topic -> {
             conversationPanel.loadTopic(topic);
             wsListener.subscribeTopic(topic.id);
         });
 
-        // ── Statistics panel ──────────────────────────────────────────────
-        StatisticsPanel statisticsPanel = new StatisticsPanel(api, cache);
+        // ── Extra panels ──────────────────────────────────────────────────
+        StatisticsPanel  statisticsPanel  = new StatisticsPanel(api, cache);
+        DashboardPanel   dashboardPanel   = new DashboardPanel(api, user);
+        GroupsPanel      groupsPanel      = new GroupsPanel(api, user);
+        ProfilePanel     profilePanel     = new ProfilePanel(api, user);
+        QuizPanel        quizPanel        = new QuizPanel(api, user);
 
-        // ── Sync listener (now statisticsPanel is in scope) ───────────────
+        // ── Sync listener ─────────────────────────────────────────────────
         syncManager.setSyncListener(() -> {
             topicListPanel.refresh();
             conversationPanel.refreshPosts();
             conversationPanel.setStatus("✅ Sync complete");
             statisticsPanel.loadData();
+            dashboardPanel.loadData();
         });
 
         // ── Layout ────────────────────────────────────────────────────────
         setTitle("Smart Discussion Forum — " + user.getName());
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(1100, 700);
+        setSize(1200, 720);
         setLocationRelativeTo(null);
 
         JSplitPane split = new JSplitPane(
             JSplitPane.HORIZONTAL_SPLIT, topicListPanel, conversationPanel);
-        split.setDividerLocation(260);
+        split.setDividerLocation(280);
         split.setDividerSize(4);
         split.setBorder(null);
 
         JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("💬  Forum",      split);
-        tabs.addTab("📊  Statistics", statisticsPanel);
-        tabs.addChangeListener(e -> {
-            if (tabs.getSelectedComponent() == statisticsPanel)
+        if (user.isAdmin()) {
+            AdminDashboardPanel adminDashboardPanel = new AdminDashboardPanel(api, user);
+            tabs.addTab("🛡  Admin",      adminDashboardPanel);
+            tabs.addTab("⚖  Moderation", new ModerationPanel(api, user));
+            tabs.addTab("👤  Profile",    profilePanel);
+            adminDashboardPanel.setTabs(tabs);
+            syncManager.setSyncListener(() -> adminDashboardPanel.loadData());
+        } else if (user.isLecturer()) {
+            LecturerAnalyticsPanel analyticsPanel = new LecturerAnalyticsPanel(api, user);
+            LecturerGroupsPanel    groupsLecPanel = new LecturerGroupsPanel(api, user);
+            tabs.addTab("🏠  Dashboard",  null); // placeholder, set after tabs built
+            tabs.addTab("🎯  Quizzes",    quizPanel);
+            tabs.addTab("📊  Analytics", analyticsPanel);
+            tabs.addTab("💬  Forum",      split);
+            tabs.addTab("👥  Groups",     groupsLecPanel);
+            tabs.addTab("👤  Profile",    profilePanel);
+            LecturerDashboardPanel lecDashboard = new LecturerDashboardPanel(api, user, tabs);
+            tabs.setComponentAt(0, lecDashboard);
+            syncManager.setSyncListener(() -> {
+                topicListPanel.refresh();
+                conversationPanel.refreshPosts();
+                conversationPanel.setStatus("✅ Sync complete");
+                analyticsPanel.loadData();
+            });
+            tabs.addChangeListener(e -> {
+                Component sel = tabs.getSelectedComponent();
+                if (sel == analyticsPanel) analyticsPanel.loadData();
+                else if (sel == groupsLecPanel) groupsLecPanel.loadGroups();
+                else if (sel == quizPanel) quizPanel.loadQuizzes();
+            });
+        } else {
+            tabs.addTab("🏠  Dashboard",  dashboardPanel);
+            tabs.addTab("💬  Forum",      split);
+            tabs.addTab("🎯  Quizzes",    quizPanel);
+            tabs.addTab("📊  Statistics", statisticsPanel);
+            tabs.addTab("👥  Groups",     groupsPanel);
+            tabs.addTab("👤  Profile",    profilePanel);
+            syncManager.setSyncListener(() -> {
+                topicListPanel.refresh();
+                conversationPanel.refreshPosts();
+                conversationPanel.setStatus("✅ Sync complete");
                 statisticsPanel.loadData();
-        });
+                dashboardPanel.loadData();
+            });
+            tabs.addChangeListener(e -> {
+                Component sel = tabs.getSelectedComponent();
+                if (sel == statisticsPanel) statisticsPanel.loadData();
+                else if (sel == dashboardPanel) dashboardPanel.loadData();
+                else if (sel == groupsPanel) groupsPanel.loadGroups();
+                else if (sel == quizPanel) quizPanel.loadQuizzes();
+            });
+        }
 
         getContentPane().setLayout(new BorderLayout());
         getContentPane().add(buildTopBar(), BorderLayout.NORTH);
@@ -138,6 +180,17 @@ public class MainWindow extends JFrame {
         userInfo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         userInfo.setForeground(Color.WHITE);
 
+        // Notifications bell
+        JButton notifBtn = new JButton("🔔");
+        notifBtn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        notifBtn.setForeground(Color.WHITE);
+        notifBtn.setBackground(new Color(255, 255, 255, 50));
+        notifBtn.setBorderPainted(false);
+        notifBtn.setFocusPainted(false);
+        notifBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        notifBtn.setToolTipText("Notifications");
+        notifBtn.addActionListener(e -> showNotifications());
+
         JButton logoutBtn = new JButton("Logout");
         logoutBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
         logoutBtn.setForeground(PRIMARY);
@@ -156,12 +209,50 @@ public class MainWindow extends JFrame {
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
         right.setOpaque(false);
         right.add(connectionBadge);
+        right.add(notifBtn);
         right.add(userInfo);
         right.add(logoutBtn);
 
         bar.add(title, BorderLayout.WEST);
         bar.add(right, BorderLayout.EAST);
         return bar;
+    }
+
+    // ── Notifications ─────────────────────────────────────────────────────
+
+    private void showNotifications() {
+        new SwingWorker<String, Void>() {
+            @Override protected String doInBackground() throws Exception {
+                try {
+                    return api.get("/notifications");
+                } catch (Exception e) {
+                    return null;
+                }
+            }
+            @Override protected void done() {
+                try {
+                    String json = get();
+                    if (json == null || json.equals("[]") || json.isBlank()) {
+                        JOptionPane.showMessageDialog(MainWindow.this,
+                            "No notifications.", "Notifications",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        // Simple display — strip JSON brackets for readability
+                        JTextArea area = new JTextArea(json, 10, 40);
+                        area.setEditable(false);
+                        area.setLineWrap(true);
+                        area.setWrapStyleWord(true);
+                        JOptionPane.showMessageDialog(MainWindow.this,
+                            new JScrollPane(area), "Notifications",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(MainWindow.this,
+                        "Could not load notifications.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
     }
 
     // ── Reconnect logic ───────────────────────────────────────────────────

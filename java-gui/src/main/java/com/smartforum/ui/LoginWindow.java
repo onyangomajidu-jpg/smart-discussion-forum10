@@ -55,26 +55,20 @@ public LoginWindow(AuthService authService, ApiClient api, LocalCacheDatabase ca
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setResizable(false);
 
-        JPanel root = new JPanel(new BorderLayout()) {
+        JPanel root = new JPanel(new GridBagLayout()) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setPaint(new GradientPaint(0, 0, PRIMARY, getWidth(), getHeight(), SECONDARY));
                 g2.fillRect(0, 0, getWidth(), getHeight());
             }
         };
-        root.setBorder(new EmptyBorder(30, 30, 30, 30));
 
-        JPanel card = new JPanel(new GridLayout(1, 2));
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createLineBorder(BORDER_C));
-        card.setPreferredSize(new Dimension(900, 560));
+        JPanel card = buildFormPanel();
+        card.setPreferredSize(new Dimension(420, 520));
+        root.add(card);
 
-        card.add(buildFormPanel());
-        card.add(buildRulesPanel());
-
-        root.add(card, BorderLayout.CENTER);
         setContentPane(root);
-        pack();
+        setSize(520, 620);
         setLocationRelativeTo(null);
     }
 
@@ -84,7 +78,11 @@ public LoginWindow(AuthService authService, ApiClient api, LocalCacheDatabase ca
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(Color.WHITE);
-        panel.setBorder(new EmptyBorder(40, 40, 40, 40));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER_C),
+            new EmptyBorder(50, 40, 40, 40)
+        ));
+        panel.putClientProperty("arc", 15);
 
         JLabel logo = new JLabel("🎓 Smart Discussion Forum", SwingConstants.CENTER);
         logo.setFont(new Font("Segoe UI", Font.BOLD, 22));
@@ -174,58 +172,6 @@ public LoginWindow(AuthService authService, ApiClient api, LocalCacheDatabase ca
         panel.add(Box.createVerticalStrut(12));
         panel.add(registerRow);
 
-        return panel;
-    }
-
-    // ── Right: forum rules ────────────────────────────────────────────────
-
-    private JPanel buildRulesPanel() {
-        JPanel panel = new JPanel(new BorderLayout(0, 12));
-        panel.setBackground(BG_PANEL);
-        panel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(0, 1, 0, 0, BORDER_C),
-            new EmptyBorder(40, 30, 40, 30)
-        ));
-
-        JLabel title = new JLabel("📋 Forum Rules");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        title.setForeground(new Color(0x33, 0x33, 0x33));
-        title.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY));
-
-        String[] rules = {
-            "Be respectful and courteous to all members",
-            "No harassment, hate speech, or discrimination",
-            "Stay on topic and contribute meaningfully",
-            "No spam, advertising, or self-promotion",
-            "Respect intellectual property and cite sources",
-            "Use appropriate language — keep content PG-13",
-            "No sharing of personal information",
-            "Report inappropriate content to moderators",
-            "Follow academic integrity guidelines",
-            "One account per person only",
-            "Moderators' decisions are final",
-            "Have fun and help build a great community!"
-        };
-
-        JPanel list = new JPanel();
-        list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
-        list.setBackground(BG_PANEL);
-        for (String rule : rules) {
-            JLabel item = new JLabel("<html><font color='#667eea'>✓</font>&nbsp;" + rule + "</html>");
-            item.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-            item.setForeground(new Color(0x49, 0x50, 0x57));
-            item.setBorder(new EmptyBorder(6, 0, 6, 0));
-            list.add(item);
-        }
-
-        JScrollPane scroll = new JScrollPane(list,
-            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scroll.setBorder(null);
-        scroll.setBackground(BG_PANEL);
-
-        panel.add(title,  BorderLayout.NORTH);
-        panel.add(scroll, BorderLayout.CENTER);
         return panel;
     }
 

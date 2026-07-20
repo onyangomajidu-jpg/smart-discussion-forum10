@@ -30,10 +30,22 @@ public class LocalCacheDatabase {
         try (Connection conn = connect(); Statement st = conn.createStatement()) {
             conn.setAutoCommit(false);
             createTables(st);
+            migrateSchema(conn);
             conn.commit();
             System.out.println("[LocalCache] Schema initialised.");
         } catch (SQLException e) {
             throw new RuntimeException("Failed to initialise local cache: " + e.getMessage(), e);
+        }
+    }
+
+    private void migrateSchema(Connection conn) throws SQLException {
+        // Add user_id to cached_topics if missing (schema upgrade)
+        try (ResultSet rs = conn.getMetaData().getColumns(null, null, "cached_topics", "user_id")) {
+            if (!rs.next()) {
+                conn.createStatement().execute(
+                    "ALTER TABLE cached_topics ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0");
+                System.out.println("[LocalCache] Migrated: added user_id to cached_topics.");
+            }
         }
     }
 
@@ -54,6 +66,7 @@ public class LocalCacheDatabase {
             CREATE TABLE IF NOT EXISTS cached_topics (
                 id           INTEGER PRIMARY KEY,
                 group_id     INTEGER NOT NULL,
+                user_id      INTEGER NOT NULL DEFAULT 0,
                 title        TEXT    NOT NULL,
                 body         TEXT    NOT NULL,
                 author_name  TEXT    NOT NULL,

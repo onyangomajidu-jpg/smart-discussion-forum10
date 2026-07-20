@@ -220,7 +220,15 @@
                     <div class="alert alert-error">{{ $errors->first() }}</div>
                 @endif
 
-                {{-- Original topic body --}}
+                @php $isRemoved = $activeTopic->removedParticipants->contains(auth()->id()); @endphp
+
+                @if($isRemoved)
+                    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9b2c2c;background:#fff5f5;border-radius:10px;padding:40px;text-align:center;">
+                        <span style="font-size:40px;">🚫</span>
+                        <p style="margin-top:10px;font-size:15px;font-weight:600;">You have been removed from this discussion.</p>
+                        <p style="font-size:13px;color:#718096;margin-top:6px;">You cannot view or post messages until restored by the topic creator.</p>
+                    </div>
+                @else
                 <div class="post-card" style="border-left: 4px solid #667eea;">
                     <div class="post-header">
                         <span class="post-author">{{ $activeTopic->author->name }}</span>
@@ -270,13 +278,14 @@
                         @endif
                     </div>
                 @endforeach
+                @endif {{-- end $isRemoved check --}}
             </div>
 
             {{-- Typing indicator --}}
             <div class="typing-indicator" id="typingIndicator"></div>
 
             {{-- Input area --}}
-            @if(!$activeTopic->is_locked)
+            @if(!$activeTopic->is_locked && !$isRemoved)
                 <div class="input-area">
                     <form action="{{ route('topics.participate', $activeTopic->id) }}" method="POST" id="postForm">
                         @csrf
@@ -350,6 +359,19 @@
                 </div>
             @empty
                 <div style="padding:10px 14px;font-size:13px;color:#a0aec0;">No blocked users.</div>
+            @endforelse
+
+            <div class="section-label" style="margin-top:8px;">🗑 Removed</div>
+            @forelse($activeTopic->removedParticipants as $removed)
+                <div class="participant-item" style="background:#fff5f5;color:#9b2c2c;">
+                    <span class="participant-name">{{ $removed->name }}</span>
+                    <form action="{{ route('topics.unremoveUser', [$activeTopic, $removed->id]) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="btn-unblock-user">Restore</button>
+                    </form>
+                </div>
+            @empty
+                <div style="padding:10px 14px;font-size:13px;color:#a0aec0;">No removed users.</div>
             @endforelse
         @endif
     </aside>

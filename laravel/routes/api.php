@@ -5,7 +5,12 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Api\DashboardApiController;
 use App\Http\Controllers\Api\RecommendationController;
 use App\Http\Controllers\Api\StatisticsApiController;
+use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\GroupController;
+use App\Http\Controllers\ModerationController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Quiz\QuizController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -63,11 +68,67 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
 
     // Posts & topics
     Route::post('/posts',               [PostController::class, 'store']);
+    Route::put('/posts/{postId}',        [PostController::class, 'update']);
+    Route::delete('/posts/{postId}',     [PostController::class, 'destroy']);
     Route::get('/topics/updates',       [PostController::class, 'updates']);
     Route::get('/topics/{topic}/posts', [PostController::class, 'index']);
     Route::get('/topics', fn() => \App\Models\Topic::withCount('posts')->latest()->get());
+    Route::post('/topics',              [\App\Http\Controllers\TopicController::class, 'store']);
+    Route::delete('/topics/{topic}',    [\App\Http\Controllers\TopicController::class, 'destroy']);
+
+    // Replies
+    Route::post('/posts/{postId}/reply', [PostController::class, 'reply']);
+    Route::get('/posts/{postId}/replies', [PostController::class, 'replies']);
+
+    // Topic actions (pin/lock — lecturer; block/unblock/remove — topic owner or admin)
+    Route::post('/topics/{topic}/pin',                          [PostController::class, 'pinTopic']);
+    Route::post('/topics/{topic}/lock',                         [PostController::class, 'lockTopic']);
+    Route::post('/topics/{topic}/users/{userId}/block',         [PostController::class, 'blockUser']);
+    Route::post('/topics/{topic}/users/{userId}/unblock',       [PostController::class, 'unblockUser']);
+    Route::delete('/topics/{topic}/users/{userId}',             [PostController::class, 'removeUser']);
+
+    // Profile
+    Route::get('/profile',  [ProfileController::class, 'apiShow']);
+    Route::put('/profile',  [ProfileController::class, 'apiUpdate']);
+
+    // AI Recommendations
+    Route::get('/recommendations', [RecommendationController::class, 'index']);
+
+    // Groups
+    Route::get('/groups',                  [GroupController::class, 'apiIndex']);
+    Route::post('/groups/{group}/join',    [GroupController::class, 'join']);
+    Route::delete('/groups/{group}/leave', [GroupController::class, 'leave']);
 
     // Export & social share
     Route::get('/topics/{topicId}/export-pdf', [ExportController::class, 'exportDiscussionPDF']);
     Route::post('/posts/{postId}/share',        [ExportController::class, 'forwardToSocialMedia']);
+
+    // Notifications
+    Route::get('/notifications', [\App\Http\Controllers\TopicController::class, 'notifications']);
+
+    // ── Student quiz routes ───────────────────────────────────────────────
+    Route::get('/quizzes',                    [QuizController::class, 'apiIndex']);
+    Route::get('/quizzes/{quiz}',             [QuizController::class, 'apiShow']);
+    Route::post('/quizzes/{quiz}/submit',     [QuizController::class, 'apiSubmit']);
+    Route::get('/quizzes/{quiz}/result',      [QuizController::class, 'apiResult']);
+
+    // ── Lecturer quiz routes ──────────────────────────────────────────────
+    Route::get('/lecturer/quizzes',                  [QuizController::class, 'apiLecturerIndex']);
+    Route::post('/lecturer/quizzes',                 [QuizController::class, 'apiStore']);
+    Route::post('/lecturer/quizzes/{quiz}/publish',  [QuizController::class, 'apiPublish']);
+    Route::get('/lecturer/quizzes/{quiz}/results',   [QuizController::class, 'apiResults']);
+    Route::post('/lecturer/groups',                  [GroupController::class, 'apiStore']);
+    Route::delete('/lecturer/groups/{group}',        [GroupController::class, 'apiDestroy']);
+    Route::get('/lecturer/analytics',                [StatisticsController::class, 'apiLecturerAnalytics']);
+
+    // ── Admin moderation routes ───────────────────────────────────────────
+    Route::get('/admin/warnings',                [ModerationController::class, 'apiWarnings']);
+    Route::post('/admin/warnings',               [ModerationController::class, 'apiIssueWarning']);
+    Route::patch('/admin/warnings/{id}/resolve', [ModerationController::class, 'resolveWarning']);
+    Route::delete('/admin/warnings/{id}',        [ModerationController::class, 'destroyWarning']);
+    Route::get('/admin/blacklists',              [ModerationController::class, 'apiBlacklists']);
+    Route::post('/admin/blacklists',             [ModerationController::class, 'blacklistUser']);
+    Route::delete('/admin/blacklists/{id}',      [ModerationController::class, 'destroyBlacklist']);
+    Route::get('/admin/users',                   [ModerationController::class, 'apiUsers']);
+    Route::get('/admin/stats',                   [ModerationController::class, 'apiAdminStats']);
 });
