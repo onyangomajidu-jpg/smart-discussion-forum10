@@ -338,11 +338,8 @@
             <a href="{{ route('lecturer.quizzes.index') }}" class="sidebar-link {{ request()->routeIs('lecturer.quizzes.*') ? 'active' : '' }}">
                 <span class="ico"><i class="fa-solid fa-clipboard-list"></i></span> My Quizzes
             </a>
-            <a href="{{ route('lecturer.quizzes.create') }}" class="sidebar-link {{ request()->routeIs('lecturer.quizzes.create') ? 'active' : '' }}">
-                <span class="ico"><i class="fa-solid fa-circle-plus"></i></span> Create Quiz
-            </a>
             <a href="{{ route('lecturer.analytics') }}" class="sidebar-link {{ request()->routeIs('lecturer.analytics') ? 'active' : '' }}">
-                <span class="ico"><i class="fa-solid fa-chart-mixed"></i></span> Analytics
+                <span class="ico"><i class="fa-solid fa-chart-bar"></i></span> Analytics
             </a>
             <a href="{{ route('lecturer.topics.index') }}" class="sidebar-link {{ request()->routeIs('lecturer.topics.*') ? 'active' : '' }}">
                 <span class="ico"><i class="fa-solid fa-comments"></i></span> Topic Discussions
