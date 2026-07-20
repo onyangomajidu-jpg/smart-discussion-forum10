@@ -64,6 +64,7 @@ Route::middleware(['auth', App\Http\Middleware\MemberMiddleware::class])->group(
 // ── Export & Social Sharing (Week 3) ─────────────────────────────
 Route::middleware('auth')->group(function () {
     Route::get('/topics/{topicId}/export-pdf', [App\Http\Controllers\ExportController::class, 'exportDiscussionPDF'])->name('topics.export-pdf');
+    Route::post('/topics/{topicId}/share',     [App\Http\Controllers\ExportController::class, 'shareDiscussion'])->name('topics.share');
     Route::post('/posts/{postId}/share',       [App\Http\Controllers\ExportController::class, 'forwardToSocialMedia'])->name('posts.share');
 });
 

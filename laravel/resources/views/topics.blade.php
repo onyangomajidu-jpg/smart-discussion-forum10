@@ -139,7 +139,7 @@
 
 {{-- Navbar --}}
 <nav class="navbar">
-    <h1>🎓 Smart Discussion Forum</h1>
+    <h1><img src="{{ asset('images/forum.png') }}" alt="SmartForum" style="height:34px;vertical-align:middle;margin-right:8px;">Smart Discussion Forum</h1>
     <div class="navbar-right">
         <button class="notif-btn" id="notifBtn" onclick="loadNotifications()">
             🔔
@@ -148,6 +148,7 @@
             @endif
         </button>
         <span>{{ auth()->user()->name }}</span>
+        <a href="{{ route('dashboard') }}" class="btn-logout" style="text-decoration:none;">&#8592; Dashboard</a>
         <form action="{{ route('logout') }}" method="POST">
             @csrf
             <button type="submit" class="btn-logout">Logout</button>
@@ -209,6 +210,10 @@
                        style="padding:7px 14px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border-radius:7px;font-size:13px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:5px;">
                         📄 Export PDF
                     </a>
+                    <button onclick="openDiscussionShareModal({{ $activeTopic->id }})"
+                        style="padding:7px 14px;background:linear-gradient(135deg,#25d366,#128c7e);color:white;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                        🌐 Share Discussion
+                    </button>
                 </div>
             </div>
 
@@ -243,7 +248,6 @@
                                 <button class="btn-sm btn-edit" onclick="editPost({{ $post->id }}, `{{ addslashes($post->body) }}`)">✏ Edit</button>
                                 <button class="btn-sm btn-delete" onclick="deletePost({{ $post->id }})">🗑 Delete</button>
                             @endif
-                            <button class="btn-sm" onclick="openShareModal({{ $post->id }})" style="color:#1da1f2;border-color:#1da1f2;">🌐 Share</button>
                         </div>
 
                         {{-- Reply form (hidden) --}}
@@ -396,22 +400,33 @@
     </div>
 </div>
 
-{{-- Share Post Modal --}}
+{{-- Share Modal --}}
 <div class="modal-overlay" id="shareModal">
-    <div class="modal" style="width:400px;">
-        <h3>🌐 Share Post</h3>
-        <div class="form-group">
-            <label>Platform</label>
-            <select id="sharePlatform">
-                <option value="twitter">𝕏 Twitter / X</option>
-                <option value="linkedin">in LinkedIn</option>
-                <option value="facebook">f Facebook</option>
-            </select>
+    <div class="modal" style="width:500px;">
+        <h3>🌐 Share Discussion</h3>
+        <p style="font-size:13px;color:#718096;margin-bottom:14px;">Choose a platform to share the entire conversation.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+            <button class="share-card" data-platform="twitter" onclick="selectSharePlatform(this)"
+                style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;color:#2d3748;">
+                <span style="font-size:22px;">𝕏</span> Twitter / X
+            </button>
+            <button class="share-card" data-platform="linkedin" onclick="selectSharePlatform(this)"
+                style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;color:#2d3748;">
+                <span style="font-size:22px;">💼</span> LinkedIn
+            </button>
+            <button class="share-card" data-platform="facebook" onclick="selectSharePlatform(this)"
+                style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;color:#2d3748;">
+                <span style="font-size:22px;">📘</span> Facebook
+            </button>
+            <button class="share-card" data-platform="whatsapp" onclick="selectSharePlatform(this)"
+                style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;color:#2d3748;">
+                <span style="font-size:22px;">💬</span> WhatsApp
+            </button>
         </div>
-        <div id="shareStatus" style="font-size:13px;min-height:20px;margin-top:6px;"></div>
+        <div id="shareStatus" style="font-size:13px;min-height:20px;margin-bottom:8px;"></div>
         <div class="modal-actions">
-            <button class="btn-cancel" onclick="document.getElementById('shareModal').classList.remove('open')">Cancel</button>
-            <button class="btn-submit" onclick="submitShare()">🚀 Share Now</button>
+            <button class="btn-cancel" onclick="closeShareModal()">Cancel</button>
+            <button class="btn-submit" id="shareBtn" onclick="submitShare()" disabled style="opacity:0.5;">🚀 Share Now</button>
         </div>
     </div>
 </div>
@@ -419,37 +434,103 @@
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     let editingPostId = null;
-    let sharingPostId = null;
+    let sharingTopicId = null;
+    let selectedPlatform = null;
     let typingTimer = null;
 
-    function openShareModal(postId) {
-        sharingPostId = postId;
-        document.getElementById('shareStatus').textContent = '';
+    // ── Open share modal for entire discussion ─────────────────
+    function openDiscussionShareModal(topicId) {
+        sharingTopicId = topicId;
+        resetShareModal();
         document.getElementById('shareModal').classList.add('open');
     }
 
-    function submitShare() {
-        const platform = document.getElementById('sharePlatform').value;
-        const statusEl = document.getElementById('shareStatus');
-        statusEl.style.color = '#718096';
-        statusEl.textContent = '⏳ Sharing to ' + platform + '…';
-
-        fetch(`/posts/${sharingPostId}/share`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ platform })
-        })
-        .then(r => r.json())
-        .then(data => {
-            statusEl.style.color = data.shared ? '#276749' : '#9b2c2c';
-            statusEl.textContent = (data.shared ? '✅ ' : '❌ ') + data.message;
-        })
-        .catch(() => {
-            statusEl.style.color = '#9b2c2c';
-            statusEl.textContent = '❌ Request failed.';
+    function resetShareModal() {
+        selectedPlatform = null;
+        document.getElementById('shareStatus').textContent = '';
+        document.getElementById('shareBtn').disabled = true;
+        document.getElementById('shareBtn').style.opacity = '0.5';
+        document.querySelectorAll('.share-card').forEach(c => {
+            c.style.borderColor = '#e2e8f0';
+            c.style.background = 'white';
+            c.style.color = '#2d3748';
         });
     }
-</script>
+
+    function closeShareModal() {
+        document.getElementById('shareModal').classList.remove('open');
+    }
+
+    function selectSharePlatform(btn) {
+        document.querySelectorAll('.share-card').forEach(c => {
+            c.style.borderColor = '#e2e8f0';
+            c.style.background = 'white';
+            c.style.color = '#2d3748';
+        });
+        btn.style.borderColor = '#667eea';
+        btn.style.background = '#f0f0ff';
+        selectedPlatform = btn.dataset.platform;
+        document.getElementById('shareBtn').disabled = false;
+        document.getElementById('shareBtn').style.opacity = '1';
+        document.getElementById('shareStatus').textContent = '';
+    }
+
+    function buildConversationText() {
+        const title = document.querySelector('.conv-header h2').textContent.trim();
+        let lines = ['📚 Discussion: "' + title + '"', ''];
+
+        // Topic body (first post card with blue border)
+        const topicBody = document.querySelector('.post-card[style*="border-left"] .post-body');
+        const topicAuthor = document.querySelector('.post-card[style*="border-left"] .post-author');
+        const topicTime = document.querySelector('.post-card[style*="border-left"] .post-time');
+        if (topicAuthor && topicBody) {
+            lines.push('[' + (topicTime ? topicTime.textContent.trim() : '') + '] ' + topicAuthor.textContent.trim() + ': ' + topicBody.textContent.trim());
+            lines.push('');
+        }
+
+        // All reply posts
+        document.querySelectorAll('.post-card:not([style*="border-left"])').forEach(card => {
+            const author = card.querySelector('.post-author');
+            const body   = card.querySelector('.post-body');
+            const time   = card.querySelector('.post-time');
+            if (author && body) {
+                lines.push('[' + (time ? time.textContent.trim() : '') + '] ' + author.textContent.trim() + ': ' + body.textContent.trim());
+                card.querySelectorAll('.reply-card').forEach(r => {
+                    const ra = r.querySelector('.reply-author');
+                    const rb = r.querySelector('.reply-body');
+                    const rt = r.querySelector('span[style*="color:#a0aec0"]');
+                    if (ra && rb) lines.push('  ↩ [' + (rt ? rt.textContent.trim() : '') + '] ' + ra.textContent.trim() + ': ' + rb.textContent.trim());
+                });
+                lines.push('');
+            }
+        });
+
+        lines.push(window.location.href);
+        return lines.join('\n');
+    }
+
+    function submitShare() {
+        if (!selectedPlatform) return;
+        const statusEl = document.getElementById('shareStatus');
+        const conversation = buildConversationText();
+        const topicUrl = encodeURIComponent(window.location.href);
+        const text = encodeURIComponent(conversation);
+        // Twitter has a 280-char limit — use a short summary + URL
+        const twitterText = encodeURIComponent(
+            '📚 "' + document.querySelector('.conv-header h2').textContent.trim() + '" — join the discussion on SmartForum'
+        );
+
+        const shareUrls = {
+            whatsapp: 'https://wa.me/?text=' + text,
+            twitter:  'https://twitter.com/intent/tweet?text=' + twitterText + '&url=' + topicUrl,
+            facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + topicUrl + '&quote=' + text,
+            linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + topicUrl,
+        };
+
+        window.open(shareUrls[selectedPlatform], '_blank', 'noopener,noreferrer');
+        statusEl.style.color = '#276749';
+        statusEl.textContent = '✅ ' + selectedPlatform.charAt(0).toUpperCase() + selectedPlatform.slice(1) + ' opened in a new tab.';
+    }
 
     // ── Reply form toggle ──────────────────────────────────────
     function toggleReplyForm(postId) {

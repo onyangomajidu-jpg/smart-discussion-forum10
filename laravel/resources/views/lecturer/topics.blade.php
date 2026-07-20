@@ -24,20 +24,39 @@
         .forum-layout { display: flex; flex: 1; overflow: hidden; }
 
         .sidebar { width: 300px; background: white; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; flex-shrink: 0; }
-        .sidebar-header { padding: 16px; border-bottom: 1px solid #e2e8f0; }
-        .search-bar { width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; margin-bottom: 10px; outline: none; }
-        .search-bar:focus { border-color: #667eea; }
-        .btn-create { width: 100%; padding: 9px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; }
-        .btn-create:hover { opacity: 0.9; }
-        .topic-list { flex: 1; overflow-y: auto; }
-        .topic-item { padding: 14px 16px; border-bottom: 1px solid #f0f2f5; cursor: pointer; transition: background 0.2s; }
-        .topic-item:hover, .topic-item.active { background: #f0f0ff; }
-        .topic-item h4 { font-size: 14px; color: #2d3748; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .topic-meta { font-size: 12px; color: #718096; display: flex; justify-content: space-between; }
-        .topic-badges { display: flex; gap: 4px; margin-top: 4px; }
-        .badge { font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 600; }
+        .sidebar-header { padding: 18px 16px 14px; border-bottom: 1px solid #e2e8f0; }
+        .sidebar-title { font-size: 11px; font-weight: 700; color: #a0aec0; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 12px; }
+        .search-bar { width: 100%; padding: 9px 12px 9px 36px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 13px; outline: none; background: #f7fafc; color: #2d3748; }
+        .search-bar::placeholder { color: #a0aec0; }
+        .search-bar:focus { border-color: #667eea; background: white; }
+        .search-wrap { position: relative; margin-bottom: 12px; }
+        .search-wrap::before { content: '🔍'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; pointer-events: none; }
+        .btn-create { width: 100%; padding: 10px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 13px; letter-spacing: 0.3px; transition: opacity 0.2s, transform 0.1s; }
+        .btn-create:hover { opacity: 0.9; transform: translateY(-1px); }
+        .topic-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+        .topic-list::-webkit-scrollbar { width: 4px; }
+        .topic-list::-webkit-scrollbar-track { background: transparent; }
+        .topic-list::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+        .topic-item { margin: 4px 10px; border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: background 0.18s; position: relative; }
+        .topic-item:hover { background: #f0f0ff; }
+        .topic-item.active { background: #ede9fe; box-shadow: inset 0 0 0 1px #c4b5fd; }
+        .topic-item-inner { display: flex; gap: 11px; align-items: flex-start; }
+        .topic-avatar { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: white; flex-shrink: 0; text-transform: uppercase; }
+        .topic-avatar.locked { background: linear-gradient(135deg, #f87171, #ef4444); }
+        .topic-avatar.pinned { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+        .topic-content { flex: 1; min-width: 0; }
+        .topic-item h4 { font-size: 13px; font-weight: 600; color: #2d3748; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .topic-item.active h4 { color: #4c1d95; }
+        .topic-author { font-size: 11px; color: #a0aec0; margin-bottom: 5px; }
+        .topic-stats { display: flex; gap: 10px; }
+        .topic-stat { display: flex; align-items: center; gap: 3px; font-size: 11px; color: #718096; }
+        .topic-badges { display: flex; gap: 4px; margin-top: 5px; }
+        .badge { font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 700; }
         .badge-locked { background: #fed7d7; color: #9b2c2c; }
         .badge-pinned { background: #fefcbf; color: #744210; }
+        .topic-delete-btn { position: absolute; top: 10px; right: 10px; opacity: 0; font-size: 11px; color: #e53e3e; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px; padding: 2px 7px; cursor: pointer; transition: opacity 0.15s; }
+        .topic-item:hover .topic-delete-btn { opacity: 1; }
+        .topics-count { padding: 6px 20px 2px; font-size: 11px; color: #a0aec0; font-weight: 600; }
 
         .participants-panel { width: 230px; background: white; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
         .participants-panel h4 { padding: 14px 16px; font-size: 13px; font-weight: 700; color: #4a5568; border-bottom: 1px solid #e2e8f0; margin: 0; }
@@ -112,7 +131,7 @@
 <body>
 
 <nav class="navbar">
-    <h1>🎓 Smart Discussion Forum — Lecturer</h1>
+    <h1><img src="{{ asset('images/forum.png') }}" alt="SmartForum" style="height:34px;vertical-align:middle;margin-right:8px;">Smart Discussion Forum</h1>
     <div class="navbar-right">
         <button class="notif-btn" onclick="loadNotifications()">
             🔔
@@ -134,35 +153,51 @@
     {{-- Sidebar --}}
     <aside class="sidebar">
         <div class="sidebar-header">
+            <div class="sidebar-title">📚 Topics</div>
             <form method="GET" action="{{ route('lecturer.topics.index') }}">
-                <input type="text" name="search" class="search-bar" placeholder="🔍 Search topics..."
-                    value="{{ request('search') }}" oninput="this.form.submit()">
+                <div class="search-wrap">
+                    <input type="text" name="search" class="search-bar" placeholder="Search topics..."
+                        value="{{ request('search') }}" oninput="this.form.submit()">
+                </div>
             </form>
             <button class="btn-create" onclick="document.getElementById('createModal').classList.add('open')">
-                + Create Topic
+                + New Topic
             </button>
         </div>
+        <div class="topics-count">{{ $topics->count() }} topic{{ $topics->count() !== 1 ? 's' : '' }}</div>
         <div class="topic-list">
             @forelse($topics as $topic)
+                @php $initials = strtoupper(substr($topic->title, 0, 2)); @endphp
                 <div class="topic-item {{ isset($activeTopic) && $activeTopic->id === $topic->id ? 'active' : '' }}"
                      onclick="window.location='{{ route('lecturer.topics.show', $topic) }}'">
-                    <h4>{{ $topic->title }}</h4>
-                    <div class="topic-meta">
-                        <span>{{ $topic->author->name }}</span>
-                        <span>{{ $topic->posts_count }} posts · {{ $topic->views }} views</span>
-                    </div>
-                    <div class="topic-badges">
-                        @if($topic->is_pinned) <span class="badge badge-pinned">📌 Pinned</span> @endif
-                        @if($topic->is_locked) <span class="badge badge-locked">🔒 Locked</span> @endif
+                    <div class="topic-item-inner">
+                        <div class="topic-avatar {{ $topic->is_locked ? 'locked' : ($topic->is_pinned ? 'pinned' : '') }}">{{ $initials }}</div>
+                        <div class="topic-content">
+                            <h4>{{ $topic->title }}</h4>
+                            <div class="topic-author">by {{ $topic->author->name }}</div>
+                            <div class="topic-stats">
+                                <span class="topic-stat">💬 {{ $topic->posts_count }}</span>
+                                <span class="topic-stat">👁 {{ $topic->views }}</span>
+                            </div>
+                            @if($topic->is_pinned || $topic->is_locked)
+                                <div class="topic-badges">
+                                    @if($topic->is_pinned) <span class="badge badge-pinned">📌 Pinned</span> @endif
+                                    @if($topic->is_locked) <span class="badge badge-locked">🔒 Locked</span> @endif
+                                </div>
+                            @endif
+                        </div>
                     </div>
                     <form action="{{ route('lecturer.topics.destroy', $topic) }}" method="POST"
-                          onsubmit="return confirm('Delete this topic?')" onclick="event.stopPropagation()" style="margin-top:6px;">
+                          onsubmit="return confirm('Delete this topic?')" onclick="event.stopPropagation()">
                         @csrf @method('DELETE')
-                        <button type="submit" style="font-size:11px;color:#e53e3e;background:none;border:1px solid #e53e3e;border-radius:4px;padding:2px 8px;cursor:pointer;">🗑 Delete</button>
+                        <button type="submit" class="topic-delete-btn">🗑 Delete</button>
                     </form>
                 </div>
             @empty
-                <div style="padding:20px;text-align:center;color:#a0aec0;font-size:14px;">No topics yet.</div>
+                <div style="padding:40px 20px;text-align:center;color:rgba(255,255,255,0.3);font-size:13px;">
+                    <div style="font-size:32px;margin-bottom:8px;">📭</div>
+                    No topics yet.
+                </div>
             @endforelse
         </div>
     </aside>
