@@ -10,6 +10,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\Api\DashboardApiController;
 use App\Http\Controllers\StatisticsController;
+use App\Http\Controllers\ProfileController;
 
 // ── Guest Routes ───────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
@@ -28,6 +29,10 @@ Route::middleware('guest')->group(function () {
 // ── Authenticated Routes ───────────────────────────────────────────
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+    // Profile
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     // AI Recommendations — displayRecommendation() (AI sequence, Fig 3.13)
     Route::get('/recommendations', [App\Http\Controllers\Api\RecommendationController::class, 'index'])->name('recommendations');
@@ -54,6 +59,12 @@ Route::middleware(['auth', App\Http\Middleware\MemberMiddleware::class])->group(
     Route::get('/groups',                    [GroupController::class, 'studentIndex'])->name('groups.index');
     Route::post('/groups/{group}/join',      [GroupController::class, 'join'])->name('groups.join');
     Route::delete('/groups/{group}/leave',   [GroupController::class, 'leave'])->name('groups.leave');
+});
+
+// ── Export & Social Sharing (Week 3) ─────────────────────────────
+Route::middleware('auth')->group(function () {
+    Route::get('/topics/{topicId}/export-pdf', [App\Http\Controllers\ExportController::class, 'exportDiscussionPDF'])->name('topics.export-pdf');
+    Route::post('/posts/{postId}/share',       [App\Http\Controllers\ExportController::class, 'forwardToSocialMedia'])->name('posts.share');
 });
 
 // ── Topics / Content Management Routes ────────────────────────────
@@ -96,6 +107,19 @@ Route::middleware(['auth', App\Http\Middleware\LecturerMiddleware::class])->grou
     Route::get('/lecturer/groups',              [GroupController::class, 'index'])->name('lecturer.groups.index');
     Route::post('/lecturer/groups',             [GroupController::class, 'store'])->name('lecturer.groups.store');
     Route::delete('/lecturer/groups/{group}',   [GroupController::class, 'destroy'])->name('lecturer.groups.destroy');
+
+    // Lecturer topic participation panel
+    Route::get('/lecturer/topics',                                          [App\Http\Controllers\LecturerTopicController::class, 'index'])->name('lecturer.topics.index');
+    Route::post('/lecturer/topics',                                         [App\Http\Controllers\LecturerTopicController::class, 'store'])->name('lecturer.topics.store');
+    Route::get('/lecturer/topics/{topic}',                                  [App\Http\Controllers\LecturerTopicController::class, 'show'])->name('lecturer.topics.show');
+    Route::delete('/lecturer/topics/{topic}',                               [App\Http\Controllers\LecturerTopicController::class, 'destroy'])->name('lecturer.topics.destroy');
+    Route::post('/lecturer/topics/{topicId}/participate',                   [App\Http\Controllers\LecturerTopicController::class, 'participate'])->name('lecturer.topics.participate');
+    Route::post('/lecturer/posts/{postId}/answer',                          [App\Http\Controllers\LecturerTopicController::class, 'answer'])->name('lecturer.topics.answer');
+    Route::post('/lecturer/topics/{topic}/lock',                            [App\Http\Controllers\LecturerTopicController::class, 'lockTopic'])->name('lecturer.topics.lock');
+    Route::post('/lecturer/topics/{topic}/pin',                             [App\Http\Controllers\LecturerTopicController::class, 'pinTopic'])->name('lecturer.topics.pin');
+    Route::delete('/lecturer/topics/{topic}/users/{userId}',                [App\Http\Controllers\LecturerTopicController::class, 'removeUser'])->name('lecturer.topics.removeUser');
+    Route::post('/lecturer/topics/{topic}/users/{userId}/block',            [App\Http\Controllers\LecturerTopicController::class, 'blockUser'])->name('lecturer.topics.blockUser');
+    Route::post('/lecturer/topics/{topic}/users/{userId}/unblock',          [App\Http\Controllers\LecturerTopicController::class, 'unblockUser'])->name('lecturer.topics.unblockUser');
 });
 
 // ── Administrator Routes ───────────────────────────────────────────

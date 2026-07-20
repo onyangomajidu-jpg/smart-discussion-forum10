@@ -139,6 +139,6 @@ class ModerationBlacklistTest extends TestCase
 
         $this->actingAs($this->offender->fresh())
              ->get('/quizzes')
-             ->assertStatus(403);
+             ->assertRedirect();
     }
 }

@@ -31,12 +31,8 @@ public class LoginWindow extends JFrame {
     private static final Color ERROR_C   = new Color(0xDC, 0x35, 0x45);
 
     private final AuthService        authService;
-<<<<<<< HEAD
-    private final ApiClient          api;
-    private final LocalCacheDatabase cache;
-=======
-    private final LocalCacheDatabase  cache;
->>>>>>> main
+private final ApiClient api;
+private final LocalCacheDatabase cache;
 
     // Form fields
     private JTextField     emailField;
@@ -45,17 +41,12 @@ public class LoginWindow extends JFrame {
     private JButton        loginButton;
     private JLabel         statusLabel;
 
-<<<<<<< HEAD
-    public LoginWindow(AuthService authService, ApiClient api, LocalCacheDatabase cache) {
-        this.authService = authService;
-        this.api         = api;
-=======
-    public LoginWindow(AuthService authService, LocalCacheDatabase cache) {
-        this.authService = authService;
->>>>>>> main
-        this.cache       = cache;
-        buildUI();
-    }
+public LoginWindow(AuthService authService, ApiClient api, LocalCacheDatabase cache) {
+    this.authService = authService;
+    this.api = api;
+    this.cache = cache;
+    buildUI();
+}
 
     // ── UI construction ───────────────────────────────────────────────────
 
@@ -282,12 +273,7 @@ public class LoginWindow extends JFrame {
 
     private void onLoginSuccess(AuthUser user) {
         dispose();
-<<<<<<< HEAD
-        new MainWindow(user, authService, api, cache).setVisible(true);
-=======
-        MainWindow mainWindow = new MainWindow(user, authService, cache);
-        mainWindow.setVisible(true);
->>>>>>> main
+new MainWindow(user, authService, api, cache).setVisible(true);
     }
 
     private void showError(String msg) {

@@ -363,6 +363,23 @@
                 </div>
             </div>
 
+            <!-- Admin-specific fields -->
+            <div id="adminFields" class="role-specific-fields">
+                <h4 style="margin-bottom: 15px; color: #667eea;">Administrator Information</h4>
+                <div class="form-group">
+                    <label for="admin_registration_key">Admin Registration Key <span class="required">*</span></label>
+                    <input type="password" id="admin_registration_key" name="admin_registration_key" placeholder="Enter the admin registration key">
+                    <small style="color: #6c757d; font-size: 12px;">Contact the system owner to obtain this key.</small>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; font-weight: 500; cursor: pointer;">
+                        <input type="checkbox" id="super_admin" name="super_admin" value="1" {{ old('super_admin') ? 'checked' : '' }} style="width: 18px; height: 18px;">
+                        Grant Super Admin privileges
+                    </label>
+                    <small style="color: #6c757d; font-size: 12px;">Super admins have full system access including user management.</small>
+                </div>
+            </div>
+
             <!-- Forum Rules (Gate requirement) -->
             <div class="forum-rules-box">
                 <h3>📋 Forum Rules - Please Read Carefully</h3>
@@ -414,6 +431,8 @@
                 document.getElementById('memberFields').classList.add('active');
             } else if (role === 'lecturer') {
                 document.getElementById('lecturerFields').classList.add('active');
+            } else if (role === 'admin') {
+                document.getElementById('adminFields').classList.add('active');
             }
         });
 

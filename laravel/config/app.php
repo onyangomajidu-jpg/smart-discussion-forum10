@@ -123,4 +123,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'admin_registration_key' => env('ADMIN_REGISTRATION_KEY', 'admin@forum2024'),
+
 ];

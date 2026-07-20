@@ -23,6 +23,11 @@ class LecturerMiddleware
             abort(403, 'Access denied. Lecturers only.');
         }
 
+        if (auth()->user()->isBanned()) {
+            auth()->logout();
+            return redirect()->route('login')->with('error', 'Your account has been suspended.');
+        }
+
         return $next($request);
     }
 }

@@ -46,6 +46,15 @@ class RegisterController extends Controller
         }
 
         try {
+            // Verify admin registration key
+            if ($request->role === 'admin') {
+                if ($request->admin_registration_key !== config('app.admin_registration_key')) {
+                    return redirect()->back()
+                        ->withErrors(['admin_registration_key' => 'Invalid admin registration key.'])
+                        ->withInput();
+                }
+            }
+
             // Register user using AuthenticationService
             $user = $this->authService->register(
                 $request->all(),
@@ -105,6 +114,10 @@ class RegisterController extends Controller
                     $rules['staff_id'] = ['nullable', 'string', 'unique:lecturers'];
                     $rules['department'] = ['nullable', 'string'];
                     $rules['specialisation'] = ['nullable', 'string'];
+                    break;
+
+                case 'admin':
+                    $rules['admin_registration_key'] = ['required', 'string'];
                     break;
             }
         }
