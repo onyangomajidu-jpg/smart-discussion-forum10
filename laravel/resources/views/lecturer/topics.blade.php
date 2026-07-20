@@ -123,9 +123,9 @@
         .btn-cancel { padding: 8px 18px; border: 1px solid #e2e8f0; border-radius: 7px; cursor: pointer; background: white; }
         .btn-submit { padding: 8px 18px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 600; }
 
-        .alert { padding: 10px 16px; border-radius: 7px; margin-bottom: 12px; font-size: 14px; }
-        .alert-success { background: #c6f6d5; color: #276749; }
-        .alert-error { background: #fed7d7; color: #9b2c2c; }
+        .btn-share { background: linear-gradient(135deg,#25d366,#128c7e); color: white; border: none; }
+        .share-card { display:flex; align-items:center; gap:10px; padding:12px 14px; border:2px solid #e2e8f0; border-radius:10px; background:white; cursor:pointer; font-size:14px; font-weight:600; color:#2d3748; width:100%; }
+        #shareStatus { font-size:13px; min-height:20px; margin-bottom:8px; }
     </style>
 </head>
 <body>
@@ -230,6 +230,9 @@
                             {{ $activeTopic->is_locked ? '🔓 Unlock' : '🔒 Lock' }}
                         </button>
                     </form>
+                    <button class="btn-action btn-share" onclick="openShareModal({{ $activeTopic->id }})">
+                        🌐 Share
+                    </button>
                 </div>
             </div>
 
@@ -398,10 +401,102 @@
     </div>
 </div>
 
+{{-- Share Modal --}}
+<div class="modal-overlay" id="shareModal">
+    <div class="modal" style="width:500px;">
+        <h3>🌐 Share Discussion</h3>
+        <p style="font-size:13px;color:#718096;margin-bottom:14px;">Choose a platform to share the entire conversation.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+            <button class="share-card" data-platform="whatsapp" onclick="selectSharePlatform(this)">
+                <span style="font-size:22px;">💬</span> WhatsApp
+            </button>
+            <button class="share-card" data-platform="twitter" onclick="selectSharePlatform(this)">
+                <span style="font-size:22px;">𝕏</span> Twitter / X
+            </button>
+            <button class="share-card" data-platform="facebook" onclick="selectSharePlatform(this)">
+                <span style="font-size:22px;">📘</span> Facebook
+            </button>
+            <button class="share-card" data-platform="linkedin" onclick="selectSharePlatform(this)">
+                <span style="font-size:22px;">💼</span> LinkedIn
+            </button>
+        </div>
+        <div id="shareStatus"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="document.getElementById('shareModal').classList.remove('open')">Cancel</button>
+            <button class="btn-submit" id="shareBtn" onclick="submitShare()" disabled style="opacity:0.5;">🚀 Share Now</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     let editingPostId = null;
+    let selectedPlatform = null;
     let typingTimer = null;
+
+    function openShareModal(topicId) {
+        selectedPlatform = null;
+        document.getElementById('shareStatus').textContent = '';
+        document.getElementById('shareBtn').disabled = true;
+        document.getElementById('shareBtn').style.opacity = '0.5';
+        document.querySelectorAll('.share-card').forEach(c => { c.style.borderColor = '#e2e8f0'; c.style.background = 'white'; });
+        document.getElementById('shareModal').classList.add('open');
+    }
+
+    function selectSharePlatform(btn) {
+        document.querySelectorAll('.share-card').forEach(c => { c.style.borderColor = '#e2e8f0'; c.style.background = 'white'; });
+        btn.style.borderColor = '#667eea';
+        btn.style.background = '#f0f0ff';
+        selectedPlatform = btn.dataset.platform;
+        document.getElementById('shareBtn').disabled = false;
+        document.getElementById('shareBtn').style.opacity = '1';
+        document.getElementById('shareStatus').textContent = '';
+    }
+
+    function buildConversationText() {
+        const title = document.querySelector('.conv-header h2').textContent.trim();
+        let lines = ['📚 Discussion: "' + title + '"', ''];
+        const topicBody   = document.querySelector('.post-card[style*="border-left"] .post-body');
+        const topicAuthor = document.querySelector('.post-card[style*="border-left"] .post-author');
+        const topicTime   = document.querySelector('.post-card[style*="border-left"] .post-time');
+        if (topicAuthor && topicBody)
+            lines.push('[' + (topicTime ? topicTime.textContent.trim() : '') + '] ' + topicAuthor.textContent.trim() + ': ' + topicBody.textContent.trim(), '');
+        document.querySelectorAll('.post-card:not([style*="border-left"])').forEach(card => {
+            const author = card.querySelector('.post-author');
+            const body   = card.querySelector('.post-body');
+            const time   = card.querySelector('.post-time');
+            if (author && body) {
+                lines.push('[' + (time ? time.textContent.trim() : '') + '] ' + author.textContent.trim() + ': ' + body.textContent.trim());
+                card.querySelectorAll('.reply-card').forEach(r => {
+                    const ra = r.querySelector('.reply-author');
+                    const rb = r.querySelector('.reply-body');
+                    const rt = r.querySelector('span[style*="color:#a0aec0"]');
+                    if (ra && rb) lines.push('  ↩ [' + (rt ? rt.textContent.trim() : '') + '] ' + ra.textContent.trim() + ': ' + rb.textContent.trim());
+                });
+                lines.push('');
+            }
+        });
+        lines.push(window.location.href);
+        return lines.join('\n');
+    }
+
+    function submitShare() {
+        if (!selectedPlatform) return;
+        const conversation = buildConversationText();
+        const topicUrl  = encodeURIComponent(window.location.href);
+        const text      = encodeURIComponent(conversation);
+        const shortText = encodeURIComponent('📚 "' + document.querySelector('.conv-header h2').textContent.trim() + '" — join the discussion on SmartForum');
+        const urls = {
+            whatsapp: 'https://wa.me/?text=' + text,
+            twitter:  'https://twitter.com/intent/tweet?text=' + shortText + '&url=' + topicUrl,
+            facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + topicUrl + '&quote=' + text,
+            linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + topicUrl,
+        };
+        window.open(urls[selectedPlatform], '_blank', 'noopener,noreferrer');
+        const statusEl = document.getElementById('shareStatus');
+        statusEl.style.color = '#276749';
+        statusEl.textContent = '✅ ' + selectedPlatform.charAt(0).toUpperCase() + selectedPlatform.slice(1) + ' opened in a new tab.';
+    }
 
     function toggleReplyForm(postId) {
         const form = document.getElementById('reply-form-' + postId);

@@ -30,25 +30,33 @@
             width: 300px; background: white; border-right: 1px solid #e2e8f0;
             display: flex; flex-direction: column; flex-shrink: 0;
         }
-        .sidebar-header { padding: 16px; border-bottom: 1px solid #e2e8f0; }
-        .search-bar {
-            width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0;
-            border-radius: 8px; font-size: 14px; margin-bottom: 10px; outline: none;
-        }
-        .search-bar:focus { border-color: #667eea; }
-        .btn-create {
-            width: 100%; padding: 9px; background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;
-        }
-        .btn-create:hover { opacity: 0.9; }
-        .topic-list { flex: 1; overflow-y: auto; }
-        .topic-item {
-            padding: 14px 16px; border-bottom: 1px solid #f0f2f5; cursor: pointer;
-            transition: background 0.2s;
-        }
-        .topic-item:hover, .topic-item.active { background: #f0f0ff; }
-        .topic-item h4 { font-size: 14px; color: #2d3748; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .topic-meta { font-size: 12px; color: #718096; display: flex; justify-content: space-between; }
+        .sidebar-header { padding: 18px 16px 14px; border-bottom: 1px solid #e2e8f0; }
+        .sidebar-title { font-size: 11px; font-weight: 700; color: #a0aec0; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 12px; }
+        .search-bar { width: 100%; padding: 9px 12px 9px 36px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 13px; outline: none; background: #f7fafc; color: #2d3748; }
+        .search-bar::placeholder { color: #a0aec0; }
+        .search-bar:focus { border-color: #667eea; background: white; }
+        .search-wrap { position: relative; margin-bottom: 12px; }
+        .search-wrap::before { content: '🔍'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; pointer-events: none; }
+        .btn-create { width: 100%; padding: 10px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 13px; letter-spacing: 0.3px; transition: opacity 0.2s, transform 0.1s; }
+        .btn-create:hover { opacity: 0.9; transform: translateY(-1px); }
+        .topic-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+        .topic-list::-webkit-scrollbar { width: 4px; }
+        .topic-list::-webkit-scrollbar-track { background: transparent; }
+        .topic-list::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+        .topic-item { margin: 4px 10px; border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: background 0.18s; position: relative; }
+        .topic-item:hover { background: #f0f0ff; }
+        .topic-item.active { background: #ede9fe; box-shadow: inset 0 0 0 1px #c4b5fd; }
+        .topic-item-inner { display: flex; gap: 11px; align-items: flex-start; }
+        .topic-avatar { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: white; flex-shrink: 0; text-transform: uppercase; }
+        .topic-content { flex: 1; min-width: 0; }
+        .topic-item h4 { font-size: 13px; font-weight: 600; color: #2d3748; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .topic-item.active h4 { color: #4c1d95; }
+        .topic-author { font-size: 11px; color: #a0aec0; margin-bottom: 5px; }
+        .topic-stats { display: flex; gap: 10px; }
+        .topic-stat { display: flex; align-items: center; gap: 3px; font-size: 11px; color: #718096; }
+        .topic-delete-btn { position: absolute; top: 10px; right: 10px; opacity: 0; font-size: 11px; color: #e53e3e; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px; padding: 2px 7px; cursor: pointer; transition: opacity 0.15s; }
+        .topic-item:hover .topic-delete-btn { opacity: 1; }
+        .topics-count { padding: 6px 20px 2px; font-size: 11px; color: #a0aec0; font-weight: 600; }
 
         /* Participants Panel */
         .participants-panel {
@@ -161,35 +169,49 @@
     {{-- Sidebar --}}
     <aside class="sidebar">
         <div class="sidebar-header">
+            <div class="sidebar-title">📚 Topics</div>
             <form method="GET" action="{{ route('topics.index') }}">
-                <input type="text" name="search" class="search-bar" placeholder="🔍 Search topics..."
-                    value="{{ request('search') }}" oninput="this.form.submit()">
+                <div class="search-wrap">
+                    <input type="text" name="search" class="search-bar" placeholder="Search topics..."
+                        value="{{ request('search') }}" oninput="this.form.submit()">
+                </div>
             </form>
             @if(auth()->user()->isMember() || auth()->user()->isLecturer() || auth()->user()->isAdmin())
             <button class="btn-create" onclick="document.getElementById('createModal').classList.add('open')">
-                + Create Topic
+                + New Topic
             </button>
             @endif
         </div>
+        <div class="topics-count">{{ $topics->count() }} topic{{ $topics->count() !== 1 ? 's' : '' }}</div>
         <div class="topic-list">
             @forelse($topics as $topic)
+                @php $initials = strtoupper(substr($topic->title, 0, 2)); @endphp
                 <div class="topic-item {{ isset($activeTopic) && $activeTopic->id === $topic->id ? 'active' : '' }}"
                      onclick="window.location='{{ route('topics.show', $topic) }}'">
-                    <h4>{{ $topic->title }}</h4>
-                    <div class="topic-meta">
-                        <span>{{ $topic->author->name }}</span>
-                        <span>{{ $topic->posts_count }} posts · {{ $topic->views }} views</span>
+                    <div class="topic-item-inner">
+                        <div class="topic-avatar">{{ $initials }}</div>
+                        <div class="topic-content">
+                            <h4>{{ $topic->title }}</h4>
+                            <div class="topic-author">by {{ $topic->author->name }}</div>
+                            <div class="topic-stats">
+                                <span class="topic-stat">💬 {{ $topic->posts_count }}</span>
+                                <span class="topic-stat">👁 {{ $topic->views }}</span>
+                            </div>
+                        </div>
                     </div>
                     @if(auth()->id() === $topic->user_id || auth()->user()->isAdmin())
                         <form action="{{ route('topics.destroy', $topic) }}" method="POST"
                               onsubmit="return confirm('Delete this topic?')" onclick="event.stopPropagation()">
                             @csrf @method('DELETE')
-                            <button type="submit" style="margin-top:6px;font-size:11px;color:#e53e3e;background:none;border:1px solid #e53e3e;border-radius:4px;padding:2px 8px;cursor:pointer;">🗑 Delete</button>
+                            <button type="submit" class="topic-delete-btn">🗑 Delete</button>
                         </form>
                     @endif
                 </div>
             @empty
-                <div style="padding:20px;text-align:center;color:#a0aec0;font-size:14px;">No topics yet.</div>
+                <div style="padding:40px 20px;text-align:center;color:#a0aec0;font-size:13px;">
+                    <div style="font-size:32px;margin-bottom:8px;">📭</div>
+                    No topics yet.
+                </div>
             @endforelse
         </div>
     </aside>
@@ -539,42 +561,18 @@
         const conversation = buildConversationText();
         const topicUrl = encodeURIComponent(window.location.href);
         const text = encodeURIComponent(conversation);
-        // Twitter has a 280-char limit — use a short summary + URL
         const twitterText = encodeURIComponent(
             '📚 "' + document.querySelector('.conv-header h2').textContent.trim() + '" — join the discussion on SmartForum'
         );
-
         const shareUrls = {
             whatsapp: 'https://wa.me/?text=' + text,
             twitter:  'https://twitter.com/intent/tweet?text=' + twitterText + '&url=' + topicUrl,
             facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + topicUrl + '&quote=' + text,
             linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + topicUrl,
         };
-
         window.open(shareUrls[selectedPlatform], '_blank', 'noopener,noreferrer');
         statusEl.style.color = '#276749';
         statusEl.textContent = '✅ ' + selectedPlatform.charAt(0).toUpperCase() + selectedPlatform.slice(1) + ' opened in a new tab.';
-    }
-
-    function submitShare() {
-        const platform = document.getElementById('sharePlatform').value;
-        const statusEl = document.getElementById('shareStatus');
-        statusEl.style.color = '#718096';
-        statusEl.textContent = '⏳ Sharing to ' + platform + '…';
-        fetch(`/posts/${sharingPostId}/share`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ platform })
-        })
-        .then(r => r.json())
-        .then(data => {
-            statusEl.style.color = data.shared ? '#276749' : '#9b2c2c';
-            statusEl.textContent = (data.shared ? '✅ ' : '❌ ') + data.message;
-        })
-        .catch(() => {
-            statusEl.style.color = '#9b2c2c';
-            statusEl.textContent = '❌ Request failed.';
-        });
     }
 
 
