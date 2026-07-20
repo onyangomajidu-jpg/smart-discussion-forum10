@@ -25,6 +25,10 @@
                 <label class="form-label">Reason</label>
                 <input type="text" name="reason" class="form-control" placeholder="Reason for warning" required>
             </div>
+            <div class="form-group" style="flex:0 0 160px;margin:0">
+                <label class="form-label">Auto-ban duration (days)</label>
+                <input type="number" name="auto_blacklist_days" class="form-control" value="30" min="1" max="365" required>
+            </div>
             <button type="submit" class="btn btn-warning"><i class="fa-solid fa-triangle-exclamation"></i> Issue Warning</button>
         </form>
     </div>

@@ -32,10 +32,10 @@ class ParticipationRecord extends Model
     public static function gradeFromPercentage(float $pct): string
     {
         return match(true) {
-            $pct >= 80 => 'A',
-            $pct >= 65 => 'B',
-            $pct >= 50 => 'C',
-            $pct >= 40 => 'D',
+            $pct >= 85 => 'A',
+            $pct >= 75 => 'B',
+            $pct >= 65 => 'C',
+            $pct >= 50 => 'D',
             default    => 'F',
         };
     }

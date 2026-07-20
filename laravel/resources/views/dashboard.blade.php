@@ -245,25 +245,6 @@
         </div>
     </div>
 
-    <div class="panel panel-account">
-        <div class="panel-header">
-            <div class="panel-header-left"><i class="fa-solid fa-gear"></i> Account Management</div>
-        </div>
-        <div class="panel-body">
-            <div class="info-row"><span class="key">Full Name</span><span>{{ auth()->user()->name }}</span></div>
-            <div class="info-row"><span class="key">Email</span><span>{{ auth()->user()->email }}</span></div>
-            <div class="info-row">
-                <span class="key">Role</span>
-                <span class="role-badge role-{{ auth()->user()->role }}">{{ ucfirst(auth()->user()->role) }}</span>
-            </div>
-            <div class="info-row"><span class="key">Joined</span><span>{{ auth()->user()->created_at->format('M d, Y') }}</span></div>
-            <form action="{{ route('logout') }}" method="POST">
-                @csrf
-                <button type="submit" class="btn-signout-panel"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out</button>
-            </form>
-        </div>
-    </div>
-
     {{-- Row 3: AI Recommendations (full width) --}}
     <div class="panel panel-ai">
         <div class="panel-header">

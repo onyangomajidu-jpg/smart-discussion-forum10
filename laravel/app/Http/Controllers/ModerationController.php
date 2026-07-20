@@ -95,11 +95,12 @@ class ModerationController extends Controller
     public function issueWarning(Request $request)
     {
         $data = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'reason'  => 'required|string|max:255',
+            'user_id'             => 'required|exists:users,id',
+            'reason'              => 'required|string|max:255',
+            'auto_blacklist_days' => 'required|integer|min:1|max:365',
         ]);
 
-        $this->moderation->issueWarning($data['user_id'], $data['reason'], auth()->id());
+        $this->moderation->issueWarning($data['user_id'], $data['reason'], auth()->id(), $data['auto_blacklist_days']);
 
         return back()->with('success', 'Warning issued.');
     }
