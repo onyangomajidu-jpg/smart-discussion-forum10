@@ -364,18 +364,7 @@
             </div>
         </div>
 
-        {{-- Quick Links --}}
-        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:16px">
-            <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:12px">
-                <i class="fa-solid fa-bolt" style="color:#f59e0b"></i> Quick Actions
-            </div>
-            <a href="{{ route('lecturer.quizzes.create') }}" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-bottom:8px">
-                <i class="fa-solid fa-plus"></i> Create New Quiz
-            </a>
-            <a href="{{ route('lecturer.quizzes.index') }}" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center">
-                <i class="fa-solid fa-list"></i> View All Quizzes
-            </a>
-        </div>
+
 
     </div>
 </div>
