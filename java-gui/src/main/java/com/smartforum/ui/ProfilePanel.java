@@ -3,7 +3,10 @@ package com.smartforum.ui;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartforum.api.ApiClient;
+import com.smartforum.model.AdminProfile;
 import com.smartforum.model.AuthUser;
+import com.smartforum.model.LecturerProfile;
+import com.smartforum.model.MemberProfile;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -28,6 +31,11 @@ public class ProfilePanel extends JPanel {
     private JTextField  tfName, tfBio;
     private JPasswordField pfCurrent, pfNew, pfConfirm;
     private JLabel statusLbl;
+
+    // Member fields
+    private JTextField tfStudentId, tfProgramme, tfYearOfStudy;
+    // Lecturer fields
+    private JTextField tfStaffId, tfDepartment, tfSpecialisation;
 
     public ProfilePanel(ApiClient api, AuthUser user) {
         this.api  = api;
@@ -59,6 +67,10 @@ public class ProfilePanel extends JPanel {
         body.add(statusLbl);
         body.add(Box.createVerticalStrut(20));
         body.add(buildInfoCard());
+        body.add(Box.createVerticalStrut(16));
+        if (user.isMember())   body.add(buildMemberCard());
+        if (user.isLecturer()) body.add(buildLecturerCard());
+        if (user.isAdmin())    body.add(buildAdminCard());
         body.add(Box.createVerticalStrut(16));
         body.add(buildPasswordCard());
 
@@ -158,6 +170,17 @@ public class ProfilePanel extends JPanel {
                     JsonNode u = get().path("user");
                     tfName.setText(u.path("name").asText(user.getName()));
                     tfBio.setText(u.path("bio").asText(""));
+                    if (user.isMember()) {
+                        JsonNode m = u.path("member");
+                        tfStudentId.setText(m.path("student_id").asText(""));
+                        tfProgramme.setText(m.path("programme").asText(""));
+                        tfYearOfStudy.setText(String.valueOf(m.path("year_of_study").asInt(0)));
+                    } else if (user.isLecturer()) {
+                        JsonNode l = u.path("lecturer");
+                        tfStaffId.setText(l.path("staff_id").asText(""));
+                        tfDepartment.setText(l.path("department").asText(""));
+                        tfSpecialisation.setText(l.path("specialisation").asText(""));
+                    }
                 } catch (Exception ignored) {}
             }
         }.execute();
@@ -208,6 +231,129 @@ public class ProfilePanel extends JPanel {
                 } catch (Exception e) {
                     showStatus("Failed to change password.", DANGER);
                 }
+            }
+        }.execute();
+    }
+
+    // ── Role-specific cards ───────────────────────────────────────────────
+
+    private JPanel buildMemberCard() {
+        JPanel card = card("🎓 Student Profile");
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(SURFACE);
+        form.setBorder(new EmptyBorder(16, 16, 16, 16));
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.insets = new Insets(6, 4, 6, 4);
+        gc.fill = GridBagConstraints.HORIZONTAL;
+
+        tfStudentId   = new JTextField(); tfStudentId.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tfProgramme   = new JTextField(); tfProgramme.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tfYearOfStudy = new JTextField(); tfYearOfStudy.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+
+        // Reputation — read-only, populated from cached profile
+        int rep = user.getMemberProfile() != null ? user.getMemberProfile().reputation : 0;
+        JLabel repLbl = new JLabel(String.valueOf(rep));
+        repLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        repLbl.setForeground(PRIMARY);
+
+        gc.gridx = 0; gc.gridy = 0; gc.weightx = 0; form.add(label("Student ID"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(tfStudentId, gc);
+        gc.gridx = 0; gc.gridy = 1; gc.weightx = 0; form.add(label("Programme"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(tfProgramme, gc);
+        gc.gridx = 0; gc.gridy = 2; gc.weightx = 0; form.add(label("Year of Study"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(tfYearOfStudy, gc);
+        gc.gridx = 0; gc.gridy = 3; gc.weightx = 0; form.add(label("Reputation"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(repLbl, gc);
+
+        gc.gridx = 1; gc.gridy = 4;
+        JButton saveBtn = primaryButton("Save Student Info");
+        saveBtn.addActionListener(e -> saveMemberProfile());
+        form.add(saveBtn, gc);
+
+        card.add(form, BorderLayout.CENTER);
+        return card;
+    }
+
+    private JPanel buildLecturerCard() {
+        JPanel card = card("🏫 Lecturer Profile");
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(SURFACE);
+        form.setBorder(new EmptyBorder(16, 16, 16, 16));
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.insets = new Insets(6, 4, 6, 4);
+        gc.fill = GridBagConstraints.HORIZONTAL;
+
+        tfStaffId        = new JTextField(); tfStaffId.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tfDepartment     = new JTextField(); tfDepartment.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tfSpecialisation = new JTextField(); tfSpecialisation.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+
+        gc.gridx = 0; gc.gridy = 0; gc.weightx = 0; form.add(label("Staff ID"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(tfStaffId, gc);
+        gc.gridx = 0; gc.gridy = 1; gc.weightx = 0; form.add(label("Department"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(tfDepartment, gc);
+        gc.gridx = 0; gc.gridy = 2; gc.weightx = 0; form.add(label("Specialisation"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(tfSpecialisation, gc);
+
+        gc.gridx = 1; gc.gridy = 3;
+        JButton saveBtn = primaryButton("Save Lecturer Info");
+        saveBtn.addActionListener(e -> saveLecturerProfile());
+        form.add(saveBtn, gc);
+
+        card.add(form, BorderLayout.CENTER);
+        return card;
+    }
+
+    private JPanel buildAdminCard() {
+        JPanel card = card("🛡 Admin Profile");
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(SURFACE);
+        form.setBorder(new EmptyBorder(16, 16, 16, 16));
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.insets = new Insets(6, 4, 6, 4);
+        gc.fill = GridBagConstraints.HORIZONTAL;
+
+        boolean isSuperAdmin = user.getAdminProfile() != null && user.getAdminProfile().superAdmin;
+        JLabel superLbl = new JLabel(isSuperAdmin ? "✅ Super Admin" : "Standard Admin");
+        superLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        superLbl.setForeground(isSuperAdmin ? new Color(0x10, 0xB9, 0x81) : MUTED);
+
+        gc.gridx = 0; gc.gridy = 0; gc.weightx = 0; form.add(label("Admin Level"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(superLbl, gc);
+
+        card.add(form, BorderLayout.CENTER);
+        return card;
+    }
+
+    // ── Role-specific save ────────────────────────────────────────────────
+
+    private void saveMemberProfile() {
+        Map<String, Object> body = new HashMap<>();
+        body.put("student_id",    tfStudentId.getText().trim());
+        body.put("programme",     tfProgramme.getText().trim());
+        body.put("year_of_study", tfYearOfStudy.getText().trim());
+        new SwingWorker<Void, Void>() {
+            @Override protected Void doInBackground() throws Exception {
+                api.put("/profile/member", body); return null;
+            }
+            @Override protected void done() {
+                try { get(); showStatus("Student info updated.", new Color(0x10, 0xB9, 0x81)); }
+                catch (Exception e) { showStatus("Failed to update student info.", DANGER); }
+            }
+        }.execute();
+    }
+
+    private void saveLecturerProfile() {
+        Map<String, Object> body = new HashMap<>();
+        body.put("staff_id",       tfStaffId.getText().trim());
+        body.put("department",     tfDepartment.getText().trim());
+        body.put("specialisation", tfSpecialisation.getText().trim());
+        new SwingWorker<Void, Void>() {
+            @Override protected Void doInBackground() throws Exception {
+                api.put("/profile/lecturer", body); return null;
+            }
+            @Override protected void done() {
+                try { get(); showStatus("Lecturer info updated.", new Color(0x10, 0xB9, 0x81)); }
+                catch (Exception e) { showStatus("Failed to update lecturer info.", DANGER); }
             }
         }.execute();
     }

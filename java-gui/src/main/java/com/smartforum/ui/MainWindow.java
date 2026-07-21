@@ -63,6 +63,8 @@ public class MainWindow extends JFrame {
         GroupsPanel      groupsPanel      = new GroupsPanel(api, user);
         ProfilePanel     profilePanel     = new ProfilePanel(api, user);
         QuizPanel        quizPanel        = new QuizPanel(api, user);
+        LecturerAnalyticsPanel lecturerAnalyticsPanel =
+            (user.isLecturer() || user.isAdmin()) ? new LecturerAnalyticsPanel(api) : null;
 
         // ── Sync listener ─────────────────────────────────────────────────
         syncManager.setSyncListener(() -> {

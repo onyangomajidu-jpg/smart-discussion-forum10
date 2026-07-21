@@ -36,6 +36,7 @@ public class OfflineSyncManager {
     }
 
     public void setSyncListener(SyncListener l) { this.syncListener = l; }
+    public ApiClient getApi() { return api; }
 
     // ── storeOfflineData() ────────────────────────────────────────────────
 

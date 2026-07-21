@@ -18,6 +18,8 @@ public class ModerationPanel extends JPanel {
     private static final Color DANGER   = new Color(0xEF, 0x44, 0x44);
     private static final Color AMBER    = new Color(0xF5, 0x9E, 0x0B);
     private static final Color GREEN    = new Color(0x10, 0xB9, 0x81);
+    private static final Color PURPLE   = new Color(0x8B, 0x5C, 0xF6);
+    private static final Color BLUE     = new Color(0x1D, 0x4E, 0xD8);
     private static final Color BG       = new Color(0xF1, 0xF5, 0xF9);
     private static final Color SURFACE  = Color.WHITE;
     private static final Color MUTED    = new Color(0x64, 0x74, 0x8B);
@@ -84,6 +86,8 @@ public class ModerationPanel extends JPanel {
         body.add(Box.createVerticalStrut(4));
         body.add(statusLbl);
         body.add(Box.createVerticalStrut(20));
+        body.add(buildAdminStatsSection());
+        body.add(Box.createVerticalStrut(20));
         body.add(buildWarningsSection());
         body.add(Box.createVerticalStrut(20));
         body.add(buildBlacklistSection());
@@ -94,6 +98,109 @@ public class ModerationPanel extends JPanel {
         scroll.setBorder(null);
         scroll.getViewport().setBackground(BG);
         add(scroll, BorderLayout.CENTER);
+    }
+
+    // ── Admin Dashboard Stats ─────────────────────────────────────────────
+
+    private JLabel lblMembers, lblLecturers, lblQuizzes, lblOpenWarnings, lblActiveBans;
+    private DefaultTableModel recentUsersModel;
+
+    private JPanel buildAdminStatsSection() {
+        JPanel section = new JPanel();
+        section.setLayout(new BoxLayout(section, BoxLayout.Y_AXIS));
+        section.setBackground(BG);
+        section.setAlignmentX(LEFT_ALIGNMENT);
+
+        // KPI row
+        JPanel kpiRow = new JPanel(new GridLayout(1, 5, 12, 0));
+        kpiRow.setBackground(BG);
+        kpiRow.setAlignmentX(LEFT_ALIGNMENT);
+        kpiRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
+
+        lblMembers      = new JLabel("—");
+        lblLecturers    = new JLabel("—");
+        lblQuizzes      = new JLabel("—");
+        lblOpenWarnings = new JLabel("—");
+        lblActiveBans   = new JLabel("—");
+
+        kpiRow.add(kpiCard("👥", lblMembers,      "Members",       PRIMARY));
+        kpiRow.add(kpiCard("🎓", lblLecturers,    "Lecturers",     PURPLE));
+        kpiRow.add(kpiCard("📋", lblQuizzes,      "Quizzes",       BLUE));
+        kpiRow.add(kpiCard("⚠",  lblOpenWarnings, "Open Warnings", AMBER));
+        kpiRow.add(kpiCard("🚫", lblActiveBans,   "Active Bans",   DANGER));
+
+        // Recent users table
+        JPanel tableCard = card("👤 Recent Users", PRIMARY);
+        recentUsersModel = new DefaultTableModel(
+            new String[]{"Name", "Email", "Role", "Joined"}, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        JTable table = new JTable(recentUsersModel);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        table.setRowHeight(28);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        table.setGridColor(BORDER_C);
+        JPanel tableBody = new JPanel(new BorderLayout());
+        tableBody.setBackground(SURFACE);
+        tableBody.add(new JScrollPane(table), BorderLayout.CENTER);
+        tableCard.add(tableBody, BorderLayout.CENTER);
+        tableCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 280));
+
+        section.add(kpiRow);
+        section.add(Box.createVerticalStrut(16));
+        section.add(tableCard);
+        return section;
+    }
+
+    private JPanel kpiCard(String icon, JLabel valLbl, String caption, Color accent) {
+        JPanel card = new JPanel(new BorderLayout(0, 4));
+        card.setBackground(SURFACE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(3, 0, 0, 0, accent),
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER_C),
+                new EmptyBorder(12, 14, 12, 14))));
+        JLabel ico = new JLabel(icon);
+        ico.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
+        valLbl.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        valLbl.setForeground(accent);
+        JLabel lbl = new JLabel(caption);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lbl.setForeground(MUTED);
+        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        top.setOpaque(false);
+        top.add(ico);
+        card.add(top,    BorderLayout.NORTH);
+        card.add(valLbl, BorderLayout.CENTER);
+        card.add(lbl,    BorderLayout.SOUTH);
+        return card;
+    }
+
+    private void loadAdminStats() {
+        new SwingWorker<JsonNode, Void>() {
+            @Override protected JsonNode doInBackground() throws Exception {
+                return mapper.readTree(api.get("/admin/dashboard"));
+            }
+            @Override protected void done() {
+                try {
+                    JsonNode d = get();
+                    lblMembers.setText(String.valueOf(d.path("members").asInt(0)));
+                    lblLecturers.setText(String.valueOf(d.path("lecturers").asInt(0)));
+                    lblQuizzes.setText(String.valueOf(d.path("quizzes").asInt(0)));
+                    lblOpenWarnings.setText(String.valueOf(d.path("open_warnings").asInt(0)));
+                    lblActiveBans.setText(String.valueOf(d.path("active_bans").asInt(0)));
+                    recentUsersModel.setRowCount(0);
+                    for (JsonNode u : d.path("recent_users")) {
+                        recentUsersModel.addRow(new Object[]{
+                            u.path("name").asText(),
+                            u.path("email").asText(),
+                            u.path("role").asText(),
+                            u.path("created_at").asText("—")
+                        });
+                    }
+                } catch (Exception ignored) {}
+            }
+        }.execute();
     }
 
     // ── Warnings ──────────────────────────────────────────────────────────
@@ -242,6 +349,7 @@ public class ModerationPanel extends JPanel {
     // ── Data loading ──────────────────────────────────────────────────────
 
     private void loadAll() {
+        loadAdminStats();
         loadUsers();
         loadWarnings();
         loadBlacklists();
@@ -333,7 +441,7 @@ public class ModerationPanel extends JPanel {
     private void resolveWarning(int id) {
         new SwingWorker<Void, Void>() {
             @Override protected Void doInBackground() throws Exception {
-                api.post("/admin/warnings/" + id + "/resolve", Map.of());
+                api.patch("/admin/warnings/" + id + "/resolve", Map.of());
                 return null;
             }
             @Override protected void done() {

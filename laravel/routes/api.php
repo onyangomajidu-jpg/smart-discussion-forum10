@@ -113,6 +113,7 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     Route::get('/quizzes/{quiz}/result',      [QuizController::class, 'apiResult']);
 
     // ── Lecturer quiz routes ──────────────────────────────────────────────
+    Route::get('/lecturer/analytics',              [\App\Http\Controllers\StatisticsController::class, 'apiLecturerAnalytics']);
     Route::get('/lecturer/quizzes',                  [QuizController::class, 'apiLecturerIndex']);
     Route::post('/lecturer/quizzes',                 [QuizController::class, 'apiStore']);
     Route::post('/lecturer/quizzes/{quiz}/publish',  [QuizController::class, 'apiPublish']);
@@ -122,6 +123,7 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     Route::get('/lecturer/analytics',                [StatisticsController::class, 'apiLecturerAnalytics']);
 
     // ── Admin moderation routes ───────────────────────────────────────────
+    Route::get('/admin/dashboard',              [ModerationController::class, 'apiAdminStats']);
     Route::get('/admin/warnings',                [ModerationController::class, 'apiWarnings']);
     Route::post('/admin/warnings',               [ModerationController::class, 'apiIssueWarning']);
     Route::patch('/admin/warnings/{id}/resolve', [ModerationController::class, 'resolveWarning']);

@@ -39,12 +39,35 @@ public class LocalCacheDatabase {
     }
 
     private void migrateSchema(Connection conn) throws SQLException {
-        // Add user_id to cached_topics if missing (schema upgrade)
+        // Add user_id to cached_topics if missing
         try (ResultSet rs = conn.getMetaData().getColumns(null, null, "cached_topics", "user_id")) {
             if (!rs.next()) {
                 conn.createStatement().execute(
                     "ALTER TABLE cached_topics ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0");
                 System.out.println("[LocalCache] Migrated: added user_id to cached_topics.");
+            }
+        }
+        // Add role-specific profile columns to session_cache if missing
+        String[][] newCols = {
+            {"avatar",        "TEXT"},
+            {"bio",           "TEXT"},
+            {"is_active",     "INTEGER NOT NULL DEFAULT 1"},
+            {"student_id",    "TEXT"},
+            {"programme",     "TEXT"},
+            {"year_of_study", "INTEGER NOT NULL DEFAULT 0"},
+            {"reputation",    "INTEGER NOT NULL DEFAULT 0"},
+            {"staff_id",      "TEXT"},
+            {"department",    "TEXT"},
+            {"specialisation","TEXT"},
+            {"super_admin",   "INTEGER NOT NULL DEFAULT 0"}
+        };
+        for (String[] col : newCols) {
+            try (ResultSet rs = conn.getMetaData().getColumns(null, null, "session_cache", col[0])) {
+                if (!rs.next()) {
+                    conn.createStatement().execute(
+                        "ALTER TABLE session_cache ADD COLUMN " + col[0] + " " + col[1]);
+                    System.out.println("[LocalCache] Migrated: added " + col[0] + " to session_cache.");
+                }
             }
         }
     }

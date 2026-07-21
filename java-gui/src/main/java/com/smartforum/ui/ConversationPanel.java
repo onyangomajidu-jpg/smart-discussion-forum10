@@ -31,6 +31,7 @@ public class ConversationPanel extends JPanel {
     private final OfflineSyncManager syncManager;
 
     private Topic           currentTopic;
+    private JButton         pinBtn, lockBtn;
     private final JLabel    topicHeader  = new JLabel("  💬 Select a topic");
     private final JPanel    postsPanel   = new JPanel();
     private final JTextArea composeBox   = new JTextArea(3, 40);
@@ -60,6 +61,49 @@ public class ConversationPanel extends JPanel {
         topicHeader.setOpaque(true);
         topicHeader.setBackground(PRIMARY);
         topicHeader.setBorder(new EmptyBorder(14, 16, 14, 16));
+
+        // Topic action buttons (lecturer/admin only — set visible in loadTopic)
+        JButton pinBtn  = new JButton("📌 Pin");
+        JButton lockBtn = new JButton("🔒 Lock");
+        styleActionBtn(pinBtn,  new Color(0xF5, 0x9E, 0x0B));
+        styleActionBtn(lockBtn, new Color(0xEF, 0x44, 0x44));
+        pinBtn.setVisible(false);
+        lockBtn.setVisible(false);
+        pinBtn.addActionListener(e -> {
+            if (currentTopic == null) return;
+            new SwingWorker<Void, Void>() {
+                @Override protected Void doInBackground() throws Exception {
+                    syncManager.getApi().post("/topics/" + currentTopic.id + "/pin", java.util.Map.of());
+                    return null;
+                }
+                @Override protected void done() {
+                    try { get(); syncManager.synchronizeOfflineData(); } catch (Exception ignored) {}
+                }
+            }.execute();
+        });
+        lockBtn.addActionListener(e -> {
+            if (currentTopic == null) return;
+            new SwingWorker<Void, Void>() {
+                @Override protected Void doInBackground() throws Exception {
+                    syncManager.getApi().post("/topics/" + currentTopic.id + "/lock", java.util.Map.of());
+                    return null;
+                }
+                @Override protected void done() {
+                    try { get(); syncManager.synchronizeOfflineData(); } catch (Exception ignored) {}
+                }
+            }.execute();
+        });
+
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(PRIMARY);
+        JPanel headerBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 8));
+        headerBtns.setOpaque(false);
+        headerBtns.add(pinBtn);
+        headerBtns.add(lockBtn);
+        headerPanel.add(topicHeader, BorderLayout.CENTER);
+        headerPanel.add(headerBtns, BorderLayout.EAST);
+        this.pinBtn  = pinBtn;
+        this.lockBtn = lockBtn;
 
         // Posts area
         postsPanel.setLayout(new BoxLayout(postsPanel, BoxLayout.Y_AXIS));
@@ -129,7 +173,7 @@ public class ConversationPanel extends JPanel {
         bottom.add(composeRow,   BorderLayout.CENTER);
         bottom.add(syndicateRow, BorderLayout.SOUTH);
 
-        add(topicHeader, BorderLayout.NORTH);
+        add(headerPanel, BorderLayout.NORTH);
         add(scroll,      BorderLayout.CENTER);
         add(buildSouthPanel(bottom), BorderLayout.SOUTH);
     }
@@ -171,6 +215,9 @@ public class ConversationPanel extends JPanel {
         sendBtn.setEnabled(!topic.locked);
         if (topic.locked) statusLbl.setText("🔒 This topic is locked.");
         else statusLbl.setText(" ");
+        boolean canModerate = user.isLecturer() || user.isAdmin();
+        if (pinBtn  != null) { pinBtn.setVisible(canModerate);  pinBtn.setText(topic.pinned  ? "📌 Unpin" : "📌 Pin"); }
+        if (lockBtn != null) { lockBtn.setVisible(canModerate); lockBtn.setText(topic.locked ? "🔓 Unlock" : "🔒 Lock"); }
         refreshPosts();
     }
 
@@ -428,6 +475,15 @@ public class ConversationPanel extends JPanel {
         btn.setFocusPainted(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return btn;
+    }
+
+    private void styleActionBtn(JButton btn, Color bg) {
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btn.setForeground(Color.WHITE);
+        btn.setBackground(bg);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
     }
 
     private void scrollToBottom() {

@@ -71,6 +71,21 @@ public class QuizPanel extends JPanel {
         heroLeft.add(heroSub);
         hero.add(heroLeft, BorderLayout.WEST);
 
+        if (user.isLecturer() || user.isAdmin()) {
+            JButton createBtn = new JButton("➕ Create Quiz");
+            createBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            createBtn.setForeground(PRIMARY);
+            createBtn.setBackground(Color.WHITE);
+            createBtn.setBorderPainted(false);
+            createBtn.setFocusPainted(false);
+            createBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            createBtn.addActionListener(e -> showCreateQuizDialog());
+            JPanel heroRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+            heroRight.setOpaque(false);
+            heroRight.add(createBtn);
+            hero.add(heroRight, BorderLayout.EAST);
+        }
+
         // Status + refresh row
         statusLbl = new JLabel(" ");
         statusLbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -211,11 +226,24 @@ public class QuizPanel extends JPanel {
         info.add(metaRow);
 
         // Action button
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         actionPanel.setOpaque(false);
         int quizId = q.path("id").asInt();
 
-        if (attempted) {
+        if (user.isLecturer() || user.isAdmin()) {
+            // Lecturer view: Publish (if draft) + Results
+            String status = q.path("status").asText("draft");
+            if ("draft".equals(status)) {
+                JButton publishBtn = new JButton("📤 Publish");
+                styleBtn(publishBtn, GREEN);
+                publishBtn.addActionListener(e -> publishQuiz(quizId));
+                actionPanel.add(publishBtn);
+            }
+            JButton resultsBtn = new JButton("📊 Results");
+            styleBtn(resultsBtn, CYAN);
+            resultsBtn.addActionListener(e -> showLecturerResults(quizId, q.path("title").asText()));
+            actionPanel.add(resultsBtn);
+        } else if (attempted) {
             JButton resultBtn = new JButton("📋 View Result");
             styleBtn(resultBtn, PURPLE);
             resultBtn.addActionListener(e -> showResult(quizId));
@@ -276,6 +304,414 @@ public class QuizPanel extends JPanel {
         lbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         p.add(lbl, BorderLayout.CENTER);
         return p;
+    }
+
+    // ── Create quiz (lecturer) ─────────────────────────────────────────────
+
+    private void showCreateQuizDialog() {
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
+            "Create New Quiz", true);
+        dialog.setSize(780, 700);
+        dialog.setLocationRelativeTo(this);
+
+        // ── Form fields ───────────────────────────────────────────────────
+        JTextField tfTitle       = new JTextField();
+        JTextArea  taDesc        = new JTextArea(3, 20);
+        taDesc.setLineWrap(true); taDesc.setWrapStyleWord(true);
+        JComboBox<String> cbGroup = new JComboBox<>();
+        java.util.List<Integer> groupIds = new ArrayList<>();
+        JSpinner spDuration      = new JSpinner(new SpinnerNumberModel(30, 1, 180, 5));
+        JTextField tfUnlock      = new JTextField("yyyy-MM-dd HH:mm");
+        JTextField tfDeadline    = new JTextField("yyyy-MM-dd HH:mm");
+        JCheckBox  chkAutoSubmit = new JCheckBox("Auto-submit on timer expiry", true);
+
+        // Load groups into combo
+        new SwingWorker<JsonNode, Void>() {
+            @Override protected JsonNode doInBackground() throws Exception {
+                return mapper.readTree(api.get("/groups"));
+            }
+            @Override protected void done() {
+                try {
+                    for (JsonNode g : get()) {
+                        groupIds.add(g.path("id").asInt());
+                        cbGroup.addItem(g.path("name").asText());
+                    }
+                } catch (Exception ignored) {}
+            }
+        }.execute();
+
+        // ── Questions panel ───────────────────────────────────────────────
+        JPanel questionsContainer = new JPanel();
+        questionsContainer.setLayout(new BoxLayout(questionsContainer, BoxLayout.Y_AXIS));
+        questionsContainer.setBackground(BG);
+        java.util.List<QuestionRow> questionRows = new ArrayList<>();
+
+        Runnable addQuestion = () -> {
+            QuestionRow row = new QuestionRow(questionRows.size() + 1, questionsContainer, questionRows);
+            questionRows.add(row);
+            questionsContainer.add(row.panel);
+            questionsContainer.add(Box.createVerticalStrut(10));
+            questionsContainer.revalidate();
+            questionsContainer.repaint();
+        };
+        addQuestion.run(); // start with one question
+
+        JButton addQBtn = new JButton("+ Add Question");
+        styleBtn(addQBtn, PURPLE);
+        addQBtn.addActionListener(e -> addQuestion.run());
+
+        // ── Layout ────────────────────────────────────────────────────────
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(SURFACE);
+        form.setBorder(new EmptyBorder(20, 20, 10, 20));
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.insets = new Insets(6, 4, 6, 4);
+        gc.fill = GridBagConstraints.HORIZONTAL;
+
+        int row = 0;
+        gc.gridx = 0; gc.gridy = row; gc.weightx = 0; form.add(formLabel("Title *"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(tfTitle, gc);
+
+        gc.gridx = 0; gc.gridy = ++row; gc.weightx = 0; form.add(formLabel("Description"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(new JScrollPane(taDesc), gc);
+
+        gc.gridx = 0; gc.gridy = ++row; gc.weightx = 0; form.add(formLabel("Group *"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(cbGroup, gc);
+
+        gc.gridx = 0; gc.gridy = ++row; gc.weightx = 0; form.add(formLabel("Duration (min) *"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(spDuration, gc);
+
+        gc.gridx = 0; gc.gridy = ++row; gc.weightx = 0; form.add(formLabel("Unlock Date"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(tfUnlock, gc);
+
+        gc.gridx = 0; gc.gridy = ++row; gc.weightx = 0; form.add(formLabel("Hard Deadline"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(tfDeadline, gc);
+
+        gc.gridx = 1; gc.gridy = ++row; form.add(chkAutoSubmit, gc);
+
+        JPanel qSection = new JPanel(new BorderLayout());
+        qSection.setBackground(BG);
+        qSection.setBorder(new EmptyBorder(10, 20, 10, 20));
+        JLabel qTitle = new JLabel("Questions");
+        qTitle.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        qTitle.setForeground(TEXT);
+        JPanel qHeader = new JPanel(new BorderLayout());
+        qHeader.setBackground(BG);
+        qHeader.add(qTitle, BorderLayout.WEST);
+        qHeader.add(addQBtn, BorderLayout.EAST);
+        qSection.add(qHeader, BorderLayout.NORTH);
+        qSection.add(new JScrollPane(questionsContainer), BorderLayout.CENTER);
+
+        JLabel errLbl = new JLabel(" ");
+        errLbl.setForeground(DANGER);
+        errLbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        errLbl.setBorder(new EmptyBorder(0, 20, 0, 20));
+
+        JButton saveBtn    = new JButton("💾 Save as Draft");
+        JButton publishBtn = new JButton("📤 Save & Publish");
+        styleBtn(saveBtn, PRIMARY);
+        styleBtn(publishBtn, GREEN);
+
+        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        bottom.setBackground(SURFACE);
+        bottom.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER_C));
+        bottom.add(saveBtn);
+        bottom.add(publishBtn);
+
+        JPanel content = new JPanel(new BorderLayout());
+        content.add(form,     BorderLayout.NORTH);
+        content.add(qSection, BorderLayout.CENTER);
+        content.add(errLbl,   BorderLayout.SOUTH);
+
+        JScrollPane scrollContent = new JScrollPane(content);
+        scrollContent.setBorder(null);
+
+        dialog.setLayout(new BorderLayout());
+        dialog.add(scrollContent, BorderLayout.CENTER);
+        dialog.add(bottom,        BorderLayout.SOUTH);
+
+        // ── Submit logic ──────────────────────────────────────────────────
+        java.util.function.Consumer<Boolean> doSubmit = (andPublish) -> {
+            String title = tfTitle.getText().trim();
+            if (title.isEmpty()) { errLbl.setText("Title is required."); return; }
+            if (groupIds.isEmpty() || cbGroup.getSelectedIndex() < 0) {
+                errLbl.setText("Please select a group."); return;
+            }
+            if (questionRows.isEmpty()) { errLbl.setText("Add at least one question."); return; }
+
+            java.util.List<Map<String, Object>> questions = new ArrayList<>();
+            for (QuestionRow qr : questionRows) {
+                Map<String, Object> qMap = qr.toMap();
+                if (qMap == null) { errLbl.setText("Fill in all question fields."); return; }
+                questions.add(qMap);
+            }
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("title",            title);
+            body.put("description",      taDesc.getText().trim());
+            body.put("group_id",         groupIds.get(cbGroup.getSelectedIndex()));
+            body.put("duration_minutes", spDuration.getValue());
+            body.put("auto_submit",      chkAutoSubmit.isSelected());
+            body.put("enforce_focus",    false);
+            body.put("questions",        questions);
+            String unlock   = tfUnlock.getText().trim();
+            String deadline = tfDeadline.getText().trim();
+            if (!unlock.equals("yyyy-MM-dd HH:mm") && !unlock.isEmpty())
+                body.put("unlock_date", unlock.replace(" ", "T") + ":00");
+            if (!deadline.equals("yyyy-MM-dd HH:mm") && !deadline.isEmpty())
+                body.put("hard_deadline", deadline.replace(" ", "T") + ":00");
+
+            saveBtn.setEnabled(false); publishBtn.setEnabled(false);
+            errLbl.setText("Saving…");
+            errLbl.setForeground(MUTED);
+
+            new SwingWorker<JsonNode, Void>() {
+                @Override protected JsonNode doInBackground() throws Exception {
+                    JsonNode created = mapper.readTree(api.post("/lecturer/quizzes", body));
+                    if (andPublish) {
+                        int newId = created.path("id").asInt();
+                        api.post("/lecturer/quizzes/" + newId + "/publish", Map.of());
+                    }
+                    return created;
+                }
+                @Override protected void done() {
+                    try {
+                        get();
+                        dialog.dispose();
+                        loadQuizzes();
+                    } catch (Exception ex) {
+                        saveBtn.setEnabled(true); publishBtn.setEnabled(true);
+                        errLbl.setText("Error: " + ex.getMessage());
+                        errLbl.setForeground(DANGER);
+                    }
+                }
+            }.execute();
+        };
+
+        saveBtn.addActionListener(e    -> doSubmit.accept(false));
+        publishBtn.addActionListener(e -> doSubmit.accept(true));
+
+        dialog.setVisible(true);
+    }
+
+    // ── Publish existing draft ────────────────────────────────────────────
+
+    private void publishQuiz(int quizId) {
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Publish this quiz? Students will be able to see and attempt it.",
+            "Confirm Publish", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) return;
+        new SwingWorker<Void, Void>() {
+            @Override protected Void doInBackground() throws Exception {
+                api.post("/lecturer/quizzes/" + quizId + "/publish", Map.of());
+                return null;
+            }
+            @Override protected void done() {
+                try {
+                    get();
+                    loadQuizzes();
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(QuizPanel.this,
+                        "Publish failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
+    }
+
+    // ── Lecturer results view ─────────────────────────────────────────────
+
+    private void showLecturerResults(int quizId, String quizTitle) {
+        new SwingWorker<JsonNode, Void>() {
+            @Override protected JsonNode doInBackground() throws Exception {
+                return mapper.readTree(api.get("/lecturer/quizzes/" + quizId + "/results"));
+            }
+            @Override protected void done() {
+                try {
+                    JsonNode data = get();
+                    JsonNode results = data.path("results");
+
+                    JDialog d = new JDialog((Frame) SwingUtilities.getWindowAncestor(QuizPanel.this),
+                        "Results — " + quizTitle, true);
+                    d.setSize(620, 420);
+                    d.setLocationRelativeTo(QuizPanel.this);
+
+                    String[] cols = {"Student", "Email", "Score", "Max", "%", "Grade", "Submitted"};
+                    Object[][] rows = new Object[results.size()][7];
+                    int i = 0;
+                    for (JsonNode r : results) {
+                        rows[i++] = new Object[]{
+                            r.path("user_name").asText(),
+                            r.path("user_email").asText(),
+                            r.path("score").asInt(),
+                            r.path("max_score").asInt(),
+                            String.format("%.1f%%", r.path("percentage").asDouble()),
+                            r.path("grade").asText(),
+                            r.path("completed_at").asText()
+                        };
+                    }
+                    JTable table = new JTable(rows, cols);
+                    table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+                    table.setRowHeight(26);
+                    table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+                    table.setEnabled(false);
+
+                    JPanel panel = new JPanel(new BorderLayout());
+                    panel.setBorder(new EmptyBorder(16, 16, 16, 16));
+                    panel.add(new JScrollPane(table), BorderLayout.CENTER);
+
+                    JButton closeBtn = new JButton("Close");
+                    styleBtn(closeBtn, PRIMARY);
+                    closeBtn.addActionListener(ev -> d.dispose());
+                    JPanel foot = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                    foot.add(closeBtn);
+                    panel.add(foot, BorderLayout.SOUTH);
+
+                    d.setContentPane(panel);
+                    d.setVisible(true);
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(QuizPanel.this,
+                        "Could not load results: " + e.getMessage());
+                }
+            }
+        }.execute();
+    }
+
+    // ── QuestionRow helper ────────────────────────────────────────────────
+
+    private class QuestionRow {
+        JPanel panel;
+        JTextField tfQuestion;
+        JSpinner   spMarks;
+        JSpinner   spCorrect;
+        java.util.List<JTextField> optionFields = new ArrayList<>();
+        JPanel optionsPanel;
+
+        QuestionRow(int num, JPanel container, java.util.List<QuestionRow> allRows) {
+            panel = new JPanel(new BorderLayout());
+            panel.setBackground(SURFACE);
+            panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 4, 0, 0, PURPLE),
+                BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(BORDER_C),
+                    new EmptyBorder(10, 12, 10, 12))));
+            panel.setAlignmentX(LEFT_ALIGNMENT);
+            panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+
+            JPanel top = new JPanel(new BorderLayout());
+            top.setOpaque(false);
+            JLabel qNumLbl = new JLabel("Q" + num);
+            qNumLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            qNumLbl.setForeground(PURPLE);
+
+            JButton removeBtn = new JButton("✕");
+            removeBtn.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            removeBtn.setForeground(DANGER);
+            removeBtn.setBackground(new Color(0xFE, 0xE2, 0xE2));
+            removeBtn.setBorderPainted(false);
+            removeBtn.setFocusPainted(false);
+            removeBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            removeBtn.addActionListener(e -> {
+                allRows.remove(this);
+                container.remove(panel);
+                // remove the strut after it
+                container.revalidate();
+                container.repaint();
+            });
+            top.add(qNumLbl,   BorderLayout.WEST);
+            top.add(removeBtn, BorderLayout.EAST);
+
+            tfQuestion = new JTextField();
+            tfQuestion.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            tfQuestion.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER_C),
+                new EmptyBorder(4, 6, 4, 6)));
+
+            optionsPanel = new JPanel();
+            optionsPanel.setLayout(new BoxLayout(optionsPanel, BoxLayout.Y_AXIS));
+            optionsPanel.setOpaque(false);
+            addOption(); addOption(); // start with 2 options
+
+            JButton addOptBtn = new JButton("+ Option");
+            addOptBtn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+            addOptBtn.setForeground(PRIMARY);
+            addOptBtn.setBackground(new Color(0xEE, 0xF2, 0xFF));
+            addOptBtn.setBorderPainted(false);
+            addOptBtn.setFocusPainted(false);
+            addOptBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            addOptBtn.addActionListener(e -> { addOption(); optionsPanel.revalidate(); optionsPanel.repaint(); });
+
+            JPanel metaRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+            metaRow.setOpaque(false);
+            metaRow.add(new JLabel("Marks:"));
+            spMarks = new JSpinner(new SpinnerNumberModel(1, 1, 100, 1));
+            spMarks.setPreferredSize(new Dimension(60, 26));
+            metaRow.add(spMarks);
+            metaRow.add(new JLabel("Correct option (0-based):"));
+            spCorrect = new JSpinner(new SpinnerNumberModel(0, 0, 9, 1));
+            spCorrect.setPreferredSize(new Dimension(60, 26));
+            metaRow.add(spCorrect);
+            metaRow.add(addOptBtn);
+
+            JPanel body = new JPanel();
+            body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+            body.setOpaque(false);
+            body.add(Box.createVerticalStrut(6));
+            body.add(tfQuestion);
+            body.add(Box.createVerticalStrut(8));
+            body.add(optionsPanel);
+            body.add(Box.createVerticalStrut(6));
+            body.add(metaRow);
+
+            panel.add(top,  BorderLayout.NORTH);
+            panel.add(body, BorderLayout.CENTER);
+        }
+
+        void addOption() {
+            JTextField tf = new JTextField();
+            tf.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            tf.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER_C),
+                new EmptyBorder(3, 6, 3, 6)));
+            tf.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+            tf.setAlignmentX(LEFT_ALIGNMENT);
+            optionFields.add(tf);
+            JLabel optLbl = new JLabel("Option " + optionFields.size() + ": ");
+            optLbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            optLbl.setForeground(MUTED);
+            JPanel row = new JPanel(new BorderLayout(4, 0));
+            row.setOpaque(false);
+            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+            row.setAlignmentX(LEFT_ALIGNMENT);
+            row.add(optLbl, BorderLayout.WEST);
+            row.add(tf,     BorderLayout.CENTER);
+            optionsPanel.add(row);
+            optionsPanel.add(Box.createVerticalStrut(4));
+        }
+
+        Map<String, Object> toMap() {
+            String q = tfQuestion.getText().trim();
+            if (q.isEmpty()) return null;
+            java.util.List<String> opts = new ArrayList<>();
+            for (JTextField tf : optionFields) {
+                String o = tf.getText().trim();
+                if (o.isEmpty()) return null;
+                opts.add(o);
+            }
+            if (opts.size() < 2) return null;
+            Map<String, Object> m = new HashMap<>();
+            m.put("question",       q);
+            m.put("options",        opts);
+            m.put("correct_option", spCorrect.getValue());
+            m.put("marks",          spMarks.getValue());
+            return m;
+        }
+    }
+
+    private JLabel formLabel(String text) {
+        JLabel l = new JLabel(text);
+        l.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        l.setForeground(MUTED);
+        return l;
     }
 
     // ── Take quiz ─────────────────────────────────────────────────────────
