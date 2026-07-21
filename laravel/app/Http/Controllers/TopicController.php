@@ -21,7 +21,27 @@ class TopicController extends Controller
             $query->where('title', 'like', '%' . $request->search . '%');
         }
 
-        $topics = $query->latest()->get();
+        $userGroupIds = auth()->user()->groups()->pluck('groups.id');
+
+        // Get lecturer IDs whose groups the student has joined
+        $lecturerIds = \App\Models\Group::whereIn('id', $userGroupIds)->pluck('created_by');
+
+        // Temporary debug — remove after fix
+        if (request()->has('debug_pin')) {
+            dd([
+                'user_id'       => auth()->id(),
+                'userGroupIds'  => $userGroupIds->toArray(),
+                'lecturerIds'   => $lecturerIds->toArray(),
+                'pinned_topics' => Topic::where('is_pinned', true)->get()->map(fn($t) => ['id'=>$t->id,'title'=>$t->title,'group_id'=>$t->group_id,'user_id'=>$t->user_id])->toArray(),
+            ]);
+        }
+
+        $topics = $query->latest()->get()
+            ->sortByDesc(fn($t) => $t->is_pinned && (
+                $userGroupIds->contains($t->group_id) ||
+                $lecturerIds->contains($t->user_id)
+            ))
+            ->values();
 
         $activeTopic = null;
         $posts = collect();
@@ -37,7 +57,7 @@ class TopicController extends Controller
             $activeTopic->increment('views');
         }
 
-        return view('topics', compact('topics', 'activeTopic', 'posts'));
+        return view('topics', compact('topics', 'activeTopic', 'posts', 'userGroupIds', 'lecturerIds'));
     }
 
     // createTopic()
@@ -76,10 +96,19 @@ class TopicController extends Controller
         $topic->load(['author', 'posts.author', 'posts.replies.author', 'participants', 'blockedParticipants', 'removedParticipants']);
         $topic->increment('views');
         $isRemoved = $topic->removedParticipants->contains(auth()->id());
+        $userGroupIds  = auth()->user()->groups()->pluck('groups.id');
+        $lecturerIds   = \App\Models\Group::whereIn('id', $userGroupIds)->pluck('created_by');
         return view('topics', [
-            'topics'      => Topic::withCount('posts')->latest()->get(),
-            'activeTopic' => $topic,
-            'posts'       => $isRemoved ? collect() : $this->filterPostsForUser($topic, auth()->id()),
+            'topics'       => Topic::withCount('posts')->latest()->get()
+                ->sortByDesc(fn($t) => $t->is_pinned && (
+                    $userGroupIds->contains($t->group_id) ||
+                    $lecturerIds->contains($t->user_id)
+                ))
+                ->values(),
+            'activeTopic'  => $topic,
+            'posts'        => $isRemoved ? collect() : $this->filterPostsForUser($topic, auth()->id()),
+            'userGroupIds' => $userGroupIds,
+            'lecturerIds'  => $lecturerIds,
         ]);
     }
 
@@ -112,11 +141,19 @@ class TopicController extends Controller
         }
     }
 
-    // sendNotification() - mark notifications read
+    // sendNotification() - fetch notifications then mark as read
     public function notifications()
     {
-        $notifications = auth()->user()->notifications()->latest()->take(20)->get();
-        auth()->user()->unreadNotifications->markAsRead();
+        $user          = auth()->user();
+        $notifications = $user->notifications()->latest()->take(20)->get()
+            ->map(fn($n) => [
+                'id'         => $n->id,
+                'type'       => data_get($n->data, 'type', 'info'),
+                'message'    => data_get($n->data, 'message', ''),
+                'read'       => !is_null($n->read_at),
+                'created_at' => $n->created_at,
+            ]);
+        $user->unreadNotifications()->update(['read_at' => now()]);
         return response()->json($notifications);
     }
 

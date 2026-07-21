@@ -196,15 +196,6 @@
                 </a>
                 @endif
 
-                <a href="{{ route('lecturer.quizzes.index') }}" class="quick-action">
-                    <div class="quick-action-icon qa-quiz"><i class="fa-solid fa-clipboard-list"></i></div>
-                    <div>
-                        <div class="quick-action-label">All Quizzes</div>
-                        <div class="quick-action-sub">Browse quiz activity</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:#94a3b8;font-size:11px"></i>
-                </a>
-
             </div>
         </div>
 

@@ -187,11 +187,13 @@
                             @endif
                         </div>
                     </div>
-                    <form action="{{ route('lecturer.topics.destroy', $topic) }}" method="POST"
-                          onsubmit="return confirm('Delete this topic?')" onclick="event.stopPropagation()">
-                        @csrf @method('DELETE')
-                        <button type="submit" class="topic-delete-btn">🗑 Delete</button>
-                    </form>
+                    @if(auth()->id() === $topic->user_id)
+                        <form action="{{ route('lecturer.topics.destroy', $topic) }}" method="POST"
+                              onsubmit="return confirm('Delete this topic?')" onclick="event.stopPropagation()">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="topic-delete-btn">🗑 Delete</button>
+                        </form>
+                    @endif
                 </div>
             @empty
                 <div style="padding:40px 20px;text-align:center;color:rgba(255,255,255,0.3);font-size:13px;">
