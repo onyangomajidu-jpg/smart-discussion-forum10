@@ -294,6 +294,14 @@
                     <i class="fa-solid fa-chart-bar"></i> View Full Results
                 </a>
                 @endif
+
+                <form action="{{ route('lecturer.quizzes.destroy', $quiz) }}" method="POST"
+                      onsubmit="return confirm('Delete quiz &quot;{{ addslashes($quiz->title) }}&quot;? This cannot be undone.')">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn" style="width:100%;justify-content:center;padding:13px;background:#fee2e2;color:#ef4444;border:1.5px solid #fecaca">
+                        <i class="fa-solid fa-trash"></i> Delete Quiz
+                    </button>
+                </form>
             </div>
         </div>
 
