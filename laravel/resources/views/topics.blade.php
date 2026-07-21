@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Topics - Smart Discussion Forum</title>
+    <title>Topics - Discussion Hub</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; height: 100vh; }
@@ -147,7 +147,7 @@
 
 {{-- Navbar --}}
 <nav class="navbar">
-    <h1><img src="{{ asset('images/forum.png') }}" alt="SmartForum" style="height:34px;vertical-align:middle;margin-right:8px;">Smart Discussion Forum</h1>
+    <h1><img src="{{ asset('images/forum.png') }}" alt="Discussion Hub" style="height:34px;vertical-align:middle;margin-right:8px;">Discussion Hub</h1>
     <div class="navbar-right">
         <button class="notif-btn" id="notifBtn" onclick="loadNotifications()">
             🔔
@@ -562,7 +562,7 @@
         const topicUrl = encodeURIComponent(window.location.href);
         const text = encodeURIComponent(conversation);
         const twitterText = encodeURIComponent(
-            '📚 "' + document.querySelector('.conv-header h2').textContent.trim() + '" — join the discussion on SmartForum'
+            '📚 "' + document.querySelector('.conv-header h2').textContent.trim() + '" — join the discussion on Discussion Hub'
         );
         const shareUrls = {
             whatsapp: 'https://wa.me/?text=' + text,

@@ -131,7 +131,7 @@
 <body>
 
 <nav class="navbar">
-    <h1><img src="{{ asset('images/forum.png') }}" alt="SmartForum" style="height:34px;vertical-align:middle;margin-right:8px;">Smart Discussion Forum</h1>
+    <h1><img src="{{ asset('images/forum.png') }}" alt="Discussion Hub" style="height:34px;vertical-align:middle;margin-right:8px;">Discussion Hub</h1>
     <div class="navbar-right">
         <button class="notif-btn" onclick="loadNotifications()">
             🔔
@@ -471,7 +471,7 @@
         const conversation = buildConversationText();
         const topicUrl  = encodeURIComponent(window.location.href);
         const text      = encodeURIComponent(conversation);
-        const shortText = encodeURIComponent('📚 "' + document.querySelector('.conv-header h2').textContent.trim() + '" — join the discussion on SmartForum');
+        const shortText = encodeURIComponent('📚 "' + document.querySelector('.conv-header h2').textContent.trim() + '" — join the discussion on Discussion Hub');
         const urls = {
             whatsapp: 'https://wa.me/?text=' + text,
             twitter:  'https://twitter.com/intent/tweet?text=' + shortText + '&url=' + topicUrl,
