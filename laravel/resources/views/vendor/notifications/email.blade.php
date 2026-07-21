@@ -20,7 +20,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Smart Discussion Forum</h1>
+            <h1>Discussion Hub</h1>
             <p>Password Reset Request</p>
         </div>
         <div class="body">
@@ -47,7 +47,7 @@
             </div>
         </div>
         <div class="footer">
-            &copy; {{ date('Y') }} Smart Discussion Forum. All rights reserved.
+            &copy; {{ date('Y') }} Discussion Hub. All rights reserved.
         </div>
     </div>
 </body>

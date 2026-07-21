@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Profile — Smart Discussion Forum')
+@section('title', 'Edit Profile — Discussion Hub')
 
 @push('styles')
 <style>
