@@ -226,6 +226,33 @@ class QuizController extends Controller
 
     // ── STUDENT ───────────────────────────────────────────────────────────
 
+    /** GET /quiz/live-check — returns open quizzes AND upcoming quizzes with unlock times */
+    public function liveCheck()
+    {
+        $user = auth()->user();
+        $attempted = QuizAttempt::where('user_id', $user->id)->pluck('quiz_id');
+
+        $quizzes = Quiz::published()
+            ->whereHas('group.members', fn($q) => $q->where('users.id', $user->id))
+            ->whereNotIn('id', $attempted)
+            ->where(fn($q) => $q->whereNull('hard_deadline')->orWhere('hard_deadline', '>', now()))
+            ->with('group')
+            ->get()
+            ->filter(fn($q) => $q->isOpen() || $q->isUpcoming())
+            ->map(fn($q) => [
+                'id'            => $q->id,
+                'title'         => $q->title,
+                'group'         => $q->group->name,
+                'duration'      => $q->duration_minutes,
+                'hard_deadline' => $q->hard_deadline?->format('d M, H:i'),
+                'url'           => route('quizzes.take', $q),
+                'unlock_ms'     => $q->unlock_date ? $q->unlock_date->utc()->timestamp * 1000 : 0,
+            ])
+            ->values();
+
+        return response()->json($quizzes);
+    }
+
     /** GET /quizzes — List available quizzes for the student */
     public function index()
     {
@@ -311,6 +338,19 @@ class QuizController extends Controller
         }
 
         return view('quiz.student.result', compact('quiz', 'record'));
+    }
+
+    /** DELETE /lecturer/quizzes/{quiz} — Delete a quiz */
+    public function destroy(Quiz $quiz)
+    {
+        $this->authoriseLecturer($quiz);
+        $quiz->questions()->delete();
+        $quiz->attempts()->delete();
+        $quiz->participationRecords()->delete();
+        $quiz->delete();
+
+        return redirect()->route('lecturer.quizzes.index')
+            ->with('success', 'Quiz "' . $quiz->title . '" deleted successfully.');
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
