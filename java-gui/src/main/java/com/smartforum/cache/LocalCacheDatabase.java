@@ -149,6 +149,12 @@ public class LocalCacheDatabase {
             )
             """);
 
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS user_groups (
+                group_id INTEGER PRIMARY KEY
+            )
+            """);
+
         // ── Offline statistics cache (Days 17-18) ─────────────────────────
         st.execute("""
             CREATE TABLE IF NOT EXISTS statistics_cache (

@@ -84,11 +84,17 @@ class ProfileController extends Controller
         $user->bio   = $request->input('bio');
 
         if ($request->hasFile('avatar') && $request->file('avatar')->isValid()) {
-            // Delete old avatar file if exists
-            if ($user->avatar && \Storage::disk('public')->exists($user->avatar)) {
-                \Storage::disk('public')->delete($user->avatar);
+            $file     = $request->file('avatar');
+            $filename = $file->hashName();
+            $destDir  = public_path('storage/avatars');
+            if (!is_dir($destDir)) mkdir($destDir, 0755, true);
+            // Delete old avatar
+            if ($user->avatar) {
+                $old = public_path('storage/' . $user->avatar);
+                if (file_exists($old)) unlink($old);
             }
-            $user->avatar = $request->file('avatar')->store('avatars', 'public');
+            $file->move($destDir, $filename);
+            $user->avatar = 'avatars/' . $filename;
         }
 
         if ($request->filled('password')) {

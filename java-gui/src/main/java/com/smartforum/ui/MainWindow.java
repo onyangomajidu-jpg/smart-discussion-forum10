@@ -1,5 +1,7 @@
 package com.smartforum.ui;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartforum.api.ApiClient;
 import com.smartforum.auth.AuthService;
 import com.smartforum.cache.LocalCacheDatabase;
@@ -26,8 +28,10 @@ public class MainWindow extends JFrame {
     private final OfflineSyncManager     syncManager;
     private final ForumWebSocketListener wsListener;
 
-    private final JLabel connectionBadge = new JLabel();
-    private boolean      wasOnline       = false;
+    private final JLabel         connectionBadge = new JLabel();
+    private final ObjectMapper    mapper          = new ObjectMapper();
+    private boolean               wasOnline       = false;
+    private TopicListPanel        topicListPanel;
 
     private final ScheduledExecutorService reconnectPoller =
         Executors.newSingleThreadScheduledExecutor(r -> {
@@ -56,6 +60,7 @@ public class MainWindow extends JFrame {
             conversationPanel.loadTopic(topic);
             wsListener.subscribeTopic(topic.id);
         });
+        this.topicListPanel = topicListPanel;
 
         // ── Extra panels ──────────────────────────────────────────────────
         StatisticsPanel  statisticsPanel  = new StatisticsPanel(api, cache);
@@ -90,17 +95,27 @@ public class MainWindow extends JFrame {
         JTabbedPane tabs = new JTabbedPane();
         if (user.isAdmin()) {
             AdminDashboardPanel adminDashboardPanel = new AdminDashboardPanel(api, user);
-            tabs.addTab("🛡  Admin",      adminDashboardPanel);
-            tabs.addTab("⚖  Moderation", new ModerationPanel(api, user));
-            tabs.addTab("👤  Profile",    profilePanel);
+            WarningRegistryPanel warningRegistryPanel = new WarningRegistryPanel(api, user);
+            BlacklistLogPanel    blacklistLogPanel    = new BlacklistLogPanel(api, user);
+            tabs.addTab("🛡  Admin Dashboard", adminDashboardPanel);
+            tabs.addTab("⚠  Warnings",         warningRegistryPanel);
+            tabs.addTab("🚫  Blacklists",       blacklistLogPanel);
+            tabs.addTab("👤  Profile",           profilePanel);
             adminDashboardPanel.setTabs(tabs);
             syncManager.setSyncListener(() -> adminDashboardPanel.loadData());
+            tabs.addChangeListener(e -> {
+                Component sel = tabs.getSelectedComponent();
+                if (sel == adminDashboardPanel)   adminDashboardPanel.loadData();
+                else if (sel == warningRegistryPanel) warningRegistryPanel.loadAll();
+                else if (sel == blacklistLogPanel)    blacklistLogPanel.loadAll();
+            });
         } else if (user.isLecturer()) {
             LecturerAnalyticsPanel analyticsPanel = new LecturerAnalyticsPanel(api, user);
             LecturerGroupsPanel    groupsLecPanel = new LecturerGroupsPanel(api, user);
             tabs.addTab("🏠  Dashboard",  null); // placeholder, set after tabs built
             tabs.addTab("🎯  Quizzes",    quizPanel);
             tabs.addTab("📊  Analytics", analyticsPanel);
+            tabs.addTab("📈  Statistics", statisticsPanel);
             tabs.addTab("💬  Forum",      split);
             tabs.addTab("👥  Groups",     groupsLecPanel);
             tabs.addTab("👤  Profile",    profilePanel);
@@ -111,10 +126,12 @@ public class MainWindow extends JFrame {
                 conversationPanel.refreshPosts();
                 conversationPanel.setStatus("✅ Sync complete");
                 analyticsPanel.loadData();
+                statisticsPanel.loadData();
             });
             tabs.addChangeListener(e -> {
                 Component sel = tabs.getSelectedComponent();
                 if (sel == analyticsPanel) analyticsPanel.loadData();
+                else if (sel == statisticsPanel) statisticsPanel.loadData();
                 else if (sel == groupsLecPanel) groupsLecPanel.loadGroups();
                 else if (sel == quizPanel) quizPanel.loadQuizzes();
             });
@@ -149,10 +166,15 @@ public class MainWindow extends JFrame {
         reconnectPoller.scheduleAtFixedRate(this::checkConnectivity,
             5, 10, TimeUnit.SECONDS);
 
+        // ── Notification poller (every 30s) ───────────────────────────────
+        reconnectPoller.scheduleAtFixedRate(this::checkModerationNotifications,
+            30, 30, TimeUnit.SECONDS);
+
         // ── Initial sync on startup ───────────────────────────────────────
         new Thread(() -> {
             syncManager.synchronizeOfflineData();
             SwingUtilities.invokeLater(topicListPanel::refresh);
+            checkModerationNotifications();
         }, "startup-sync").start();
 
         addWindowListener(new java.awt.event.WindowAdapter() {
@@ -224,31 +246,37 @@ public class MainWindow extends JFrame {
     // ── Notifications ─────────────────────────────────────────────────────
 
     private void showNotifications() {
-        new SwingWorker<String, Void>() {
-            @Override protected String doInBackground() throws Exception {
-                try {
-                    return api.get("/notifications");
-                } catch (Exception e) {
-                    return null;
-                }
+        new SwingWorker<JsonNode, Void>() {
+            @Override protected JsonNode doInBackground() throws Exception {
+                return mapper.readTree(api.get("/notifications"));
             }
             @Override protected void done() {
                 try {
-                    String json = get();
-                    if (json == null || json.equals("[]") || json.isBlank()) {
+                    JsonNode list = get();
+                    if (!list.isArray() || list.size() == 0) {
                         JOptionPane.showMessageDialog(MainWindow.this,
                             "No notifications.", "Notifications",
                             JOptionPane.INFORMATION_MESSAGE);
-                    } else {
-                        // Simple display — strip JSON brackets for readability
-                        JTextArea area = new JTextArea(json, 10, 40);
-                        area.setEditable(false);
-                        area.setLineWrap(true);
-                        area.setWrapStyleWord(true);
-                        JOptionPane.showMessageDialog(MainWindow.this,
-                            new JScrollPane(area), "Notifications",
-                            JOptionPane.INFORMATION_MESSAGE);
+                        return;
                     }
+                    StringBuilder sb = new StringBuilder();
+                    for (JsonNode n : list) {
+                        JsonNode data = n.path("data");
+                        String type    = data.path("type").asText("");
+                        String message = data.path("message").asText(n.path("type").asText());
+                        String readAt  = n.path("read_at").asText("");
+                        String icon    = type.equals("warning") ? "⚠️" : type.equals("blacklist") ? "🚫" : "🔔";
+                        String status  = readAt.isBlank() ? " [NEW]" : "";
+                        sb.append(icon).append(status).append(" ").append(message).append("\n");
+                    }
+                    JTextArea area = new JTextArea(sb.toString(), 10, 40);
+                    area.setEditable(false);
+                    area.setLineWrap(true);
+                    area.setWrapStyleWord(true);
+                    area.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+                    JOptionPane.showMessageDialog(MainWindow.this,
+                        new JScrollPane(area), "Notifications",
+                        JOptionPane.INFORMATION_MESSAGE);
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(MainWindow.this,
                         "Could not load notifications.", "Error",
@@ -256,6 +284,39 @@ public class MainWindow extends JFrame {
                 }
             }
         }.execute();
+    }
+
+    /** Called once on startup and every 30s — pops up a dialog for unread moderation notifications. */
+    private void checkModerationNotifications() {
+        try {
+            JsonNode list = mapper.readTree(api.get("/notifications"));
+            if (!list.isArray() || list.size() == 0) return;
+            StringBuilder sb = new StringBuilder();
+            for (JsonNode n : list) {
+                JsonNode data = n.path("data");
+                String type    = data.path("type").asText("");
+                String message = data.path("message").asText("");
+                String icon = switch (type) {
+                    case "warning"   -> "⚠️ WARNING";
+                    case "blacklist" -> "🚫 SUSPENDED";
+                    case "pinned"    -> "📌 PINNED TOPIC";
+                    default          -> "🔔";
+                };
+                if (!message.isEmpty()) sb.append(icon).append(": ").append(message).append("\n");
+            }
+            if (sb.length() > 0) {
+                final String msg = sb.toString();
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(MainWindow.this,
+                        msg, "🔔 Notifications", JOptionPane.INFORMATION_MESSAGE);
+                    refresh();
+                });
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void refresh() {
+        if (topicListPanel != null) SwingUtilities.invokeLater(topicListPanel::refresh);
     }
 
     // ── Reconnect logic ───────────────────────────────────────────────────
