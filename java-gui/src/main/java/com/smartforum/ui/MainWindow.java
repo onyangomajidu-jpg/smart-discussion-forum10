@@ -261,15 +261,14 @@ public class MainWindow extends JFrame {
                     }
                     StringBuilder sb = new StringBuilder();
                     for (JsonNode n : list) {
-                        JsonNode data = n.path("data");
-                        String type    = data.path("type").asText("");
-                        String message = data.path("message").asText(n.path("type").asText());
-                        String readAt  = n.path("read_at").asText("");
+                        String type    = n.path("type").asText("info");
+                        String message = n.path("message").asText("");
+                        boolean unread = !n.path("read").asBoolean(true);
                         String icon    = type.equals("warning") ? "⚠️" : type.equals("blacklist") ? "🚫" : "🔔";
-                        String status  = readAt.isBlank() ? " [NEW]" : "";
+                        String status  = unread ? " [NEW]" : "";
                         sb.append(icon).append(status).append(" ").append(message).append("\n");
                     }
-                    JTextArea area = new JTextArea(sb.toString(), 10, 40);
+                    JTextArea area = new JTextArea(sb.toString().trim(), 10, 44);
                     area.setEditable(false);
                     area.setLineWrap(true);
                     area.setWrapStyleWord(true);
@@ -293,24 +292,22 @@ public class MainWindow extends JFrame {
             if (!list.isArray() || list.size() == 0) return;
             StringBuilder sb = new StringBuilder();
             for (JsonNode n : list) {
-                JsonNode data = n.path("data");
-                String type    = data.path("type").asText("");
-                String message = data.path("message").asText("");
+                String type    = n.path("type").asText("");
+                String message = n.path("message").asText("");
+                boolean unread = !n.path("read").asBoolean(true);
+                if (!unread || message.isEmpty()) continue;
                 String icon = switch (type) {
                     case "warning"   -> "⚠️ WARNING";
                     case "blacklist" -> "🚫 SUSPENDED";
-                    case "pinned"    -> "📌 PINNED TOPIC";
                     default          -> "🔔";
                 };
-                if (!message.isEmpty()) sb.append(icon).append(": ").append(message).append("\n");
+                sb.append(icon).append(": ").append(message).append("\n");
             }
             if (sb.length() > 0) {
                 final String msg = sb.toString();
-                SwingUtilities.invokeLater(() -> {
+                SwingUtilities.invokeLater(() ->
                     JOptionPane.showMessageDialog(MainWindow.this,
-                        msg, "🔔 Notifications", JOptionPane.INFORMATION_MESSAGE);
-                    refresh();
-                });
+                        msg, "🔔 New Notifications", JOptionPane.WARNING_MESSAGE));
             }
         } catch (Exception ignored) {}
     }
