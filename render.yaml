@@ -1,0 +1,58 @@
+databases:
+  - name: smart-forum-db
+    plan: free
+    databaseName: smart_discussion_forum
+    user: forum_user
+
+services:
+  - type: web
+    name: smart-discussion-forum
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: APP_NAME
+        value: "Smart Discussion Forum"
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_URL
+        sync: false        # fill in with your onrender.com URL after first deploy
+      - key: APP_KEY
+        sync: false        # generate locally: php artisan key:generate --show
+      - key: LOG_CHANNEL
+        value: stack
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: BROADCAST_CONNECTION
+        value: log
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: smart-forum-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: smart-forum-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: smart-forum-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: smart-forum-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: smart-forum-db
+          property: password
