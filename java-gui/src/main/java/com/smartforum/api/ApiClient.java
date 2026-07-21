@@ -62,6 +62,50 @@ public class ApiClient {
         }
     }
 
+    /** PUT request with a JSON body map. */
+    public String put(String endpoint, Map<String, Object> body) throws IOException {
+        String json = mapper.writeValueAsString(body);
+        Request request = new Request.Builder()
+            .url(BASE_URL + endpoint)
+            .header("Accept", "application/json")
+            .header("Authorization", bearerToken != null ? "Bearer " + bearerToken : "")
+            .put(RequestBody.create(json, JSON))
+            .build();
+        try (Response response = http.newCall(request).execute()) {
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
+            return response.body() != null ? response.body().string() : "";
+        }
+    }
+
+    /** PATCH request with a JSON body map. */
+    public String patch(String endpoint, Map<String, Object> body) throws IOException {
+        String json = mapper.writeValueAsString(body);
+        Request request = new Request.Builder()
+            .url(BASE_URL + endpoint)
+            .header("Accept", "application/json")
+            .header("Authorization", bearerToken != null ? "Bearer " + bearerToken : "")
+            .patch(RequestBody.create(json, JSON))
+            .build();
+        try (Response response = http.newCall(request).execute()) {
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
+            return response.body() != null ? response.body().string() : "";
+        }
+    }
+
+    /** DELETE request. */
+    public String delete(String endpoint) throws IOException {
+        Request request = new Request.Builder()
+            .url(BASE_URL + endpoint)
+            .header("Accept", "application/json")
+            .header("Authorization", bearerToken != null ? "Bearer " + bearerToken : "")
+            .delete()
+            .build();
+        try (Response response = http.newCall(request).execute()) {
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
+            return response.body() != null ? response.body().string() : "";
+        }
+    }
+
     /** GET request — returns raw bytes (for binary responses like PDF). */
     public byte[] getBytes(String endpoint) throws IOException {
         Request request = new Request.Builder()

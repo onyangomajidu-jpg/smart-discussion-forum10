@@ -88,6 +88,7 @@ public class ForumWebSocketListener extends WebSocketListener {
             Post post = new Post(
                 payload.path("id").asInt(-1),
                 payload.path("topic_id").asInt(subscribedTopicId),
+                payload.path("user_id").asInt(0),
                 payload.path("author_name").asText("Unknown"),
                 payload.path("body").asText(""),
                 false, false

@@ -75,6 +75,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/topics/{topic}', [App\Http\Controllers\TopicController::class, 'show'])->name('topics.show');
     Route::delete('/topics/{topic}', [App\Http\Controllers\TopicController::class, 'destroy'])->name('topics.destroy');
     Route::delete('/topics/{topic}/users/{userId}', [App\Http\Controllers\TopicController::class, 'removeUser'])->name('topics.removeUser');
+    Route::post('/topics/{topic}/users/{userId}/unremove', [App\Http\Controllers\TopicController::class, 'unremoveUser'])->name('topics.unremoveUser');
     Route::post('/topics/{topic}/users/{userId}/block', [App\Http\Controllers\TopicController::class, 'blockUser'])->name('topics.blockUser');
     Route::post('/topics/{topic}/users/{userId}/unblock', [App\Http\Controllers\TopicController::class, 'unblockUser'])->name('topics.unblockUser');
     Route::post('/topics/{topicId}/participate', [App\Http\Controllers\TopicController::class, 'participate'])->name('topics.participate');

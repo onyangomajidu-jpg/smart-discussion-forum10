@@ -263,8 +263,10 @@
                         <div class="post-body" id="post-body-{{ $post->id }}">{{ $post->body }}</div>
                         <div class="post-actions">
                             <button class="btn-sm btn-reply" onclick="toggleReplyForm({{ $post->id }})">↩ Reply</button>
-                            <button class="btn-sm btn-edit" onclick="editPost({{ $post->id }}, `{{ addslashes($post->body) }}`)">✏ Edit</button>
-                            <button class="btn-sm btn-delete" onclick="deletePost({{ $post->id }})">🗑 Delete</button>
+                            @if($post->user_id === auth()->id())
+                                <button class="btn-sm btn-edit" onclick="editPost({{ $post->id }}, `{{ addslashes($post->body) }}`)">✏ Edit</button>
+                                <button class="btn-sm btn-delete" onclick="deletePost({{ $post->id }})">🗑 Delete</button>
+                            @endif
                         </div>
 
                         <form id="reply-form-{{ $post->id }}" style="display:none;margin-top:10px;"
@@ -329,13 +331,8 @@
                 <span class="participant-name">{{ $participant->name }}</span>
                 @if($participant->id === $activeTopic->user_id)
                     <span style="font-size:11px;color:#667eea;">creator</span>
-                @else
+                @elseif(auth()->id() === $activeTopic->user_id)
                     <div class="participant-actions">
-                        <form action="{{ route('lecturer.topics.blockUser', [$activeTopic, $participant->id]) }}" method="POST"
-                              onsubmit="return confirm('Block {{ addslashes($participant->name) }}?')">
-                            @csrf
-                            <button type="submit" class="btn-block-user">Block</button>
-                        </form>
                         <form action="{{ route('lecturer.topics.removeUser', [$activeTopic, $participant->id]) }}" method="POST"
                               onsubmit="return confirm('Remove {{ addslashes($participant->name) }}?')">
                             @csrf @method('DELETE')
@@ -348,18 +345,7 @@
             <div style="padding:10px 14px;font-size:13px;color:#a0aec0;">No active participants.</div>
         @endforelse
 
-        <div class="section-label" style="margin-top:8px;">🚫 Blocked</div>
-        @forelse($activeTopic->blockedParticipants as $blocked)
-            <div class="participant-item blocked-item">
-                <span class="participant-name">{{ $blocked->name }}</span>
-                <form action="{{ route('lecturer.topics.unblockUser', [$activeTopic, $blocked->id]) }}" method="POST">
-                    @csrf
-                    <button type="submit" class="btn-unblock-user">Unblock</button>
-                </form>
-            </div>
-        @empty
-            <div style="padding:10px 14px;font-size:13px;color:#a0aec0;">No blocked users.</div>
-        @endforelse
+
     </aside>
     @endif
 </div>
