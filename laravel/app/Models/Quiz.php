@@ -49,18 +49,27 @@ class Quiz extends Model
     // ── Helpers ───────────────────────────────────────────────────────────
     public function isOpen(): bool
     {
-        $now = now();
+        $now      = now();
+        $deadline = $this->effectiveDeadline();
         return $this->status === 'published'
             && ($this->unlock_date === null || $now->gte($this->unlock_date))
-            && ($this->hard_deadline === null || $now->lte($this->hard_deadline));
+            && ($deadline === null || $now->lte($deadline));
     }
 
     public function isPastDeadline(): bool
     {
-        // Only consider it past deadline if the quiz actually had a chance to open
-        if ($this->hard_deadline === null) return false;
+        $deadline = $this->effectiveDeadline();
+        if ($deadline === null) return false;
         if ($this->unlock_date !== null && now()->lt($this->unlock_date)) return false;
-        return now()->gt($this->hard_deadline);
+        return now()->gt($deadline);
+    }
+
+    /** Hard deadline if set, otherwise unlock_date + duration_minutes. */
+    public function effectiveDeadline(): ?\Carbon\Carbon
+    {
+        if ($this->hard_deadline) return $this->hard_deadline;
+        if ($this->unlock_date)   return $this->unlock_date->copy()->addMinutes($this->duration_minutes);
+        return null;
     }
 
     public function isUpcoming(): bool
