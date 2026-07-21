@@ -157,22 +157,22 @@
 <div class="stats-row">
     <a href="{{ route('topics.index') }}" class="dash-stat-card">
         <div class="stat-icon"><i class="fa-solid fa-comments"></i></div>
-        <div class="value" id="sc-topics">—</div>
+        <div class="value" id="sc-topics">{{ $topicsJoined }}</div>
         <div class="label">Topics Joined</div>
     </a>
     <a href="{{ route('topics.index') }}" class="dash-stat-card">
         <div class="stat-icon"><i class="fa-solid fa-pen-to-square"></i></div>
-        <div class="value" id="sc-posts">—</div>
+        <div class="value" id="sc-posts">{{ $postsMade }}</div>
         <div class="label">Posts Made</div>
     </a>
     <a href="{{ auth()->user()->role === 'member' ? route('quizzes.index') : '#' }}" class="dash-stat-card">
         <div class="stat-icon"><i class="fa-solid fa-bullseye"></i></div>
-        <div class="value" id="sc-attempts">—</div>
+        <div class="value" id="sc-attempts">{{ $quizAttempts }}</div>
         <div class="label">Quiz Attempts</div>
     </a>
     <a href="{{ auth()->user()->role === 'member' ? route('quizzes.index') : '#' }}" class="dash-stat-card">
         <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
-        <div class="value" id="sc-avg">—</div>
+        <div class="value" id="sc-avg">{{ $avgScore !== null ? round($avgScore) . '%' : 'N/A' }}</div>
         <div class="label">Avg Quiz Score</div>
     </a>
 </div>
@@ -186,8 +186,18 @@
             <div class="panel-header-left"><i class="fa-solid fa-comments"></i> Topic Participation</div>
             <a href="{{ route('topics.index') }}" class="panel-view-all">View All <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
         </div>
-        <div class="panel-body" id="topicsPanel">
-            <div class="empty-state"><div class="icon">💬</div>No topic participation yet.</div>
+        <div class="panel-body">
+            @forelse($recentTopics as $t)
+                <a href="/topics/{{ $t->id }}" style="text-decoration:none;color:inherit">
+                    <div class="list-row">
+                        <span class="list-dot" style="color:#8b5cf6">●</span>
+                        <span style="flex:1">{{ $t->title }}</span>
+                        <i class="fa-solid fa-arrow-right" style="font-size:10px;color:#c4b5fd"></i>
+                    </div>
+                </a>
+            @empty
+                <div class="empty-state"><div class="icon">💬</div>No topic participation yet.</div>
+            @endforelse
         </div>
     </div>
 
@@ -196,8 +206,18 @@
             <div class="panel-header-left"><i class="fa-solid fa-bullseye"></i> Quiz Attempts</div>
             <a href="{{ route('quizzes.index') }}" class="panel-view-all">View All <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
         </div>
-        <div class="panel-body" id="quizPanel">
-            <div class="empty-state"><div class="icon">📋</div>No quiz attempts yet.</div>
+        <div class="panel-body">
+            @forelse($recentAttempts as $a)
+                <a href="/quizzes" style="text-decoration:none;color:inherit">
+                    <div class="list-row">
+                        <span class="list-dot" style="color:#06b6d4">✓</span>
+                        <span style="flex:1">{{ $a->title }}</span>
+                        <span class="dash-badge">{{ $a->score !== null ? round($a->score).'%' : '—' }}</span>
+                    </div>
+                </a>
+            @empty
+                <div class="empty-state"><div class="icon">📋</div>No quiz attempts yet.</div>
+            @endforelse
         </div>
     </div>
 
@@ -231,16 +251,16 @@
         </div>
         <div class="panel-body">
             <div class="progress-row">
-                <div class="progress-label"><span>Forum Engagement</span><span id="pct-eng">0%</span></div>
-                <div class="progress-track"><div class="progress-fill" id="bar-eng" style="width:0%"></div></div>
+                <div class="progress-label"><span>Forum Engagement</span><span>{{ $engPct }}%</span></div>
+                <div class="progress-track"><div class="progress-fill" style="width:{{ $engPct }}%"></div></div>
             </div>
             <div class="progress-row">
-                <div class="progress-label"><span>Quiz Completion</span><span id="pct-comp">0%</span></div>
-                <div class="progress-track"><div class="progress-fill" id="bar-comp" style="width:0%"></div></div>
+                <div class="progress-label"><span>Quiz Completion</span><span>{{ $compPct }}%</span></div>
+                <div class="progress-track"><div class="progress-fill" style="width:{{ $compPct }}%"></div></div>
             </div>
             <div class="progress-row">
-                <div class="progress-label"><span>Average Score</span><span id="pct-avg">N/A</span></div>
-                <div class="progress-track"><div class="progress-fill" id="bar-avg" style="width:0%"></div></div>
+                <div class="progress-label"><span>Average Score</span><span>{{ $avgScore !== null ? $avgPct.'%' : 'N/A' }}</span></div>
+                <div class="progress-track"><div class="progress-fill" style="width:{{ $avgPct }}%"></div></div>
             </div>
         </div>
     </div>
@@ -250,96 +270,27 @@
         <div class="panel-header">
             <div class="panel-header-left"><i class="fa-solid fa-robot"></i> AI Recommended Topics</div>
         </div>
-        <div class="panel-body" id="aiPanel">
-            <div class="empty-state"><div class="icon">🤖</div>Generating personalised recommendations…</div>
+        <div class="panel-body">
+            @forelse($recommendations as $r)
+                <a href="/topics/{{ $r['id'] }}" style="text-decoration:none;color:inherit">
+                    <div class="list-row" style="flex-wrap:wrap;gap:6px">
+                        <span class="list-dot" style="color:#db2777">★</span>
+                        <span style="flex:1;min-width:120px">{{ $r['title'] }}</span>
+                        <span>
+                            @foreach($r['tags'] as $tag)
+                                <span class="ai-tag">{{ $tag }}</span>
+                            @endforeach
+                        </span>
+                        <span class="ai-score">{{ round($r['score'] * 100) }}% match</span>
+                    </div>
+                </a>
+            @empty
+                <div class="empty-state"><div class="icon">🤖</div>No recommendations yet — start participating in topics!</div>
+            @endforelse
         </div>
     </div>
 
 </div>
 
-<script>
-fetch('/recommendations', {
-    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' },
-    credentials: 'same-origin'
-})
-    .then(r => r.json())
-    .then(({ recommendations }) => {
-        const panel = document.getElementById('aiPanel');
-        if (!recommendations.length) {
-            panel.innerHTML = '<div class="empty-state"><div class="icon">🤖</div>No recommendations yet — start participating in topics!</div>';
-            return;
-        }
-        panel.innerHTML = recommendations.map(r =>
-            `<a href="/topics/${r.id}" style="text-decoration:none;color:inherit">
-                <div class="list-row" style="flex-wrap:wrap;gap:6px">
-                    <span class="list-dot" style="color:#db2777">★</span>
-                    <span style="flex:1;min-width:120px">${esc(r.title)}</span>
-                    <span>${r.tags.map(t => `<span class="ai-tag">${esc(t)}</span>`).join('')}</span>
-                    <span class="ai-score">${Math.round(r.score * 100)}% match</span>
-                </div>
-            </a>`
-        ).join('');
-    })
-    .catch(() => { document.getElementById('aiPanel').innerHTML = '<div class="empty-state"><div class="icon">🤖</div>Recommendations loading in background…</div>'; });
 
-fetch('/api/dashboard', {
-    headers: {
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? ''
-    },
-    credentials: 'same-origin'
-})
-    .then(r => r.json())
-    .then(({ stats: s }) => {
-        document.getElementById('sc-topics').textContent   = s.topicsParticipated;
-        document.getElementById('sc-posts').textContent    = s.totalPosts;
-        document.getElementById('sc-attempts').textContent = s.quizAttempts;
-        document.getElementById('sc-avg').textContent      = s.avgScore != null ? Math.round(s.avgScore) + '%' : '—';
-
-        const engPct  = Math.min(s.totalPosts * 5, 100);
-        const total   = s.quizAttempts + s.availableQuizzes;
-        const compPct = total > 0 ? Math.round(s.quizAttempts * 100 / total) : 0;
-        const avgPct  = s.avgScore != null ? Math.round(s.avgScore) : 0;
-
-        setBar('eng',  engPct,  engPct + '%');
-        setBar('comp', compPct, compPct + '%');
-        setBar('avg',  avgPct,  s.avgScore != null ? avgPct + '%' : 'N/A');
-
-        const tp = document.getElementById('topicsPanel');
-        if (s.recentTopics.length) {
-            tp.innerHTML = s.recentTopics.map(t =>
-                `<a href="/topics/${t.id}" style="text-decoration:none;color:inherit">
-                    <div class="list-row">
-                        <span class="list-dot" style="color:#8b5cf6">●</span>
-                        <span style="flex:1">${esc(t.title)}</span>
-                        <i class="fa-solid fa-arrow-right" style="font-size:10px;color:#c4b5fd"></i>
-                    </div>
-                </a>`
-            ).join('');
-        }
-
-        const qp = document.getElementById('quizPanel');
-        if (s.recentAttempts.length) {
-            qp.innerHTML = s.recentAttempts.map(a =>
-                `<a href="/quizzes" style="text-decoration:none;color:inherit">
-                    <div class="list-row">
-                        <span class="list-dot" style="color:#06b6d4">✓</span>
-                        <span style="flex:1">${esc(a.title)}</span>
-                        <span class="dash-badge">${a.score != null ? Math.round(a.score) + '%' : '—'}</span>
-                    </div>
-                </a>`
-            ).join('');
-        }
-    })
-    .catch(() => {});
-
-function setBar(id, pct, label) {
-    document.getElementById('bar-' + id).style.width = pct + '%';
-    document.getElementById('pct-' + id).textContent = label;
-}
-function esc(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-</script>
 @endsection
