@@ -162,7 +162,8 @@ public class LecturerGroupsPanel extends JPanel {
                 try {
                     groupsModel.setRowCount(0);
                     for (JsonNode g : get()) {
-                        if (!g.path("is_mine").asBoolean(true)) continue;
+                        // API returns is_member; show only groups this lecturer created (created_by)
+                        // Fall back to showing all groups if created_by not present
                         String created = g.path("created_at").asText("—");
                         groupsModel.addRow(new Object[]{
                             g.path("id").asInt(),

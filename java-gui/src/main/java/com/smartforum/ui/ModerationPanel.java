@@ -386,7 +386,7 @@ public class ModerationPanel extends JPanel {
                     for (JsonNode w : get()) {
                         warningsModel.addRow(new Object[]{
                             w.path("id").asInt(),
-                            w.path("user").path("name").asText(),
+                            w.path("user_name").asText(),
                             w.path("reason").asText(),
                             w.path("resolved_at").isNull() ? "No" : "Yes"
                         });
@@ -407,7 +407,7 @@ public class ModerationPanel extends JPanel {
                     for (JsonNode b : get()) {
                         blacklistModel.addRow(new Object[]{
                             b.path("id").asInt(),
-                            b.path("user").path("name").asText(),
+                            b.path("user_name").asText(),
                             b.path("reason").asText(),
                             b.path("expires_at").asText("—")
                         });

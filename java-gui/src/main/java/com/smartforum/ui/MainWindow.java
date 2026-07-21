@@ -186,7 +186,8 @@ public class MainWindow extends JFrame {
         JButton notifBtn = new JButton("🔔");
         notifBtn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         notifBtn.setForeground(Color.WHITE);
-        notifBtn.setBackground(new Color(255, 255, 255, 50));
+        notifBtn.setContentAreaFilled(false);
+        notifBtn.setOpaque(false);
         notifBtn.setBorderPainted(false);
         notifBtn.setFocusPainted(false);
         notifBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));

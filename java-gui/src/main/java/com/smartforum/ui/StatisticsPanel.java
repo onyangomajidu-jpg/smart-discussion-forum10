@@ -141,8 +141,8 @@ public class StatisticsPanel extends JPanel {
         pieChartHolder = new JPanel(new BorderLayout());
         pieChartHolder.setBackground(SURFACE);
 
-        chartsRow.add(wrapChart(barChartHolder, "📈 Weekly Performance Trend", PRIMARY));
-        chartsRow.add(wrapChart(pieChartHolder, "🥧 Subject Allocation",       PURPLE));
+        chartsRow.add(wrapChart(barChartHolder, "📈 Posts Per Day (Last 7 Days)", PRIMARY));
+        chartsRow.add(wrapChart(pieChartHolder, "🥧 Score Distribution",           PURPLE));
 
         // ── Bottom row: Progress + Quick Stats ────────────────────────────
         JPanel bottomRow = new JPanel(new GridLayout(1, 2, 16, 0));
@@ -378,17 +378,15 @@ public class StatisticsPanel extends JPanel {
     }
 
     private void applyStats(JsonNode s) {
-        JsonNode quiz  = s.path("quiz");
-        JsonNode forum = s.path("forum");
-
-        int    totalAttempts   = quiz.path("total_attempts").asInt(0);
-        double avgScore        = quiz.path("average_score").asDouble(0);
-        int    completionRate  = quiz.path("completion_rate").asInt(0);
-        int    maxScore        = quiz.path("max_score").asInt(0);
-        int    minScore        = quiz.path("min_score").asInt(0);
-        int    topicsJoined    = forum.path("topics_joined").asInt(0);
-        int    totalPosts      = forum.path("total_posts").asInt(0);
-        int    subjectCount    = s.path("subject_allocation").size();
+        // API returns flat structure: topicsParticipated, totalPosts, quizAttempts,
+        // availableQuizzes, avgScore, postsPerDay[], scoreDistribution{}
+        int    totalAttempts  = s.path("quizAttempts").asInt(0);
+        double avgScore       = s.path("avgScore").asDouble(0);
+        int    availableQuizzes = s.path("availableQuizzes").asInt(0);
+        int    topicsJoined   = s.path("topicsParticipated").asInt(0);
+        int    totalPosts     = s.path("totalPosts").asInt(0);
+        int    total          = totalAttempts + availableQuizzes;
+        int    completionRate = total > 0 ? (int) Math.round(totalAttempts * 100.0 / total) : 0;
 
         // KPI cards
         lblQuizzesTaken.setText(String.valueOf(totalAttempts));
@@ -399,36 +397,50 @@ public class StatisticsPanel extends JPanel {
         // Progress bars
         barCompletion.setValue(completionRate);  lblCompPct.setText(completionRate + "%");
         barAvgScore.setValue((int) Math.round(avgScore)); lblAvgPct.setText(Math.round(avgScore) + "%");
-        barBestScore.setValue(maxScore);         lblBestPct.setText(maxScore + "%");
         int engPct = Math.min(totalPosts * 5, 100);
         barEngagement.setValue(engPct);          lblEngPct.setText(totalPosts + " posts");
 
+        // Best/lowest from scoreDistribution buckets
+        JsonNode dist = s.path("scoreDistribution");
+        String bestBucket = "—", lowestBucket = "—";
+        if (!dist.isMissingNode()) {
+            if (dist.path("85-100").asInt(0) > 0) { bestBucket = "85-100%"; }
+            else if (dist.path("70-84").asInt(0) > 0) { bestBucket = "70-84%"; }
+            else if (dist.path("50-69").asInt(0) > 0) { bestBucket = "50-69%"; }
+            else if (dist.path("0-49").asInt(0) > 0)  { bestBucket = "0-49%"; }
+            if (dist.path("0-49").asInt(0) > 0) { lowestBucket = "0-49%"; }
+            else if (dist.path("50-69").asInt(0) > 0) { lowestBucket = "50-69%"; }
+            else if (dist.path("70-84").asInt(0) > 0) { lowestBucket = "70-84%"; }
+            else if (dist.path("85-100").asInt(0) > 0){ lowestBucket = "85-100%"; }
+        }
+        barBestScore.setValue(totalAttempts > 0 ? (int) Math.round(avgScore) : 0);
+        lblBestPct.setText(bestBucket);
+
         // Quick stats
         lblQsTotalAttempts.setText(String.valueOf(totalAttempts));
-        lblQsBestScore.setText(maxScore + "%");
-        lblQsLowestScore.setText(minScore + "%");
+        lblQsBestScore.setText(bestBucket);
+        lblQsLowestScore.setText(lowestBucket);
         lblQsTotalPosts.setText(String.valueOf(totalPosts));
         lblQsTopicsJoined.setText(String.valueOf(topicsJoined));
-        lblQsSubjects.setText(String.valueOf(subjectCount));
+        lblQsSubjects.setText(String.valueOf(dist.size()));
 
         // Charts
-        renderBarChart(s.path("weekly_performance"));
-        renderPieChart(s.path("subject_allocation"), totalAttempts,
-            s.path("quiz").path("available_quizzes").asInt(0));
+        renderBarChart(s.path("postsPerDay"));
+        renderPieChart(s.path("scoreDistribution"), totalAttempts, availableQuizzes);
     }
 
-    private void renderBarChart(JsonNode weekly) {
+    private void renderBarChart(JsonNode postsPerDay) {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-        if (weekly != null && weekly.isArray() && weekly.size() > 0) {
-            for (JsonNode w : weekly)
-                dataset.addValue(w.path("avg_score").asDouble(0), "Avg Score",
-                    w.path("date").asText());
+        if (postsPerDay != null && postsPerDay.isArray() && postsPerDay.size() > 0) {
+            for (JsonNode w : postsPerDay)
+                dataset.addValue(w.path("value").asDouble(0), "Posts",
+                    w.path("label").asText());
         } else {
             String[] days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
-            for (String d : days) dataset.addValue(0, "Avg Score", d);
+            for (String d : days) dataset.addValue(0, "Posts", d);
         }
         JFreeChart chart = ChartFactory.createBarChart(
-            "Weekly Performance Trend", "Day", "Score %",
+            "Posts Per Day (Last 7 Days)", "Day", "Posts",
             dataset, PlotOrientation.VERTICAL, false, true, false);
         chart.setBackgroundPaint(SURFACE);
         chart.getPlot().setBackgroundPaint(SURFACE);
@@ -442,13 +454,13 @@ public class StatisticsPanel extends JPanel {
         barChartHolder.repaint();
     }
 
-    private void renderPieChart(JsonNode subjects, int attempts, int available) {
+    private void renderPieChart(JsonNode scoreDist, int attempts, int available) {
         DefaultPieDataset<String> dataset = new DefaultPieDataset<>();
-        if (subjects != null && subjects.isArray() && subjects.size() > 0) {
-            for (JsonNode sa : subjects) {
-                int val = sa.path("attempts").asInt(0);
-                if (val > 0) dataset.setValue(sa.path("subject").asText("Unknown"), val);
-            }
+        if (scoreDist != null && !scoreDist.isMissingNode() && scoreDist.isObject()) {
+            scoreDist.fields().forEachRemaining(e -> {
+                int val = e.getValue().asInt(0);
+                if (val > 0) dataset.setValue(e.getKey() + "%", val);
+            });
         }
         if (dataset.getItemCount() == 0) {
             if (attempts > 0) dataset.setValue("Attempted", attempts);
@@ -456,7 +468,7 @@ public class StatisticsPanel extends JPanel {
             if (dataset.getItemCount() == 0) dataset.setValue("No data yet", 1);
         }
         JFreeChart chart = ChartFactory.createPieChart(
-            "Quiz Subject Allocation", dataset, true, true, false);
+            "Score Distribution", dataset, true, true, false);
         chart.setBackgroundPaint(SURFACE);
         chart.getPlot().setBackgroundPaint(SURFACE);
         pieChartHolder.removeAll();

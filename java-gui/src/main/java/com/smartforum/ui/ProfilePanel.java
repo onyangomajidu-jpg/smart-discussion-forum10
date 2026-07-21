@@ -328,12 +328,14 @@ public class ProfilePanel extends JPanel {
 
     private void saveMemberProfile() {
         Map<String, Object> body = new HashMap<>();
+        body.put("name", tfName.getText().trim());
+        body.put("bio",  tfBio != null ? tfBio.getText().trim() : "");
         body.put("student_id",    tfStudentId.getText().trim());
         body.put("programme",     tfProgramme.getText().trim());
         body.put("year_of_study", tfYearOfStudy.getText().trim());
         new SwingWorker<Void, Void>() {
             @Override protected Void doInBackground() throws Exception {
-                api.put("/profile/member", body); return null;
+                api.put("/profile", body); return null;
             }
             @Override protected void done() {
                 try { get(); showStatus("Student info updated.", new Color(0x10, 0xB9, 0x81)); }
@@ -344,12 +346,14 @@ public class ProfilePanel extends JPanel {
 
     private void saveLecturerProfile() {
         Map<String, Object> body = new HashMap<>();
+        body.put("name", tfName.getText().trim());
+        body.put("bio",  tfBio != null ? tfBio.getText().trim() : "");
         body.put("staff_id",       tfStaffId.getText().trim());
         body.put("department",     tfDepartment.getText().trim());
         body.put("specialisation", tfSpecialisation.getText().trim());
         new SwingWorker<Void, Void>() {
             @Override protected Void doInBackground() throws Exception {
-                api.put("/profile/lecturer", body); return null;
+                api.put("/profile", body); return null;
             }
             @Override protected void done() {
                 try { get(); showStatus("Lecturer info updated.", new Color(0x10, 0xB9, 0x81)); }

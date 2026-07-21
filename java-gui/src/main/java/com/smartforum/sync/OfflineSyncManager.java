@@ -30,6 +30,9 @@ public class OfflineSyncManager {
 
     private SyncListener syncListener;
 
+    /** ISO-8601 watermark — advanced after each successful download. */
+    private String lastFetchedAt = "1970-01-01T00:00:00";
+
     public OfflineSyncManager(ApiClient api, LocalCacheDatabase cache) {
         this.api   = api;
         this.cache = cache;
@@ -170,7 +173,7 @@ public class OfflineSyncManager {
 
     private void downloadMissing() {
         try {
-            String   json = api.get("/topics/updates?since=1970-01-01+00:00:00");
+            String   json = api.get("/topics/updates?since=" + lastFetchedAt);
             JsonNode root = mapper.readTree(json);
 
             try (Connection conn = cache.connect()) {
@@ -180,6 +183,9 @@ public class OfflineSyncManager {
                 if (root.has("posts")) {
                     for (JsonNode n : root.get("posts"))  upsertPost(conn, n);
                 }
+            }
+            if (root.has("fetched_at")) {
+                lastFetchedAt = root.get("fetched_at").asText();
             }
             System.out.println("[OfflineSync] downloadMissing complete.");
         } catch (Exception e) {

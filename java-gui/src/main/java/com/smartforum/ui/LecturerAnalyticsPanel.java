@@ -36,6 +36,10 @@ public class LecturerAnalyticsPanel extends JPanel {
     private JLabel statusLbl;
 
     public LecturerAnalyticsPanel(ApiClient api) {
+        this(api, null);
+    }
+
+    public LecturerAnalyticsPanel(ApiClient api, com.smartforum.model.AuthUser user) {
         this.api = api;
         setBackground(BG);
         setLayout(new BorderLayout());
