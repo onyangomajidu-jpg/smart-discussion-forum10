@@ -43,10 +43,11 @@ class ModerationController extends Controller
     {
         if ($request->user()->role !== 'admin') abort(403);
         $data = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'reason'  => 'required|string|max:255',
+            'user_id'             => 'required|exists:users,id',
+            'reason'              => 'required|string|max:255',
+            'auto_blacklist_days' => 'nullable|integer|min:1|max:365',
         ]);
-        $this->moderation->issueWarning($data['user_id'], $data['reason'], $request->user()->id);
+        $this->moderation->issueWarning($data['user_id'], $data['reason'], $request->user()->id, $data['auto_blacklist_days'] ?? 30);
         return response()->json(['message' => 'Warning issued.']);
     }
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Topics - Smart Discussion Forum</title>
+    <title>Topics - Discussion Hub</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; height: 100vh; }
@@ -147,7 +147,7 @@
 
 {{-- Navbar --}}
 <nav class="navbar">
-    <h1><img src="{{ asset('images/forum.png') }}" alt="SmartForum" style="height:34px;vertical-align:middle;margin-right:8px;">Smart Discussion Forum</h1>
+    <h1><img src="{{ asset('images/forum.png') }}" alt="Discussion Hub" style="height:34px;vertical-align:middle;margin-right:8px;">Discussion Hub</h1>
     <div class="navbar-right">
         <button class="notif-btn" id="notifBtn" onclick="loadNotifications()">
             🔔
@@ -191,7 +191,7 @@
                     <div class="topic-item-inner">
                         <div class="topic-avatar">{{ $initials }}</div>
                         <div class="topic-content">
-                            <h4>{{ $topic->title }}</h4>
+                            <h4>{{ ($topic->is_pinned && ($userGroupIds->contains($topic->group_id) || $lecturerIds->contains($topic->user_id))) ? '📌 ' : '' }}{{ $topic->title }}</h4>
                             <div class="topic-author">by {{ $topic->author->name }}</div>
                             <div class="topic-stats">
                                 <span class="topic-stat">💬 {{ $topic->posts_count }}</span>
@@ -355,11 +355,6 @@
                     <span style="font-size:11px;color:#667eea;">creator</span>
                 @elseif(auth()->id() === $activeTopic->user_id)
                     <div class="participant-actions">
-                        <form action="{{ route('topics.blockUser', [$activeTopic, $participant->id]) }}" method="POST"
-                              onsubmit="return confirm('Block {{ addslashes($participant->name) }}?')">
-                            @csrf
-                            <button type="submit" class="btn-block-user">Block</button>
-                        </form>
                         <form action="{{ route('topics.removeUser', [$activeTopic, $participant->id]) }}" method="POST"
                               onsubmit="return confirm('Remove {{ addslashes($participant->name) }}?')">
                             @csrf @method('DELETE')
@@ -372,21 +367,7 @@
             <div style="padding:10px 14px;font-size:13px;color:#a0aec0;">No active participants.</div>
         @endforelse
 
-        {{-- Blocked participants --}}
         @if(auth()->id() === $activeTopic->user_id)
-            <div class="section-label" style="margin-top:8px;">🚫 Blocked</div>
-            @forelse($activeTopic->blockedParticipants as $blocked)
-                <div class="participant-item blocked-item">
-                    <span class="participant-name">{{ $blocked->name }}</span>
-                    <form action="{{ route('topics.unblockUser', [$activeTopic, $blocked->id]) }}" method="POST">
-                        @csrf
-                        <button type="submit" class="btn-unblock-user">Unblock</button>
-                    </form>
-                </div>
-            @empty
-                <div style="padding:10px 14px;font-size:13px;color:#a0aec0;">No blocked users.</div>
-            @endforelse
-
             <div class="section-label" style="margin-top:8px;">🗑 Removed</div>
             @forelse($activeTopic->removedParticipants as $removed)
                 <div class="participant-item" style="background:#fff5f5;color:#9b2c2c;">
@@ -562,7 +543,7 @@
         const topicUrl = encodeURIComponent(window.location.href);
         const text = encodeURIComponent(conversation);
         const twitterText = encodeURIComponent(
-            '📚 "' + document.querySelector('.conv-header h2').textContent.trim() + '" — join the discussion on SmartForum'
+            '📚 "' + document.querySelector('.conv-header h2').textContent.trim() + '" — join the discussion on Discussion Hub'
         );
         const shareUrls = {
             whatsapp: 'https://wa.me/?text=' + text,

@@ -16,7 +16,7 @@ class Group extends Model
     protected $casts = ['is_private' => 'boolean'];
 
     public function creator(): BelongsTo     { return $this->belongsTo(User::class, 'created_by'); }
-    public function members(): BelongsToMany { return $this->belongsToMany(User::class)->withPivot('role')->withTimestamps(); }
+    public function members(): BelongsToMany { return $this->belongsToMany(User::class)->withPivot('role'); }
     public function topics(): HasMany        { return $this->hasMany(Topic::class); }
     public function quizzes(): HasMany       { return $this->hasMany(Quiz::class); }
 }

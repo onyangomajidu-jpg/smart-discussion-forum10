@@ -56,14 +56,6 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
 
-        \Log::info('PROFILE UPDATE', [
-            'has_file'    => $request->hasFile('avatar'),
-            'all_files'   => array_keys($request->allFiles()),
-            'content_type'=> $request->header('Content-Type'),
-            'method'      => $request->method(),
-            'file_error'  => $request->hasFile('avatar') ? $request->file('avatar')->getError() : 'no file',
-        ]);
-
         $request->validate([
             'name'             => ['required', 'string', 'max:255'],
             'email'            => ['required', 'email', Rule::unique('users')->ignore($user->id)],
@@ -84,11 +76,16 @@ class ProfileController extends Controller
         $user->bio   = $request->input('bio');
 
         if ($request->hasFile('avatar') && $request->file('avatar')->isValid()) {
-            // Delete old avatar file if exists
-            if ($user->avatar && \Storage::disk('public')->exists($user->avatar)) {
-                \Storage::disk('public')->delete($user->avatar);
+            $file     = $request->file('avatar');
+            $filename = $file->hashName();
+            $destDir  = public_path('storage/avatars');
+            if (!is_dir($destDir)) mkdir($destDir, 0755, true);
+            if ($user->avatar) {
+                $old = public_path('storage/' . $user->avatar);
+                if (file_exists($old)) unlink($old);
             }
-            $user->avatar = $request->file('avatar')->store('avatars', 'public');
+            $file->move($destDir, $filename);
+            $user->avatar = 'avatars/' . $filename;
         }
 
         if ($request->filled('password')) {
