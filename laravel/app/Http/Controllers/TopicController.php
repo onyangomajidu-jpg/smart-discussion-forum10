@@ -141,16 +141,16 @@ class TopicController extends Controller
         }
     }
 
-    // sendNotification() - fetch unread notifications then mark as read
+    // sendNotification() - fetch notifications then mark as read
     public function notifications()
     {
         $user          = auth()->user();
-        $notifications = $user->unreadNotifications()->latest()->take(20)->get()
+        $notifications = $user->notifications()->latest()->take(20)->get()
             ->map(fn($n) => [
                 'id'         => $n->id,
-                'type'       => $n->type,
-                'data'       => is_string($n->data) ? json_decode($n->data, true) : $n->data,
-                'read_at'    => $n->read_at,
+                'type'       => data_get($n->data, 'type', 'info'),
+                'message'    => data_get($n->data, 'message', ''),
+                'read'       => !is_null($n->read_at),
                 'created_at' => $n->created_at,
             ]);
         $user->unreadNotifications()->update(['read_at' => now()]);
