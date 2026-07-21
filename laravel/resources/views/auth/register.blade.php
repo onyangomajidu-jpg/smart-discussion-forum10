@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="{{ asset('images/forum-favicon.png') }}">
-    <title>Register - Smart Discussion Forum</title>
+    <title>Register - Discussion Hub</title>
     <style>
         * {
             margin: 0;
@@ -248,8 +248,8 @@
 <body>
     <div class="register-container">
         <div class="logo">
-            <img src="{{ asset('images/forum.png') }}" alt="Smart Discussion Forum">
-            <h1>Smart Discussion Forum</h1>
+            <img src="{{ asset('images/forum.png') }}" alt="Discussion Hub">
+            <h1>Discussion Hub</h1>
             <p>Create your account to join our community</p>
         </div>
 
@@ -333,6 +333,15 @@
                         <option value="5">Year 5+</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label for="group_id">Join a Group</label>
+                    <select id="group_id" name="group_id">
+                        <option value="">-- Select a Group (optional) --</option>
+                        @foreach($groups as $group)
+                            <option value="{{ $group->id }}" {{ old('group_id') == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
 
             <!-- Lecturer-specific fields -->
@@ -351,6 +360,23 @@
                 <div class="form-group">
                     <label for="specialisation">Specialisation</label>
                     <input type="text" id="specialisation" name="specialisation" value="{{ old('specialisation') }}">
+                </div>
+            </div>
+
+            <!-- Admin-specific fields -->
+            <div id="adminFields" class="role-specific-fields">
+                <h4 style="margin-bottom: 15px; color: #667eea;">Administrator Information</h4>
+                <div class="form-group">
+                    <label for="admin_registration_key">Admin Registration Key <span class="required">*</span></label>
+                    <input type="password" id="admin_registration_key" name="admin_registration_key" placeholder="Enter the admin registration key">
+                    <small style="color: #6c757d; font-size: 12px;">Contact the system owner to obtain this key.</small>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; font-weight: 500; cursor: pointer;">
+                        <input type="checkbox" id="super_admin" name="super_admin" value="1" {{ old('super_admin') ? 'checked' : '' }} style="width: 18px; height: 18px;">
+                        Grant Super Admin privileges
+                    </label>
+                    <small style="color: #6c757d; font-size: 12px;">Super admins have full system access including user management.</small>
                 </div>
             </div>
 
@@ -405,6 +431,8 @@
                 document.getElementById('memberFields').classList.add('active');
             } else if (role === 'lecturer') {
                 document.getElementById('lecturerFields').classList.add('active');
+            } else if (role === 'admin') {
+                document.getElementById('adminFields').classList.add('active');
             }
         });
 

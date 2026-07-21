@@ -37,4 +37,21 @@
     </a>
 </div>
 
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:28px">
+    <a href="{{ route('lecturer.groups.index') }}" style="text-decoration:none">
+        <div class="card" style="padding:24px;text-align:center;transition:all .2s;cursor:pointer" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 32px rgba(99,102,241,.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <div style="font-size:36px;margin-bottom:10px">&#128101;</div>
+            <div style="font-size:16px;font-weight:800;color:#0f172a;margin-bottom:4px">Manage Groups</div>
+            <div style="font-size:12px;color:#64748b">Create and manage class groups</div>
+        </div>
+    </a>
+    <a href="{{ route('lecturer.topics.index') }}" style="text-decoration:none">
+        <div class="card" style="padding:24px;text-align:center;transition:all .2s;cursor:pointer" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 32px rgba(99,102,241,.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <div style="font-size:36px;margin-bottom:10px">💬</div>
+            <div style="font-size:16px;font-weight:800;color:#0f172a;margin-bottom:4px">Topic Discussions</div>
+            <div style="font-size:12px;color:#64748b">Create topics, chat &amp; manage participation</div>
+        </div>
+    </a>
+</div>
+
 @endsection

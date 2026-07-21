@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard — Smart Discussion Forum')
+@section('title', 'Dashboard — Discussion Hub')
 
 @push('styles')
 <style>
@@ -63,6 +63,26 @@
     .panel-ai .panel-header { background: linear-gradient(135deg,#7c3aed,#db2777); color:#fff; }
     .ai-tag { display:inline-block; font-size:10px; font-weight:600; padding:2px 7px; border-radius:8px; background:#fdf4ff; color:#7c3aed; border:1px solid #e9d5ff; margin-right:3px; }
     .ai-score { font-size:10px; color:#db2777; font-weight:700; margin-left:auto; flex-shrink:0; }
+    .panel-groups  { border-top: 3px solid #6366f1; }
+    .panel-groups  .panel-header { background: linear-gradient(135deg,#6366f1,#4f46e5); color:#fff; }
+    .group-chip {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 12px; border-radius: 10px;
+        background: #f1f5f9; margin-bottom: 8px;
+        font-size: 13px; font-weight: 600; color: #1e293b;
+    }
+    .group-chip:last-child { margin-bottom: 0; }
+    .group-chip .g-icon {
+        width: 34px; height: 34px; border-radius: 8px;
+        background: linear-gradient(135deg,#6366f1,#8b5cf6);
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 14px; flex-shrink: 0;
+    }
+    .group-chip .g-role {
+        margin-left: auto; font-size: 11px; font-weight: 600;
+        padding: 2px 9px; border-radius: 10px;
+        background: #e0e7ff; color: #3730a3;
+    }
 
     .panel-body { padding: 16px 18px; flex: 1; overflow-y: auto; }
 
@@ -112,6 +132,33 @@
 
     .flash { background: #d1fae5; color: #065f46; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
 
+    /* ── Quiz announcements ── */
+    .quiz-announce {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        border: 1.5px solid #f59e0b;
+        border-left: 5px solid #d97706;
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+    }
+    .quiz-announce-title {
+        font-size: 13px; font-weight: 800; color: #92400e;
+        display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+    .quiz-announce-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 8px 10px; background: rgba(255,255,255,.6);
+        border-radius: 8px; margin-bottom: 6px; font-size: 13px;
+    }
+    .quiz-announce-item:last-child { margin-bottom: 0; }
+    .quiz-announce-item .qa-name { flex: 1; font-weight: 600; color: #1e293b; }
+    .quiz-announce-item .qa-group { font-size: 11px; color: #64748b; }
+    .quiz-announce-item .qa-badge {
+        font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 10px;
+    }
+    .qa-badge-open     { background: #d1fae5; color: #065f46; }
+    .qa-badge-upcoming { background: #e0e7ff; color: #3730a3; }
+
     @media (max-width: 900px) {
         .stats-row { grid-template-columns: 1fr 1fr; }
         .panel-grid { grid-template-columns: 1fr; }
@@ -128,6 +175,26 @@
     <div class="flash">{{ session('success') }}</div>
 @endif
 
+@php $hasAnnouncements = !empty($quizAnnouncements) && count($quizAnnouncements) > 0; @endphp
+@if($hasAnnouncements)
+<div class="quiz-announce" id="quizAnnounceBanner">
+    <div class="quiz-announce-title">
+        <i class="fa-solid fa-bell"></i> Quiz Announcements
+    </div>
+    @foreach($quizAnnouncements as $quiz)
+    <div class="quiz-announce-item">
+        <i class="fa-solid fa-clock" style="color:#6366f1;font-size:16px;flex-shrink:0"></i>
+        <span class="qa-name">{{ $quiz->title }}</span>
+        <span class="qa-group"><i class="fa-solid fa-users" style="font-size:10px"></i> {{ $quiz->group->name }}</span>
+        @if($quiz->hard_deadline)
+        <span class="qa-group"><i class="fa-solid fa-flag-checkered" style="font-size:10px"></i> Due {{ $quiz->hard_deadline->format('d M, H:i') }}</span>
+        @endif
+        <span class="qa-badge qa-badge-upcoming">Opens {{ $quiz->unlock_date->format('d M, H:i') }}</span>
+    </div>
+    @endforeach
+</div>
+@endif
+
 <div class="dash-header">
     <h1>Dashboard</h1>
     <p>Welcome back, {{ auth()->user()->name }}! Here's your activity overview.</p>
@@ -137,22 +204,22 @@
 <div class="stats-row">
     <a href="{{ route('topics.index') }}" class="dash-stat-card">
         <div class="stat-icon"><i class="fa-solid fa-comments"></i></div>
-        <div class="value" id="sc-topics">—</div>
+        <div class="value" id="sc-topics">{{ $topicsJoined }}</div>
         <div class="label">Topics Joined</div>
     </a>
     <a href="{{ route('topics.index') }}" class="dash-stat-card">
         <div class="stat-icon"><i class="fa-solid fa-pen-to-square"></i></div>
-        <div class="value" id="sc-posts">—</div>
+        <div class="value" id="sc-posts">{{ $postsMade }}</div>
         <div class="label">Posts Made</div>
     </a>
     <a href="{{ auth()->user()->role === 'member' ? route('quizzes.index') : '#' }}" class="dash-stat-card">
         <div class="stat-icon"><i class="fa-solid fa-bullseye"></i></div>
-        <div class="value" id="sc-attempts">—</div>
+        <div class="value" id="sc-attempts">{{ $quizAttempts }}</div>
         <div class="label">Quiz Attempts</div>
     </a>
     <a href="{{ auth()->user()->role === 'member' ? route('quizzes.index') : '#' }}" class="dash-stat-card">
         <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
-        <div class="value" id="sc-avg">—</div>
+        <div class="value" id="sc-avg">{{ $avgScore !== null ? round($avgScore) . '%' : 'N/A' }}</div>
         <div class="label">Avg Quiz Score</div>
     </a>
 </div>
@@ -166,8 +233,18 @@
             <div class="panel-header-left"><i class="fa-solid fa-comments"></i> Topic Participation</div>
             <a href="{{ route('topics.index') }}" class="panel-view-all">View All <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
         </div>
-        <div class="panel-body" id="topicsPanel">
-            <div class="empty-state"><div class="icon">💬</div>No topic participation yet.</div>
+        <div class="panel-body">
+            @forelse($recentTopics as $t)
+                <a href="/topics/{{ $t->id }}" style="text-decoration:none;color:inherit">
+                    <div class="list-row">
+                        <span class="list-dot" style="color:#8b5cf6">●</span>
+                        <span style="flex:1">{{ $t->title }}</span>
+                        <i class="fa-solid fa-arrow-right" style="font-size:10px;color:#c4b5fd"></i>
+                    </div>
+                </a>
+            @empty
+                <div class="empty-state"><div class="icon">💬</div>No topic participation yet.</div>
+            @endforelse
         </div>
     </div>
 
@@ -176,48 +253,62 @@
             <div class="panel-header-left"><i class="fa-solid fa-bullseye"></i> Quiz Attempts</div>
             <a href="{{ route('quizzes.index') }}" class="panel-view-all">View All <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
         </div>
-        <div class="panel-body" id="quizPanel">
-            <div class="empty-state"><div class="icon">📋</div>No quiz attempts yet.</div>
+        <div class="panel-body">
+            @forelse($recentAttempts as $a)
+                <a href="/quizzes" style="text-decoration:none;color:inherit">
+                    <div class="list-row">
+                        <span class="list-dot" style="color:#06b6d4">✓</span>
+                        <span style="flex:1">{{ $a->title }}</span>
+                        <span class="dash-badge">{{ $a->score !== null ? round($a->score).'%' : '—' }}</span>
+                    </div>
+                </a>
+            @empty
+                <div class="empty-state"><div class="icon">📋</div>No quiz attempts yet.</div>
+            @endforelse
         </div>
     </div>
 
-    {{-- Row 2: Statistics + Account --}}
+    {{-- Panel 3: My Groups --}}
+    <div class="panel panel-groups">
+        <div class="panel-header">
+            <div class="panel-header-left"><i class="fa-solid fa-users"></i> My Groups</div>
+            @if(auth()->user()->isMember())
+            <a href="{{ route('groups.index') }}" class="panel-view-all">Browse <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+            @endif
+        </div>
+        <div class="panel-body">
+            @if($groups->isEmpty())
+                <div class="empty-state"><div class="icon">👥</div>You are not assigned to any group yet.</div>
+            @else
+                @foreach($groups as $group)
+                <div class="group-chip">
+                    <div class="g-icon"><i class="fa-solid fa-users"></i></div>
+                    <span>{{ $group->name }}</span>
+                    <span class="g-role">{{ ucfirst($group->pivot->role ?? 'member') }}</span>
+                </div>
+                @endforeach
+            @endif
+        </div>
+    </div>
+
+    {{-- Panel 4: Statistics Review --}}
     <div class="panel panel-stats">
         <div class="panel-header">
             <div class="panel-header-left"><i class="fa-solid fa-chart-bar"></i> Statistics Review</div>
         </div>
         <div class="panel-body">
             <div class="progress-row">
-                <div class="progress-label"><span>Forum Engagement</span><span id="pct-eng">0%</span></div>
-                <div class="progress-track"><div class="progress-fill" id="bar-eng" style="width:0%"></div></div>
+                <div class="progress-label"><span>Forum Engagement</span><span>{{ $engPct }}%</span></div>
+                <div class="progress-track"><div class="progress-fill" style="width:{{ $engPct }}%"></div></div>
             </div>
             <div class="progress-row">
-                <div class="progress-label"><span>Quiz Completion</span><span id="pct-comp">0%</span></div>
-                <div class="progress-track"><div class="progress-fill" id="bar-comp" style="width:0%"></div></div>
+                <div class="progress-label"><span>Quiz Completion</span><span>{{ $compPct }}%</span></div>
+                <div class="progress-track"><div class="progress-fill" style="width:{{ $compPct }}%"></div></div>
             </div>
             <div class="progress-row">
-                <div class="progress-label"><span>Average Score</span><span id="pct-avg">N/A</span></div>
-                <div class="progress-track"><div class="progress-fill" id="bar-avg" style="width:0%"></div></div>
+                <div class="progress-label"><span>Average Score</span><span>{{ $avgScore !== null ? $avgPct.'%' : 'N/A' }}</span></div>
+                <div class="progress-track"><div class="progress-fill" style="width:{{ $avgPct }}%"></div></div>
             </div>
-        </div>
-    </div>
-
-    <div class="panel panel-account">
-        <div class="panel-header">
-            <div class="panel-header-left"><i class="fa-solid fa-gear"></i> Account Management</div>
-        </div>
-        <div class="panel-body">
-            <div class="info-row"><span class="key">Full Name</span><span>{{ auth()->user()->name }}</span></div>
-            <div class="info-row"><span class="key">Email</span><span>{{ auth()->user()->email }}</span></div>
-            <div class="info-row">
-                <span class="key">Role</span>
-                <span class="role-badge role-{{ auth()->user()->role }}">{{ ucfirst(auth()->user()->role) }}</span>
-            </div>
-            <div class="info-row"><span class="key">Joined</span><span>{{ auth()->user()->created_at->format('M d, Y') }}</span></div>
-            <form action="{{ route('logout') }}" method="POST">
-                @csrf
-                <button type="submit" class="btn-signout-panel"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out</button>
-            </form>
         </div>
     </div>
 
@@ -226,96 +317,27 @@
         <div class="panel-header">
             <div class="panel-header-left"><i class="fa-solid fa-robot"></i> AI Recommended Topics</div>
         </div>
-        <div class="panel-body" id="aiPanel">
-            <div class="empty-state"><div class="icon">🤖</div>Generating personalised recommendations…</div>
+        <div class="panel-body">
+            @forelse($recommendations as $r)
+                <a href="/topics/{{ $r['id'] }}" style="text-decoration:none;color:inherit">
+                    <div class="list-row" style="flex-wrap:wrap;gap:6px">
+                        <span class="list-dot" style="color:#db2777">★</span>
+                        <span style="flex:1;min-width:120px">{{ $r['title'] }}</span>
+                        <span>
+                            @foreach($r['tags'] as $tag)
+                                <span class="ai-tag">{{ $tag }}</span>
+                            @endforeach
+                        </span>
+                        <span class="ai-score">{{ round($r['score'] * 100) }}% match</span>
+                    </div>
+                </a>
+            @empty
+                <div class="empty-state"><div class="icon">🤖</div>No recommendations yet — start participating in topics!</div>
+            @endforelse
         </div>
     </div>
 
 </div>
 
-<script>
-fetch('/recommendations', {
-    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' },
-    credentials: 'same-origin'
-})
-    .then(r => r.json())
-    .then(({ recommendations }) => {
-        const panel = document.getElementById('aiPanel');
-        if (!recommendations.length) {
-            panel.innerHTML = '<div class="empty-state"><div class="icon">🤖</div>No recommendations yet — start participating in topics!</div>';
-            return;
-        }
-        panel.innerHTML = recommendations.map(r =>
-            `<a href="/topics/${r.id}" style="text-decoration:none;color:inherit">
-                <div class="list-row" style="flex-wrap:wrap;gap:6px">
-                    <span class="list-dot" style="color:#db2777">★</span>
-                    <span style="flex:1;min-width:120px">${esc(r.title)}</span>
-                    <span>${r.tags.map(t => `<span class="ai-tag">${esc(t)}</span>`).join('')}</span>
-                    <span class="ai-score">${Math.round(r.score * 100)}% match</span>
-                </div>
-            </a>`
-        ).join('');
-    })
-    .catch(() => { document.getElementById('aiPanel').innerHTML = '<div class="empty-state"><div class="icon">🤖</div>Recommendations loading in background…</div>'; });
 
-fetch('/api/dashboard', {
-    headers: {
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? ''
-    },
-    credentials: 'same-origin'
-})
-    .then(r => r.json())
-    .then(({ stats: s }) => {
-        document.getElementById('sc-topics').textContent   = s.topicsParticipated;
-        document.getElementById('sc-posts').textContent    = s.totalPosts;
-        document.getElementById('sc-attempts').textContent = s.quizAttempts;
-        document.getElementById('sc-avg').textContent      = s.avgScore != null ? Math.round(s.avgScore) + '%' : '—';
-
-        const engPct  = Math.min(s.totalPosts * 5, 100);
-        const total   = s.quizAttempts + s.availableQuizzes;
-        const compPct = total > 0 ? Math.round(s.quizAttempts * 100 / total) : 0;
-        const avgPct  = s.avgScore != null ? Math.round(s.avgScore) : 0;
-
-        setBar('eng',  engPct,  engPct + '%');
-        setBar('comp', compPct, compPct + '%');
-        setBar('avg',  avgPct,  s.avgScore != null ? avgPct + '%' : 'N/A');
-
-        const tp = document.getElementById('topicsPanel');
-        if (s.recentTopics.length) {
-            tp.innerHTML = s.recentTopics.map(t =>
-                `<a href="/topics/${t.id}" style="text-decoration:none;color:inherit">
-                    <div class="list-row">
-                        <span class="list-dot" style="color:#8b5cf6">●</span>
-                        <span style="flex:1">${esc(t.title)}</span>
-                        <i class="fa-solid fa-arrow-right" style="font-size:10px;color:#c4b5fd"></i>
-                    </div>
-                </a>`
-            ).join('');
-        }
-
-        const qp = document.getElementById('quizPanel');
-        if (s.recentAttempts.length) {
-            qp.innerHTML = s.recentAttempts.map(a =>
-                `<a href="/quizzes" style="text-decoration:none;color:inherit">
-                    <div class="list-row">
-                        <span class="list-dot" style="color:#06b6d4">✓</span>
-                        <span style="flex:1">${esc(a.title)}</span>
-                        <span class="dash-badge">${a.score != null ? Math.round(a.score) + '%' : '—'}</span>
-                    </div>
-                </a>`
-            ).join('');
-        }
-    })
-    .catch(() => {});
-
-function setBar(id, pct, label) {
-    document.getElementById('bar-' + id).style.width = pct + '%';
-    document.getElementById('pct-' + id).textContent = label;
-}
-function esc(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-</script>
 @endsection

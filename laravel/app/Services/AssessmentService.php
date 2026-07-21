@@ -111,6 +111,8 @@ class AssessmentService implements IAssessment
 
         Notification::send($members, new QuizReminderNotification($quiz));
 
+        $quiz->update(['reminder_sent_at' => now()]);
+
         return $members->count();
     }
 
@@ -128,8 +130,11 @@ class AssessmentService implements IAssessment
     {
         $quiz = Quiz::with('questions')->findOrFail($quizId);
 
-        // Enforce quiz window
-        if (!$quiz->isOpen()) {
+        // Enforce quiz window — allow 30s grace for auto-submit race condition
+        $isOpenOrJustClosed = $quiz->isOpen() ||
+            ($quiz->hard_deadline && now()->diffInSeconds($quiz->hard_deadline, false) >= -30);
+
+        if (!$isOpenOrJustClosed) {
             throw ValidationException::withMessages([
                 'quiz' => 'This quiz is not currently open for submissions.',
             ]);

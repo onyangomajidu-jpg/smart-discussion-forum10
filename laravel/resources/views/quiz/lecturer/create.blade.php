@@ -175,16 +175,40 @@
                               placeholder="Provide instructions or context for students…">{{ old('description') }}</textarea>
                 </div>
 
+                @php
+                    $nowLocal = now()->timezone(config('app.timezone'));
+                @endphp
+                <div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#854d0e;display:flex;align-items:center;gap:8px">
+                    <i class="fa-solid fa-clock"></i>
+                    <span>Now: <strong>{{ $nowLocal->format('h:i A') }}</strong> &mdash; set deadlines <u>after</u> this time.</span>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label"><i class="fa-solid fa-unlock" style="color:#10b981;margin-right:5px"></i>Unlock Date</label>
-                        <input type="datetime-local" name="unlock_date" class="form-control" value="{{ old('unlock_date') }}">
-                        <p class="form-hint"><i class="fa-solid fa-circle-info"></i> Leave blank to open immediately on publish.</p>
+                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                            <input type="date" name="unlock_date_date" class="form-control" style="flex:1;min-width:130px" value="{{ old('unlock_date_date') }}">
+                            <input type="number" name="unlock_date_hour" class="form-control" style="width:64px" min="1" max="12" placeholder="hh" value="{{ old('unlock_date_hour') }}">
+                            <span>:</span>
+                            <input type="number" name="unlock_date_min" class="form-control" style="width:64px" min="0" max="59" placeholder="mm" value="{{ old('unlock_date_min', '00') }}">
+                            <select name="unlock_date_ampm" class="form-control" style="width:74px">
+                                <option value="AM" {{ old('unlock_date_ampm') === 'AM' ? 'selected' : '' }}>AM</option>
+                                <option value="PM" {{ old('unlock_date_ampm', 'PM') === 'PM' ? 'selected' : '' }}>PM</option>
+                            </select>
+                        </div>
+                        <p class="form-hint"><i class="fa-solid fa-circle-info"></i> Leave date blank to open immediately on publish.</p>
                     </div>
                     <div class="form-group">
                         <label class="form-label"><i class="fa-solid fa-flag-checkered" style="color:#ef4444;margin-right:5px"></i>Hard Deadline</label>
-                        <input type="datetime-local" name="hard_deadline" class="form-control" value="{{ old('hard_deadline') }}">
-                        <p class="form-hint"><i class="fa-solid fa-circle-info"></i> Auto-submit fires at this time.</p>
+                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                            <input type="date" name="hard_deadline_date" class="form-control" style="flex:1;min-width:130px" value="{{ old('hard_deadline_date') }}">
+                            <input type="number" name="hard_deadline_hour" class="form-control" style="width:64px" min="1" max="12" placeholder="hh" value="{{ old('hard_deadline_hour') }}">
+                            <span>:</span>
+                            <input type="number" name="hard_deadline_min" class="form-control" style="width:64px" min="0" max="59" placeholder="mm" value="{{ old('hard_deadline_min', '00') }}">
+                            <select name="hard_deadline_ampm" class="form-control" style="width:74px">
+                                <option value="AM" {{ old('hard_deadline_ampm') === 'AM' ? 'selected' : '' }}>AM</option>
+                                <option value="PM" {{ old('hard_deadline_ampm', 'PM') === 'PM' ? 'selected' : '' }}>PM</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 

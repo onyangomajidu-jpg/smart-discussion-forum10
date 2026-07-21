@@ -39,7 +39,6 @@ public class SyncService {
         System.out.println("[Sync] Online — starting sync...");
         uploadPendingMessages();
         uploadPendingQuizAnswers();
-        cache.markAllSynced();
         System.out.println("[Sync] Sync complete.");
     }
 
@@ -50,6 +49,7 @@ public class SyncService {
              ResultSet rs   = st.executeQuery(sql)) {
 
             while (rs.next()) {
+                int id = rs.getInt("id");
                 Map<String, Object> body = new HashMap<>();
                 body.put("topic_id", rs.getInt("topic_id"));
                 body.put("user_id",  rs.getInt("user_id"));
@@ -57,10 +57,11 @@ public class SyncService {
 
                 try {
                     api.post("/posts", body);
-                    logSync(conn, "UPLOAD", "pending_messages", rs.getInt("id"), "success");
+                    markSynced(conn, "pending_messages", id);
+                    logSync(conn, "UPLOAD", "pending_messages", id, "success");
                 } catch (IOException e) {
-                    logSync(conn, "UPLOAD", "pending_messages", rs.getInt("id"), "failed");
-                    System.err.println("[Sync] Failed to upload message id=" + rs.getInt("id"));
+                    logSync(conn, "UPLOAD", "pending_messages", id, "failed");
+                    System.err.println("[Sync] Failed to upload message id=" + id);
                 }
             }
         } catch (SQLException e) {
@@ -69,27 +70,36 @@ public class SyncService {
     }
 
     private void uploadPendingQuizAnswers() {
-        String sql = "SELECT id, quiz_id, user_id, answers_json FROM pending_quiz_answers WHERE synced = 0";
+        String sql = "SELECT id, quiz_id, answers_json FROM pending_quiz_answers WHERE synced = 0";
         try (Connection conn = cache.connect();
              Statement st   = conn.createStatement();
              ResultSet rs   = st.executeQuery(sql)) {
 
             while (rs.next()) {
+                int id     = rs.getInt("id");
+                int quizId = rs.getInt("quiz_id");
                 Map<String, Object> body = new HashMap<>();
-                body.put("quiz_id",      rs.getInt("quiz_id"));
-                body.put("user_id",      rs.getInt("user_id"));
-                body.put("answers",      rs.getString("answers_json"));
+                body.put("answers", rs.getString("answers_json"));
 
                 try {
-                    api.post("/quiz-attempts", body);
-                    logSync(conn, "UPLOAD", "pending_quiz_answers", rs.getInt("id"), "success");
+                    api.post("/quizzes/" + quizId + "/submit", body);
+                    markSynced(conn, "pending_quiz_answers", id);
+                    logSync(conn, "UPLOAD", "pending_quiz_answers", id, "success");
                 } catch (IOException e) {
-                    logSync(conn, "UPLOAD", "pending_quiz_answers", rs.getInt("id"), "failed");
-                    System.err.println("[Sync] Failed to upload quiz attempt id=" + rs.getInt("id"));
+                    logSync(conn, "UPLOAD", "pending_quiz_answers", id, "failed");
+                    System.err.println("[Sync] Failed to upload quiz attempt id=" + id);
                 }
             }
         } catch (SQLException e) {
             throw new RuntimeException("uploadPendingQuizAnswers failed: " + e.getMessage(), e);
+        }
+    }
+
+    private void markSynced(Connection conn, String table, int id) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE " + table + " SET synced = 1 WHERE id = ?")) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
         }
     }
 

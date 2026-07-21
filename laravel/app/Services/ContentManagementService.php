@@ -59,15 +59,30 @@ class ContentManagementService implements IContentManagement
             throw new \RuntimeException('Content flagged as spam.');
         }
 
-        // Check if user is blocked before creating the post
+        // Check global admin ban
+        $banned = \App\Models\Blacklist::where('user_id', Auth::id())
+            ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->exists();
+        if ($banned) {
+            throw new \RuntimeException('You have been banned from the forum.');
+        }
+
         $topic = Topic::find($topicId);
         if ($topic) {
             $entry = $topic->belongsToMany(User::class, 'topic_user')
-                ->withPivot('is_blocked')
+                ->withPivot('is_blocked', 'is_removed')
                 ->wherePivot('user_id', Auth::id())
                 ->first();
-            if ($entry && $entry->pivot->is_blocked) {
-                throw new \RuntimeException('You have been blocked from this topic.');
+            if (!$entry) {
+                // First time posting — auto-join as participant
+                $topic->allParticipants()->syncWithoutDetaching([Auth::id() => ['is_blocked' => false, 'is_removed' => false]]);
+            } else {
+                if ($entry->pivot->is_removed) {
+                    throw new \RuntimeException('You have been removed from this topic.');
+                }
+                if ($entry->pivot->is_blocked) {
+                    throw new \RuntimeException('You have been blocked from this topic.');
+                }
             }
         }
 
@@ -76,10 +91,6 @@ class ContentManagementService implements IContentManagement
             'user_id'  => Auth::id(),
             'body'     => $data['body'],
         ]);
-
-        if ($topic) {
-            $topic->participants()->syncWithoutDetaching([Auth::id() => ['is_blocked' => false]]);
-        }
 
         broadcast(new NewPost($topicId, Auth::id(), $data['body'], 'post'))->toOthers();
 
@@ -92,7 +103,29 @@ class ContentManagementService implements IContentManagement
             throw new \RuntimeException('Content flagged as spam.');
         }
 
+        // Check global admin ban
+        $banned = \App\Models\Blacklist::where('user_id', Auth::id())
+            ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->exists();
+        if ($banned) {
+            throw new \RuntimeException('You have been banned from the forum.');
+        }
+
         $post = Post::findOrFail($postId);
+
+        // Check topic-level removal or block
+        $entry = $post->topic->allParticipants()
+            ->wherePivot('user_id', Auth::id())
+            ->first();
+        if (!$entry) {
+            throw new \RuntimeException('You have been removed from this topic.');
+        }
+        if ($entry->pivot->is_removed) {
+            throw new \RuntimeException('You have been removed from this topic.');
+        }
+        if ($entry->pivot->is_blocked) {
+            throw new \RuntimeException('You have been blocked from this topic.');
+        }
 
         $reply = Reply::create([
             'post_id'         => $postId,
@@ -141,7 +174,7 @@ class ContentManagementService implements IContentManagement
     private function authorizeOwner(int $ownerId): void
     {
         $user = Auth::user();
-        if ($user->id !== $ownerId && !$user->isAdmin() && !$user->isLecturer()) {
+        if ($user->id !== $ownerId && !$user->isAdmin()) {
             throw new \RuntimeException('Unauthorized.');
         }
     }

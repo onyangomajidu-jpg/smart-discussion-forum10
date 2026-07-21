@@ -65,7 +65,7 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => 'Africa/Kampala',
 
     /*
     |--------------------------------------------------------------------------
@@ -122,5 +122,7 @@ return [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
+
+    'admin_registration_key' => env('ADMIN_REGISTRATION_KEY', 'admin@forum2024'),
 
 ];

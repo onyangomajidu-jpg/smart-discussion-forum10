@@ -119,6 +119,17 @@
 .btn-csv  { background:linear-gradient(135deg,#10b981,#059669); color:#fff; box-shadow:0 4px 12px rgba(16,185,129,.3); }
 .btn-json { background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; box-shadow:0 4px 12px rgba(245,158,11,.3); }
 
+/* ── Zero-state nudge ────────────────────────────────────────────── */
+.kpi-nudge {
+    display:flex; align-items:center; gap:12px;
+    background:linear-gradient(135deg,#eff6ff,#f0fdf4);
+    border:1px solid #bfdbfe; border-radius:12px;
+    padding:14px 20px; margin-bottom:24px; font-size:13px; color:#1e40af;
+}
+.kpi-nudge i { font-size:18px; color:#6366f1; flex-shrink:0; }
+.kpi-nudge strong { font-weight:700; display:block; margin-bottom:2px; color:#1e3a8a; }
+.kpi-nudge span { color:#3b82f6; font-size:12px; }
+
 /* ── Responsive ───────────────────────────────────────────────────── */
 @media(max-width:1024px) {
     .kpi-grid    { grid-template-columns:repeat(2,1fr); }
@@ -150,7 +161,8 @@
 </div>
 
 {{-- KPI Cards (Fig 6.5 — stat cards) --}}
-<div class="kpi-grid">
+<div class="kpi-grid"
+     id="kpiGrid">
     <div class="kpi-card">
         <div class="kpi-icon purple"><i class="fa-solid fa-calculator"></i></div>
         <div>
@@ -181,6 +193,17 @@
     </div>
 </div>
 
+@php $isBlankSlate = $stats['quiz']['total_attempts'] === 0 && $stats['forum']['total_posts'] === 0; @endphp
+@if($isBlankSlate)
+<div class="kpi-nudge">
+    <i class="fa-solid fa-circle-info"></i>
+    <div>
+        <strong>You're just getting started!</strong>
+        <span>Join a topic discussion or take a quiz — your stats will appear here once you participate.</span>
+    </div>
+</div>
+@endif
+
 {{-- Charts Row --}}
 <div class="charts-row">
 
@@ -206,7 +229,7 @@
                     </linearGradient>
                 </defs>
                 @php
-                    $maxVal = max(array_column($weekly, 'avg_score')) ?: 100;
+                    $maxVal = max(array_column($weekly->toArray(), 'avg_score')) ?: 100;
                     $maxVal = max($maxVal, 100);
                     $pts = [];
                     foreach ($weekly as $i => $w) {

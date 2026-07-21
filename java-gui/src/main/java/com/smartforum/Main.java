@@ -3,9 +3,7 @@ package com.smartforum;
 import com.smartforum.api.ApiClient;
 import com.smartforum.auth.AuthService;
 import com.smartforum.cache.LocalCacheDatabase;
-import com.smartforum.sync.RealtimeSyncService;
 import com.smartforum.ui.LoginWindow;
-import com.smartforum.ui.MainWindow;
 
 import javax.swing.*;
 import java.io.InputStream;
@@ -17,8 +15,12 @@ import java.util.Properties;
  * Boot sequence (SDD §3.1):
  *   1. Load app.properties
  *   2. Initialise SQLite local cache (creates tables if absent)
- *   3. Wire ApiClient, AuthService, RealtimeSyncService
+ *   3. Wire ApiClient, AuthService
  *   4. Launch Swing LoginWindow on the EDT
+ *
+ * Sync is handled entirely by OfflineSyncManager inside MainWindow
+ * (reconnect poller every 10 s). RealtimeSyncService is not started
+ * here to avoid duplicate pending_messages uploads.
  */
 public class Main {
 
@@ -36,13 +38,8 @@ public class Main {
         System.setProperty("ws.url", wsUrl);
         ApiClient api = new ApiClient();
 
-        // ── 3. Auth + sync services ───────────────────────────────────────
-        AuthService         authService = new AuthService(api, cache);
-        RealtimeSyncService syncService = new RealtimeSyncService(api, cache);
-
-        int syncInterval = Integer.parseInt(
-            props.getProperty("sync.interval", "30"));
-        syncService.start(syncInterval);
+        // ── 3. Auth service ───────────────────────────────────────────────
+        AuthService authService = new AuthService(api, cache);
 
         // ── 4. GUI ────────────────────────────────────────────────────────
         // Pass api + cache into LoginWindow so it can construct MainWindow

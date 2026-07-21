@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="{{ asset('images/forum-favicon.png') }}">
-    <title>Forgot Password - Smart Discussion Forum</title>
+    <title>Forgot Password - Discussion Hub</title>
     <style>
         * {
             margin: 0;
@@ -141,7 +141,7 @@
 <body>
     <div class="forgot-password-container">
         <div class="logo">
-            <img src="{{ asset('images/forum.png') }}" alt="Smart Discussion Forum">
+            <img src="{{ asset('images/forum.png') }}" alt="Discussion Hub">
             <h1>Forgot Password</h1>
             <p>Enter your email address and we'll send you a link to reset your password</p>
         </div>

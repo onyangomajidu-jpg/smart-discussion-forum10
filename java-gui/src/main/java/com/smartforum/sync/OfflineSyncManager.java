@@ -30,12 +30,16 @@ public class OfflineSyncManager {
 
     private SyncListener syncListener;
 
+    /** ISO-8601 watermark — advanced after each successful download. */
+    private String lastFetchedAt = "1970-01-01T00:00:00";
+
     public OfflineSyncManager(ApiClient api, LocalCacheDatabase cache) {
         this.api   = api;
         this.cache = cache;
     }
 
     public void setSyncListener(SyncListener l) { this.syncListener = l; }
+    public ApiClient getApi() { return api; }
 
     // ── storeOfflineData() ────────────────────────────────────────────────
 
@@ -74,8 +78,41 @@ public class OfflineSyncManager {
         System.out.println("[OfflineSync] Online — starting synchronizeOfflineData()");
         uploadPending();
         downloadMissing();
+        downloadUserGroups();
         if (syncListener != null) syncListener.onSyncComplete();
         System.out.println("[OfflineSync] synchronizeOfflineData() complete.");
+    }
+
+    // ── createTopic() ─────────────────────────────────────────────────────
+
+    public void createTopic(String title, String body, int userId) throws IOException {
+        api.post("/topics", Map.of(
+            "title",   title,
+            "body",    body,
+            "user_id", userId
+        ));
+        synchronizeOfflineData();
+    }
+
+    // ── editPost() ────────────────────────────────────────────────────────
+
+    public void editPost(int postId, String newBody) throws IOException {
+        api.put("/posts/" + postId, Map.of("body", newBody));
+        synchronizeOfflineData();
+    }
+
+    // ── deletePost() ──────────────────────────────────────────────────────
+
+    public void deletePost(int postId) throws IOException {
+        api.delete("/posts/" + postId);
+        synchronizeOfflineData();
+    }
+
+    // ── deleteTopic() ─────────────────────────────────────────────────────
+
+    public void deleteTopic(int topicId) throws IOException {
+        api.delete("/topics/" + topicId);
+        synchronizeOfflineData();
     }
 
     // ── sendOrQueue() ─────────────────────────────────────────────────────
@@ -93,6 +130,7 @@ public class OfflineSyncManager {
                     "user_id",  userId,
                     "body",     body
                 ));
+                downloadMissing();
                 return true;
             } catch (IOException e) {
                 System.err.println("[OfflineSync] Live send failed, queuing: " + e.getMessage());
@@ -136,7 +174,7 @@ public class OfflineSyncManager {
 
     private void downloadMissing() {
         try {
-            String   json = api.get("/topics/updates?since=1970-01-01T00:00:00");
+            String   json = api.get("/topics/updates?since=" + lastFetchedAt);
             JsonNode root = mapper.readTree(json);
 
             try (Connection conn = cache.connect()) {
@@ -147,6 +185,9 @@ public class OfflineSyncManager {
                     for (JsonNode n : root.get("posts"))  upsertPost(conn, n);
                 }
             }
+            if (root.has("fetched_at")) {
+                lastFetchedAt = root.get("fetched_at").asText();
+            }
             System.out.println("[OfflineSync] downloadMissing complete.");
         } catch (Exception e) {
             System.err.println("[OfflineSync] downloadMissing failed: " + e.getMessage());
@@ -156,18 +197,19 @@ public class OfflineSyncManager {
     private void upsertTopic(Connection conn, JsonNode n) throws SQLException {
         String sql = """
             INSERT OR REPLACE INTO cached_topics
-                (id, group_id, title, body, author_name, is_pinned, is_locked, views, cached_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                (id, group_id, user_id, title, body, author_name, is_pinned, is_locked, views, cached_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
             """;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1,    n.path("id").asInt());
             ps.setInt(2,    n.path("group_id").asInt());
-            ps.setString(3, n.path("title").asText());
-            ps.setString(4, n.path("body").asText());
-            ps.setString(5, n.path("author_name").asText("Unknown"));
-            ps.setInt(6,    n.path("is_pinned").asInt(0));
-            ps.setInt(7,    n.path("is_locked").asInt(0));
-            ps.setInt(8,    n.path("views").asInt(0));
+            ps.setInt(3,    n.path("user_id").asInt(0));
+            ps.setString(4, n.path("title").asText());
+            ps.setString(5, n.path("body").asText());
+            ps.setString(6, n.path("author_name").asText("Unknown"));
+            ps.setInt(7,    n.path("is_pinned").asInt(0));
+            ps.setInt(8,    n.path("is_locked").asInt(0));
+            ps.setInt(9,    n.path("views").asInt(0));
             ps.executeUpdate();
         }
     }
@@ -189,6 +231,28 @@ public class OfflineSyncManager {
             ps.setInt(7,    n.path("upvotes").asInt(0));
             ps.setInt(8,    n.path("downvotes").asInt(0));
             ps.executeUpdate();
+        }
+    }
+
+    private void downloadUserGroups() {
+        try {
+            JsonNode groups = mapper.readTree(api.get("/groups"));
+            try (Connection conn = cache.connect(); Statement st = conn.createStatement()) {
+                st.execute("DELETE FROM user_groups");
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "INSERT OR IGNORE INTO user_groups (group_id) VALUES (?)")) {
+                    for (JsonNode g : groups) {
+                        // Only store groups the user has actually joined
+                        if (g.path("is_member").asBoolean(false)) {
+                            ps.setInt(1, g.path("id").asInt());
+                            ps.executeUpdate();
+                        }
+                    }
+                }
+            }
+            System.out.println("[OfflineSync] user_groups cached.");
+        } catch (Exception e) {
+            System.err.println("[OfflineSync] downloadUserGroups failed: " + e.getMessage());
         }
     }
 

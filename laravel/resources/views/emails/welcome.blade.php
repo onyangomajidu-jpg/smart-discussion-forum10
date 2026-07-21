@@ -19,12 +19,12 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Smart Discussion Forum</h1>
+            <h1>Discussion Hub</h1>
             <p>Your academic community awaits</p>
         </div>
         <div class="body">
             <h2>Welcome, {{ $user->name }}! 🎉</h2>
-            <p>Your account has been created successfully. You're now part of the Smart Discussion Forum community.</p>
+            <p>Your account has been created successfully. You're now part of the Discussion Hub community.</p>
             <p><strong>Account details:</strong></p>
             <p>
                 Email: <strong>{{ $user->email }}</strong><br>
@@ -35,7 +35,7 @@
             <p style="font-size:13px; color:#888;">If you did not create this account, please ignore this email.</p>
         </div>
         <div class="footer">
-            &copy; {{ date('Y') }} Smart Discussion Forum. All rights reserved.
+            &copy; {{ date('Y') }} Discussion Hub. All rights reserved.
         </div>
     </div>
 </body>

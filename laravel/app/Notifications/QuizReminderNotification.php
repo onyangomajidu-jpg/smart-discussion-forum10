@@ -3,7 +3,6 @@
 namespace App\Notifications;
 
 use App\Models\Quiz;
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -13,7 +12,6 @@ use Illuminate\Notifications\Notification;
  */
 class QuizReminderNotification extends Notification
 {
-    use Queueable;
 
     public function __construct(private readonly Quiz $quiz) {}
 

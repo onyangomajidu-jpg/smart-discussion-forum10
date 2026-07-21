@@ -27,7 +27,8 @@ class RegisterController extends Controller
      */
     public function showRegistrationForm()
     {
-        return view('auth.register');
+        $groups = \App\Models\Group::orderBy('name')->get();
+        return view('auth.register', compact('groups'));
     }
 
     /**
@@ -45,11 +46,25 @@ class RegisterController extends Controller
         }
 
         try {
+            // Verify admin registration key
+            if ($request->role === 'admin') {
+                if ($request->admin_registration_key !== config('app.admin_registration_key')) {
+                    return redirect()->back()
+                        ->withErrors(['admin_registration_key' => 'Invalid admin registration key.'])
+                        ->withInput();
+                }
+            }
+
             // Register user using AuthenticationService
             $user = $this->authService->register(
                 $request->all(),
                 $request->boolean('accept_rules')
             );
+
+            // Attach student to chosen group
+            if ($user->role === 'member' && $request->filled('group_id')) {
+                $user->groups()->attach($request->group_id, ['role' => 'member']);
+            }
 
             // Send welcome email (non-blocking)
             try {
@@ -92,12 +107,17 @@ class RegisterController extends Controller
                     $rules['student_id'] = ['nullable', 'string', 'unique:members'];
                     $rules['programme'] = ['nullable', 'string'];
                     $rules['year_of_study'] = ['nullable', 'integer', 'min:1', 'max:5'];
+                    $rules['group_id'] = ['nullable', 'exists:groups,id'];
                     break;
                     
                 case 'lecturer':
                     $rules['staff_id'] = ['nullable', 'string', 'unique:lecturers'];
                     $rules['department'] = ['nullable', 'string'];
                     $rules['specialisation'] = ['nullable', 'string'];
+                    break;
+
+                case 'admin':
+                    $rules['admin_registration_key'] = ['required', 'string'];
                     break;
             }
         }

@@ -148,11 +148,11 @@
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
                     <div style="padding:14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0">
                         <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px"><i class="fa-solid fa-unlock" style="color:#10b981"></i> Unlock Date</div>
-                        <div style="font-size:13px;font-weight:600">{{ $quiz->unlock_date?->format('D d M Y, H:i') ?? 'Immediate on publish' }}</div>
+                        <div style="font-size:13px;font-weight:600">{{ $quiz->unlock_date?->format('D d M Y, h:i A') ?? 'Immediate on publish' }}</div>
                     </div>
                     <div style="padding:14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0">
                         <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px"><i class="fa-solid fa-flag-checkered" style="color:#ef4444"></i> Hard Deadline</div>
-                        <div style="font-size:13px;font-weight:600">{{ $quiz->hard_deadline?->format('D d M Y, H:i') ?? 'No deadline set' }}</div>
+                        <div style="font-size:13px;font-weight:600">{{ $quiz->hard_deadline?->format('D d M Y, h:i A') ?? 'No deadline set' }}</div>
                     </div>
                     <div style="padding:14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0">
                         <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px"><i class="fa-solid fa-robot" style="color:#6366f1"></i> Auto-Submit</div>
@@ -270,6 +270,9 @@
             <div class="card-header"><h2><i class="fa-solid fa-bolt"></i> Actions</h2></div>
             <div class="card-body action-btn-group">
                 @if($quiz->status === 'draft')
+                <a href="{{ route('lecturer.quizzes.edit', $quiz) }}" class="btn btn-outline" style="width:100%;justify-content:center;padding:13px">
+                    <i class="fa-solid fa-pen-to-square"></i> Edit Draft
+                </a>
                 <form action="{{ route('lecturer.quizzes.publish', $quiz) }}" method="POST">
                     @csrf
                     <button type="submit" class="btn btn-success" style="width:100%;justify-content:center;padding:13px">
@@ -287,11 +290,18 @@
                     </button>
                 </form>
                 <p style="font-size:11px;color:#64748b;text-align:center">Notifies all group members about this quiz.</p>
-                @endif
-
                 <a href="{{ route('lecturer.quizzes.results', $quiz) }}" class="btn btn-outline" style="width:100%;justify-content:center">
                     <i class="fa-solid fa-chart-bar"></i> View Full Results
                 </a>
+                @endif
+
+                <form action="{{ route('lecturer.quizzes.destroy', $quiz) }}" method="POST"
+                      onsubmit="return confirm('Delete quiz &quot;{{ addslashes($quiz->title) }}&quot;? This cannot be undone.')">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn" style="width:100%;justify-content:center;padding:13px;background:#fee2e2;color:#ef4444;border:1.5px solid #fecaca">
+                        <i class="fa-solid fa-trash"></i> Delete Quiz
+                    </button>
+                </form>
             </div>
         </div>
 

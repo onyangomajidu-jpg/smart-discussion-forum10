@@ -91,9 +91,22 @@
         <a href="{{ route('lecturer.quizzes.show', $quiz) }}" class="btn btn-outline btn-sm">
             <i class="fa-solid fa-eye"></i> View
         </a>
+        @if($quiz->status === 'draft')
+        <a href="{{ route('lecturer.quizzes.edit', $quiz) }}" class="btn btn-secondary btn-sm">
+            <i class="fa-solid fa-pen-to-square"></i> Edit Draft
+        </a>
+        @else
         <a href="{{ route('lecturer.quizzes.results', $quiz) }}" class="btn btn-secondary btn-sm">
             <i class="fa-solid fa-chart-bar"></i> Results
         </a>
+        @endif
+        <form action="{{ route('lecturer.quizzes.destroy', $quiz) }}" method="POST"
+              onsubmit="return confirm('Delete quiz &quot;{{ addslashes($quiz->title) }}&quot;? This cannot be undone.')">
+            @csrf @method('DELETE')
+            <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#ef4444;border:1.5px solid #fecaca">
+                <i class="fa-solid fa-trash"></i> Delete
+            </button>
+        </form>
     </div>
 </div>
 @endforeach

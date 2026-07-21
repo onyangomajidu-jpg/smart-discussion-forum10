@@ -7,8 +7,10 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Quiz\QuizController;
 use App\Http\Controllers\ModerationController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GroupController;
 use App\Http\Controllers\Api\DashboardApiController;
 use App\Http\Controllers\StatisticsController;
+use App\Http\Controllers\ProfileController;
 
 // ── Guest Routes ───────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
@@ -28,6 +30,10 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+    // Profile
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
     // AI Recommendations — displayRecommendation() (AI sequence, Fig 3.13)
     Route::get('/recommendations', [App\Http\Controllers\Api\RecommendationController::class, 'index'])->name('recommendations');
 
@@ -40,6 +46,8 @@ Route::middleware('auth')->group(function () {
 
 // ── Member Routes ──────────────────────────────────────────────────
 Route::middleware(['auth', App\Http\Middleware\MemberMiddleware::class])->group(function () {
+    Route::get('/quiz/live-check', [QuizController::class, 'liveCheck'])->name('quizzes.live-check');
+
     // Student quiz routes (SDD §4.2 — Student quiz screen Fig 6.6)
     Route::get('/quizzes',                [QuizController::class, 'index'])->name('quizzes.index');
     Route::get('/quizzes/{quiz}',         [QuizController::class, 'take'])->name('quizzes.take');
@@ -48,6 +56,18 @@ Route::middleware(['auth', App\Http\Middleware\MemberMiddleware::class])->group(
 
     // Analytics — Statistics screen (SDD §4.3 / Fig 6.5)
     Route::get('/analytics', [StatisticsController::class, 'index'])->name('analytics.index');
+
+    // Student group routes
+    Route::get('/groups',                    [GroupController::class, 'studentIndex'])->name('groups.index');
+    Route::post('/groups/{group}/join',      [GroupController::class, 'join'])->name('groups.join');
+    Route::delete('/groups/{group}/leave',   [GroupController::class, 'leave'])->name('groups.leave');
+});
+
+// ── Export & Social Sharing (Week 3) ─────────────────────────────
+Route::middleware('auth')->group(function () {
+    Route::get('/topics/{topicId}/export-pdf', [App\Http\Controllers\ExportController::class, 'exportDiscussionPDF'])->name('topics.export-pdf');
+    Route::post('/topics/{topicId}/share',     [App\Http\Controllers\ExportController::class, 'shareDiscussion'])->name('topics.share');
+    Route::post('/posts/{postId}/share',       [App\Http\Controllers\ExportController::class, 'forwardToSocialMedia'])->name('posts.share');
 });
 
 // ── Topics / Content Management Routes ────────────────────────────
@@ -57,6 +77,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/topics/{topic}', [App\Http\Controllers\TopicController::class, 'show'])->name('topics.show');
     Route::delete('/topics/{topic}', [App\Http\Controllers\TopicController::class, 'destroy'])->name('topics.destroy');
     Route::delete('/topics/{topic}/users/{userId}', [App\Http\Controllers\TopicController::class, 'removeUser'])->name('topics.removeUser');
+    Route::post('/topics/{topic}/users/{userId}/unremove', [App\Http\Controllers\TopicController::class, 'unremoveUser'])->name('topics.unremoveUser');
     Route::post('/topics/{topic}/users/{userId}/block', [App\Http\Controllers\TopicController::class, 'blockUser'])->name('topics.blockUser');
     Route::post('/topics/{topic}/users/{userId}/unblock', [App\Http\Controllers\TopicController::class, 'unblockUser'])->name('topics.unblockUser');
     Route::post('/topics/{topicId}/participate', [App\Http\Controllers\TopicController::class, 'participate'])->name('topics.participate');
@@ -64,6 +85,10 @@ Route::middleware('auth')->group(function () {
     Route::put('/posts/{id}', [App\Http\Controllers\PostController::class, 'update'])->name('posts.update');
     Route::delete('/posts/{id}', [App\Http\Controllers\PostController::class, 'destroy'])->name('posts.destroy');
     Route::get('/notifications', [App\Http\Controllers\TopicController::class, 'notifications'])->name('notifications.index');
+    Route::post('/notifications/read', function() {
+        auth()->user()->unreadNotifications()->update(['read_at' => now()]);
+        return response()->json(['message' => 'Marked as read.']);
+    })->name('notifications.read');
 });
 
 // ── Lecturer Routes ────────────────────────────────────────────────
@@ -80,9 +105,30 @@ Route::middleware(['auth', App\Http\Middleware\LecturerMiddleware::class])->grou
     Route::get('/lecturer/quizzes/create',          [QuizController::class, 'create'])->name('lecturer.quizzes.create');
     Route::post('/lecturer/quizzes',                [QuizController::class, 'store'])->name('lecturer.quizzes.store');
     Route::get('/lecturer/quizzes/{quiz}',          [QuizController::class, 'show'])->name('lecturer.quizzes.show');
+    Route::get('/lecturer/quizzes/{quiz}/edit',     [QuizController::class, 'edit'])->name('lecturer.quizzes.edit');
+    Route::post('/lecturer/quizzes/{quiz}/update',  [QuizController::class, 'update'])->name('lecturer.quizzes.update');
     Route::post('/lecturer/quizzes/{quiz}/publish', [QuizController::class, 'publish'])->name('lecturer.quizzes.publish');
     Route::post('/lecturer/quizzes/{quiz}/remind',  [QuizController::class, 'remind'])->name('lecturer.quizzes.remind');
     Route::get('/lecturer/quizzes/{quiz}/results',  [QuizController::class, 'results'])->name('lecturer.quizzes.results');
+    Route::delete('/lecturer/quizzes/{quiz}',        [QuizController::class, 'destroy'])->name('lecturer.quizzes.destroy');
+
+    // Lecturer group management
+    Route::get('/lecturer/groups',              [GroupController::class, 'index'])->name('lecturer.groups.index');
+    Route::post('/lecturer/groups',             [GroupController::class, 'store'])->name('lecturer.groups.store');
+    Route::delete('/lecturer/groups/{group}',   [GroupController::class, 'destroy'])->name('lecturer.groups.destroy');
+
+    // Lecturer topic participation panel
+    Route::get('/lecturer/topics',                                          [App\Http\Controllers\LecturerTopicController::class, 'index'])->name('lecturer.topics.index');
+    Route::post('/lecturer/topics',                                         [App\Http\Controllers\LecturerTopicController::class, 'store'])->name('lecturer.topics.store');
+    Route::get('/lecturer/topics/{topic}',                                  [App\Http\Controllers\LecturerTopicController::class, 'show'])->name('lecturer.topics.show');
+    Route::delete('/lecturer/topics/{topic}',                               [App\Http\Controllers\LecturerTopicController::class, 'destroy'])->name('lecturer.topics.destroy');
+    Route::post('/lecturer/topics/{topicId}/participate',                   [App\Http\Controllers\LecturerTopicController::class, 'participate'])->name('lecturer.topics.participate');
+    Route::post('/lecturer/posts/{postId}/answer',                          [App\Http\Controllers\LecturerTopicController::class, 'answer'])->name('lecturer.topics.answer');
+    Route::post('/lecturer/topics/{topic}/lock',                            [App\Http\Controllers\LecturerTopicController::class, 'lockTopic'])->name('lecturer.topics.lock');
+    Route::post('/lecturer/topics/{topic}/pin',                             [App\Http\Controllers\LecturerTopicController::class, 'pinTopic'])->name('lecturer.topics.pin');
+    Route::delete('/lecturer/topics/{topic}/users/{userId}',                [App\Http\Controllers\LecturerTopicController::class, 'removeUser'])->name('lecturer.topics.removeUser');
+    Route::post('/lecturer/topics/{topic}/users/{userId}/block',            [App\Http\Controllers\LecturerTopicController::class, 'blockUser'])->name('lecturer.topics.blockUser');
+    Route::post('/lecturer/topics/{topic}/users/{userId}/unblock',          [App\Http\Controllers\LecturerTopicController::class, 'unblockUser'])->name('lecturer.topics.unblockUser');
 });
 
 // ── Administrator Routes ───────────────────────────────────────────
