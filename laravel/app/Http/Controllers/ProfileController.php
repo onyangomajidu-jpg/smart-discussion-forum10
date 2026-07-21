@@ -56,14 +56,6 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
 
-        \Log::info('PROFILE UPDATE', [
-            'has_file'    => $request->hasFile('avatar'),
-            'all_files'   => array_keys($request->allFiles()),
-            'content_type'=> $request->header('Content-Type'),
-            'method'      => $request->method(),
-            'file_error'  => $request->hasFile('avatar') ? $request->file('avatar')->getError() : 'no file',
-        ]);
-
         $request->validate([
             'name'             => ['required', 'string', 'max:255'],
             'email'            => ['required', 'email', Rule::unique('users')->ignore($user->id)],
@@ -84,11 +76,10 @@ class ProfileController extends Controller
         $user->bio   = $request->input('bio');
 
         if ($request->hasFile('avatar') && $request->file('avatar')->isValid()) {
-            // Delete old avatar file if exists
-            if ($user->avatar && \Storage::disk('public')->exists($user->avatar)) {
-                \Storage::disk('public')->delete($user->avatar);
+            if ($user->avatar && \Storage::disk('public_web')->exists($user->avatar)) {
+                \Storage::disk('public_web')->delete($user->avatar);
             }
-            $user->avatar = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar = $request->file('avatar')->store('avatars', 'public_web');
         }
 
         if ($request->filled('password')) {
