@@ -132,6 +132,33 @@
 
     .flash { background: #d1fae5; color: #065f46; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
 
+    /* ── Quiz announcements ── */
+    .quiz-announce {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        border: 1.5px solid #f59e0b;
+        border-left: 5px solid #d97706;
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+    }
+    .quiz-announce-title {
+        font-size: 13px; font-weight: 800; color: #92400e;
+        display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+    .quiz-announce-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 8px 10px; background: rgba(255,255,255,.6);
+        border-radius: 8px; margin-bottom: 6px; font-size: 13px;
+    }
+    .quiz-announce-item:last-child { margin-bottom: 0; }
+    .quiz-announce-item .qa-name { flex: 1; font-weight: 600; color: #1e293b; }
+    .quiz-announce-item .qa-group { font-size: 11px; color: #64748b; }
+    .quiz-announce-item .qa-badge {
+        font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 10px;
+    }
+    .qa-badge-open     { background: #d1fae5; color: #065f46; }
+    .qa-badge-upcoming { background: #e0e7ff; color: #3730a3; }
+
     @media (max-width: 900px) {
         .stats-row { grid-template-columns: 1fr 1fr; }
         .panel-grid { grid-template-columns: 1fr; }
@@ -146,6 +173,26 @@
 
 @if(session('success'))
     <div class="flash">{{ session('success') }}</div>
+@endif
+
+@php $hasAnnouncements = !empty($quizAnnouncements) && count($quizAnnouncements) > 0; @endphp
+@if($hasAnnouncements)
+<div class="quiz-announce" id="quizAnnounceBanner">
+    <div class="quiz-announce-title">
+        <i class="fa-solid fa-bell"></i> Quiz Announcements
+    </div>
+    @foreach($quizAnnouncements as $quiz)
+    <div class="quiz-announce-item">
+        <i class="fa-solid fa-clock" style="color:#6366f1;font-size:16px;flex-shrink:0"></i>
+        <span class="qa-name">{{ $quiz->title }}</span>
+        <span class="qa-group"><i class="fa-solid fa-users" style="font-size:10px"></i> {{ $quiz->group->name }}</span>
+        @if($quiz->hard_deadline)
+        <span class="qa-group"><i class="fa-solid fa-flag-checkered" style="font-size:10px"></i> Due {{ $quiz->hard_deadline->format('d M, H:i') }}</span>
+        @endif
+        <span class="qa-badge qa-badge-upcoming">Opens {{ $quiz->unlock_date->format('d M, H:i') }}</span>
+    </div>
+    @endforeach
+</div>
 @endif
 
 <div class="dash-header">

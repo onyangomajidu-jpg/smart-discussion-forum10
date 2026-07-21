@@ -30,10 +30,45 @@ public class LocalCacheDatabase {
         try (Connection conn = connect(); Statement st = conn.createStatement()) {
             conn.setAutoCommit(false);
             createTables(st);
+            migrateSchema(conn);
             conn.commit();
             System.out.println("[LocalCache] Schema initialised.");
         } catch (SQLException e) {
             throw new RuntimeException("Failed to initialise local cache: " + e.getMessage(), e);
+        }
+    }
+
+    private void migrateSchema(Connection conn) throws SQLException {
+        // Add user_id to cached_topics if missing
+        try (ResultSet rs = conn.getMetaData().getColumns(null, null, "cached_topics", "user_id")) {
+            if (!rs.next()) {
+                conn.createStatement().execute(
+                    "ALTER TABLE cached_topics ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0");
+                System.out.println("[LocalCache] Migrated: added user_id to cached_topics.");
+            }
+        }
+        // Add role-specific profile columns to session_cache if missing
+        String[][] newCols = {
+            {"avatar",        "TEXT"},
+            {"bio",           "TEXT"},
+            {"is_active",     "INTEGER NOT NULL DEFAULT 1"},
+            {"student_id",    "TEXT"},
+            {"programme",     "TEXT"},
+            {"year_of_study", "INTEGER NOT NULL DEFAULT 0"},
+            {"reputation",    "INTEGER NOT NULL DEFAULT 0"},
+            {"staff_id",      "TEXT"},
+            {"department",    "TEXT"},
+            {"specialisation","TEXT"},
+            {"super_admin",   "INTEGER NOT NULL DEFAULT 0"}
+        };
+        for (String[] col : newCols) {
+            try (ResultSet rs = conn.getMetaData().getColumns(null, null, "session_cache", col[0])) {
+                if (!rs.next()) {
+                    conn.createStatement().execute(
+                        "ALTER TABLE session_cache ADD COLUMN " + col[0] + " " + col[1]);
+                    System.out.println("[LocalCache] Migrated: added " + col[0] + " to session_cache.");
+                }
+            }
         }
     }
 
@@ -54,6 +89,7 @@ public class LocalCacheDatabase {
             CREATE TABLE IF NOT EXISTS cached_topics (
                 id           INTEGER PRIMARY KEY,
                 group_id     INTEGER NOT NULL,
+                user_id      INTEGER NOT NULL DEFAULT 0,
                 title        TEXT    NOT NULL,
                 body         TEXT    NOT NULL,
                 author_name  TEXT    NOT NULL,

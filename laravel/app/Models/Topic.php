@@ -22,20 +22,28 @@ class Topic extends Model
     public function participants(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(User::class, 'topic_user')
-            ->withPivot('is_blocked')->withTimestamps()
-            ->wherePivot('is_blocked', false);
+            ->withPivot('is_blocked', 'is_removed')->withTimestamps()
+            ->wherePivot('is_blocked', false)
+            ->wherePivot('is_removed', false);
     }
 
     public function allParticipants(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(User::class, 'topic_user')
-            ->withPivot('is_blocked')->withTimestamps();
+            ->withPivot('is_blocked', 'is_removed')->withTimestamps();
     }
 
     public function blockedParticipants(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(User::class, 'topic_user')
-            ->withPivot('is_blocked')->withTimestamps()
+            ->withPivot('is_blocked', 'is_removed')->withTimestamps()
             ->wherePivot('is_blocked', true);
+    }
+
+    public function removedParticipants(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'topic_user')
+            ->withPivot('is_blocked', 'is_removed')->withTimestamps()
+            ->wherePivot('is_removed', true);
     }
 }

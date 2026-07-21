@@ -170,18 +170,19 @@ public class RealtimeSyncService {
     private void cacheTopic(Connection conn, JsonNode n) throws SQLException {
         String sql = """
             INSERT OR REPLACE INTO cached_topics
-                (id, group_id, title, body, author_name, is_pinned, is_locked, views, cached_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                (id, group_id, user_id, title, body, author_name, is_pinned, is_locked, views, cached_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
             """;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1,    n.path("id").asInt());
             ps.setInt(2,    n.path("group_id").asInt());
-            ps.setString(3, n.path("title").asText());
-            ps.setString(4, n.path("body").asText());
-            ps.setString(5, n.path("author_name").asText("Unknown"));
-            ps.setInt(6,    n.path("is_pinned").asInt(0));
-            ps.setInt(7,    n.path("is_locked").asInt(0));
-            ps.setInt(8,    n.path("views").asInt(0));
+            ps.setInt(3,    n.path("user_id").asInt(0));
+            ps.setString(4, n.path("title").asText());
+            ps.setString(5, n.path("body").asText());
+            ps.setString(6, n.path("author_name").asText("Unknown"));
+            ps.setInt(7,    n.path("is_pinned").asInt(0));
+            ps.setInt(8,    n.path("is_locked").asInt(0));
+            ps.setInt(9,    n.path("views").asInt(0));
             ps.executeUpdate();
         }
     }

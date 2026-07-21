@@ -226,6 +226,33 @@ class QuizController extends Controller
 
     // ── STUDENT ───────────────────────────────────────────────────────────
 
+    /** GET /quiz/live-check — returns open quizzes AND upcoming quizzes with unlock times */
+    public function liveCheck()
+    {
+        $user = auth()->user();
+        $attempted = QuizAttempt::where('user_id', $user->id)->pluck('quiz_id');
+
+        $quizzes = Quiz::published()
+            ->whereHas('group.members', fn($q) => $q->where('users.id', $user->id))
+            ->whereNotIn('id', $attempted)
+            ->where(fn($q) => $q->whereNull('hard_deadline')->orWhere('hard_deadline', '>', now()))
+            ->with('group')
+            ->get()
+            ->filter(fn($q) => $q->isOpen() || $q->isUpcoming())
+            ->map(fn($q) => [
+                'id'            => $q->id,
+                'title'         => $q->title,
+                'group'         => $q->group->name,
+                'duration'      => $q->duration_minutes,
+                'hard_deadline' => $q->hard_deadline?->format('d M, H:i'),
+                'url'           => route('quizzes.take', $q),
+                'unlock_ms'     => $q->unlock_date ? $q->unlock_date->utc()->timestamp * 1000 : 0,
+            ])
+            ->values();
+
+        return response()->json($quizzes);
+    }
+
     /** GET /quizzes — List available quizzes for the student */
     public function index()
     {
@@ -313,6 +340,19 @@ class QuizController extends Controller
         return view('quiz.student.result', compact('quiz', 'record'));
     }
 
+    /** DELETE /lecturer/quizzes/{quiz} — Delete a quiz */
+    public function destroy(Quiz $quiz)
+    {
+        $this->authoriseLecturer($quiz);
+        $quiz->questions()->delete();
+        $quiz->attempts()->delete();
+        $quiz->participationRecords()->delete();
+        $quiz->delete();
+
+        return redirect()->route('lecturer.quizzes.index')
+            ->with('success', 'Quiz "' . $quiz->title . '" deleted successfully.');
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private function authoriseLecturer(Quiz $quiz): void
@@ -320,5 +360,135 @@ class QuizController extends Controller
         if ($quiz->created_by !== auth()->id()) {
             abort(403, 'You are not authorised to manage this quiz.');
         }
+    }
+
+    // ── API methods (Java GUI) ────────────────────────────────────────────
+
+    public function apiIndex(Request $request)
+    {
+        $user = $request->user();
+        $quizzes = Quiz::published()->with('group:id,name')->withCount('questions')->orderBy('unlock_date')->get()
+            ->map(fn($q) => [
+                'id'               => $q->id,
+                'title'            => $q->title,
+                'description'      => $q->description,
+                'group_name'       => $q->group?->name,
+                'duration_minutes' => $q->duration_minutes,
+                'unlock_date'      => $q->unlock_date,
+                'hard_deadline'    => $q->hard_deadline,
+                'questions_count'  => $q->questions_count,
+                'is_open'          => $q->isOpen(),
+                'is_upcoming'      => $q->isUpcoming(),
+                'attempted'        => QuizAttempt::where('quiz_id', $q->id)->where('user_id', $user->id)->exists(),
+            ]);
+        return response()->json($quizzes);
+    }
+
+    public function apiShow(Quiz $quiz)
+    {
+        if (!$quiz->isOpen()) return response()->json(['message' => 'Quiz is not open.'], 422);
+        if (QuizAttempt::where('quiz_id', $quiz->id)->where('user_id', auth()->id())->exists())
+            return response()->json(['message' => 'Already attempted.'], 422);
+        $quiz->load('questions');
+        return response()->json([
+            'id'               => $quiz->id,
+            'title'            => $quiz->title,
+            'duration_minutes' => $quiz->duration_minutes,
+            'hard_deadline'    => $quiz->hard_deadline,
+            'enforce_focus'    => $quiz->enforce_focus,
+            'questions'        => $quiz->questions->map(fn($q) => [
+                'id'      => $q->id,
+                'question'=> $q->question,
+                'options' => is_array($q->options) ? $q->options : json_decode($q->options, true),
+                'marks'   => $q->marks,
+            ]),
+        ]);
+    }
+
+    public function apiSubmit(Request $request, Quiz $quiz)
+    {
+        $request->validate(['answers' => 'required|array', 'answers.*' => 'integer|min:0']);
+        try {
+            $attempt = $this->assessment->submitQuiz($quiz->id, auth()->id(), $request->input('answers'));
+            return response()->json(['score' => $attempt->score, 'submitted_at' => $attempt->submitted_at]);
+        } catch (ValidationException $e) {
+            return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
+        }
+    }
+
+    public function apiResult(Quiz $quiz)
+    {
+        $record = $this->assessment->participationRecord($quiz->id, auth()->id());
+        if (!$record) return response()->json(['message' => 'No submission found.'], 404);
+        return response()->json($record);
+    }
+
+    public function apiLecturerIndex(Request $request)
+    {
+        if (!in_array($request->user()->role, ['lecturer', 'admin'])) abort(403);
+        $quizzes = Quiz::where('created_by', $request->user()->id)
+            ->with('group:id,name')->withCount('questions', 'attempts')->orderByDesc('created_at')->get()
+            ->map(fn($q) => [
+                'id'               => $q->id,
+                'title'            => $q->title,
+                'status'           => $q->status,
+                'group_name'       => $q->group?->name,
+                'duration_minutes' => $q->duration_minutes,
+                'questions_count'  => $q->questions_count,
+                'attempts_count'   => $q->attempts_count,
+                'unlock_date'      => $q->unlock_date,
+                'hard_deadline'    => $q->hard_deadline,
+                'created_at'       => $q->created_at,
+            ]);
+        return response()->json($quizzes);
+    }
+
+    public function apiStore(Request $request)
+    {
+        if (!in_array($request->user()->role, ['lecturer', 'admin'])) abort(403);
+        $data = $request->validate([
+            'group_id'                   => 'required|exists:groups,id',
+            'title'                      => 'required|string|max:255',
+            'description'                => 'nullable|string',
+            'unlock_date'                => 'nullable|date',
+            'hard_deadline'              => 'nullable|date',
+            'duration_minutes'           => 'required|integer|min:1|max:180',
+            'auto_submit'                => 'boolean',
+            'enforce_focus'              => 'boolean',
+            'questions'                  => 'required|array|min:1',
+            'questions.*.question'       => 'required|string',
+            'questions.*.options'        => 'required|array|min:2',
+            'questions.*.correct_option' => 'required|integer|min:0',
+            'questions.*.marks'          => 'required|integer|min:1',
+        ]);
+        $quiz = $this->assessment->createQuiz($data, $request->user()->id);
+        return response()->json($quiz->load('questions'), 201);
+    }
+
+    public function apiPublish(Request $request, Quiz $quiz)
+    {
+        if (!in_array($request->user()->role, ['lecturer', 'admin'])) abort(403);
+        try {
+            $quiz = $this->assessment->publishQuiz($quiz->id, $request->user()->id);
+            return response()->json(['message' => 'Quiz published.', 'status' => $quiz->status]);
+        } catch (ValidationException $e) {
+            return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
+        }
+    }
+
+    public function apiResults(Request $request, Quiz $quiz)
+    {
+        if (!in_array($request->user()->role, ['lecturer', 'admin'])) abort(403);
+        $records = $quiz->participationRecords()->with('user:id,name,email')->orderByDesc('score')->get()
+            ->map(fn($r) => [
+                'user_name'   => $r->user?->name,
+                'user_email'  => $r->user?->email,
+                'score'       => $r->score,
+                'max_score'   => $r->max_score,
+                'percentage'  => $r->percentage,
+                'grade'       => $r->grade,
+                'completed_at'=> $r->completed_at,
+            ]);
+        return response()->json(['quiz' => $quiz->title, 'results' => $records]);
     }
 }

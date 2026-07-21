@@ -67,15 +67,22 @@ class ContentManagementService implements IContentManagement
             throw new \RuntimeException('You have been banned from the forum.');
         }
 
-        // Check if user is blocked before creating the post
         $topic = Topic::find($topicId);
         if ($topic) {
             $entry = $topic->belongsToMany(User::class, 'topic_user')
-                ->withPivot('is_blocked')
+                ->withPivot('is_blocked', 'is_removed')
                 ->wherePivot('user_id', Auth::id())
                 ->first();
-            if ($entry && $entry->pivot->is_blocked) {
-                throw new \RuntimeException('You have been blocked from this topic.');
+            if (!$entry) {
+                // First time posting — auto-join as participant
+                $topic->allParticipants()->syncWithoutDetaching([Auth::id() => ['is_blocked' => false, 'is_removed' => false]]);
+            } else {
+                if ($entry->pivot->is_removed) {
+                    throw new \RuntimeException('You have been removed from this topic.');
+                }
+                if ($entry->pivot->is_blocked) {
+                    throw new \RuntimeException('You have been blocked from this topic.');
+                }
             }
         }
 
@@ -84,10 +91,6 @@ class ContentManagementService implements IContentManagement
             'user_id'  => Auth::id(),
             'body'     => $data['body'],
         ]);
-
-        if ($topic) {
-            $topic->participants()->syncWithoutDetaching([Auth::id() => ['is_blocked' => false]]);
-        }
 
         broadcast(new NewPost($topicId, Auth::id(), $data['body'], 'post'))->toOthers();
 
@@ -110,11 +113,17 @@ class ContentManagementService implements IContentManagement
 
         $post = Post::findOrFail($postId);
 
-        // Check topic-level block
+        // Check topic-level removal or block
         $entry = $post->topic->allParticipants()
             ->wherePivot('user_id', Auth::id())
             ->first();
-        if ($entry && $entry->pivot->is_blocked) {
+        if (!$entry) {
+            throw new \RuntimeException('You have been removed from this topic.');
+        }
+        if ($entry->pivot->is_removed) {
+            throw new \RuntimeException('You have been removed from this topic.');
+        }
+        if ($entry->pivot->is_blocked) {
             throw new \RuntimeException('You have been blocked from this topic.');
         }
 
