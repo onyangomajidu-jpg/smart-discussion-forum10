@@ -85,6 +85,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/posts/{id}', [App\Http\Controllers\PostController::class, 'update'])->name('posts.update');
     Route::delete('/posts/{id}', [App\Http\Controllers\PostController::class, 'destroy'])->name('posts.destroy');
     Route::get('/notifications', [App\Http\Controllers\TopicController::class, 'notifications'])->name('notifications.index');
+    Route::post('/notifications/read', fn() => [
+        auth()->user()->unreadNotifications()->update(['read_at' => now()])
+    ])->name('notifications.read');
 });
 
 // ── Lecturer Routes ────────────────────────────────────────────────

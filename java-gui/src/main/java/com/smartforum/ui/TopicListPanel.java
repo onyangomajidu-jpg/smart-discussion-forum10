@@ -106,7 +106,8 @@ public class TopicListPanel extends JPanel {
             Topic selected = list.getSelectedValue();
             if (selected == null) return;
             if (selected.userId != user.getUserId() && !user.getRole().equals("admin")) {
-                JOptionPane.showMessageDialog(this, "You can only delete your own topics.");
+                JOptionPane.showMessageDialog(this, "You can only delete your own topics.",
+                    "Permission Denied", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             int confirm = JOptionPane.showConfirmDialog(this,
@@ -258,17 +259,26 @@ public class TopicListPanel extends JPanel {
 
     private List<Topic> loadTopics() {
         List<Topic> result = new ArrayList<>();
+        // Load user's group IDs
+        java.util.Set<Integer> userGroupIds = new java.util.HashSet<>();
+        try (Connection conn = cache.connect();
+             ResultSet rs = conn.createStatement().executeQuery("SELECT group_id FROM user_groups")) {
+            while (rs.next()) userGroupIds.add(rs.getInt("group_id"));
+        } catch (SQLException ignored) {}
+
         String sql = "SELECT id, group_id, user_id, title, body, author_name, is_pinned, is_locked " +
                      "FROM cached_topics ORDER BY is_pinned DESC, id DESC";
         try (Connection conn = cache.connect();
              Statement  st   = conn.createStatement();
              ResultSet  rs   = st.executeQuery(sql)) {
             while (rs.next()) {
+                int groupId   = rs.getInt("group_id");
+                boolean pinned = rs.getInt("is_pinned") == 1 && userGroupIds.contains(groupId);
                 result.add(new Topic(
-                    rs.getInt("id"), rs.getInt("group_id"), rs.getInt("user_id"),
+                    rs.getInt("id"), groupId, rs.getInt("user_id"),
                     rs.getString("title"), rs.getString("body"),
                     rs.getString("author_name"),
-                    rs.getInt("is_pinned") == 1, rs.getInt("is_locked") == 1));
+                    pinned, rs.getInt("is_locked") == 1));
             }
         } catch (SQLException e) {
             System.err.println("[TopicListPanel] load failed: " + e.getMessage());
@@ -286,7 +296,7 @@ public class TopicListPanel extends JPanel {
             JLabel lbl = (JLabel) super.getListCellRendererComponent(
                     list, value, index, isSelected, cellHasFocus);
             if (value instanceof Topic t) {
-                lbl.setText("<html><b>" + esc(t.toString()) + "</b>" +
+                lbl.setText("<html><b>" + (t.isPinned ? "📌 " : "") + esc(t.toString()) + "</b>" +
                     "<br><font color='#6c757d' size='-2'>by " + esc(t.authorName) +
                     "</font></html>");
             }
