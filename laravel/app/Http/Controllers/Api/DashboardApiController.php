@@ -23,64 +23,70 @@ class DashboardApiController extends Controller
     {
         $user = $request->user();
 
-        // Topic participation count
-        $topicsParticipated = DB::table('posts')
+        $topicsParticipated = DB::table('topic_user')
             ->where('user_id', $user->id)
-            ->distinct('topic_id')
-            ->count('topic_id');
+            ->count();
 
-        // Total posts made
+        // Fall back to posts-based count if topic_user is empty
+        if ($topicsParticipated === 0) {
+            $topicsParticipated = DB::table('posts')
+                ->where('user_id', $user->id)
+                ->distinct('topic_id')
+                ->count('topic_id');
+        }
+
         $totalPosts = DB::table('posts')
             ->where('user_id', $user->id)
             ->count();
 
-        // Quiz attempts
-        $quizAttempts = DB::table('quiz_attempts')
+        $quizAttempts = DB::table('participation_records')
             ->where('user_id', $user->id)
+            ->where('completed', true)
             ->count();
 
-        // Available quizzes (not yet attempted)
         $availableQuizzes = DB::table('quizzes')
+            ->where('status', 'published')
             ->whereNotIn('id', function ($q) use ($user) {
                 $q->select('quiz_id')
-                    ->from('quiz_attempts')
-                    ->where('user_id', $user->id);
+                    ->from('participation_records')
+                    ->where('user_id', $user->id)
+                    ->where('completed', true);
             })
             ->count();
 
-        // Average quiz score
-        $avgScore = DB::table('quiz_attempts')
+        $avgScore = DB::table('participation_records')
             ->where('user_id', $user->id)
-            ->avg('score');
+            ->where('completed', true)
+            ->avg('percentage');
 
-        // Recent topics (last 5)
         $recentTopics = DB::table('posts')
             ->join('topics', 'posts.topic_id', '=', 'topics.id')
             ->where('posts.user_id', $user->id)
+            ->whereNull('topics.deleted_at')
             ->select('topics.id', 'topics.title')
             ->distinct()
             ->orderBy('posts.created_at', 'desc')
             ->limit(5)
             ->get();
 
-        // Recent quiz attempts (last 5)
-        $recentAttempts = DB::table('quiz_attempts')
-            ->join('quizzes', 'quiz_attempts.quiz_id', '=', 'quizzes.id')
-            ->where('quiz_attempts.user_id', $user->id)
-            ->select('quizzes.id', 'quizzes.title', 'quiz_attempts.score')
-            ->orderBy('quiz_attempts.created_at', 'desc')
+        $recentAttempts = DB::table('participation_records')
+            ->join('quizzes', 'participation_records.quiz_id', '=', 'quizzes.id')
+            ->where('participation_records.user_id', $user->id)
+            ->where('participation_records.completed', true)
+            ->select('quizzes.id', 'quizzes.title', 'participation_records.percentage as score')
+            ->orderBy('participation_records.completed_at', 'desc')
             ->limit(5)
             ->get();
 
         return response()->json([
             'stats' => [
                 'topicsParticipated' => $topicsParticipated,
-                'totalPosts' => $totalPosts,
-                'quizAttempts' => $quizAttempts,
-                'availableQuizzes' => $availableQuizzes,
-                'avgScore' => $avgScore,
-                'recentTopics' => $recentTopics,
-                'recentAttempts' => $recentAttempts,
+                'totalPosts'         => $totalPosts,
+                'quizAttempts'       => $quizAttempts,
+                'availableQuizzes'   => $availableQuizzes,
+                'avgScore'           => $avgScore,
+                'recentTopics'       => $recentTopics,
+                'recentAttempts'     => $recentAttempts,
             ],
         ]);
     }

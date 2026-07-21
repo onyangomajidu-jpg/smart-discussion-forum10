@@ -111,6 +111,8 @@ class AssessmentService implements IAssessment
 
         Notification::send($members, new QuizReminderNotification($quiz));
 
+        $quiz->update(['reminder_sent_at' => now()]);
+
         return $members->count();
     }
 

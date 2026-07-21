@@ -280,7 +280,7 @@ class StatisticsService
 </head><body>
 <div class='header'>
   <h1>Analytics Report</h1>
-  <p>Smart Discussion Forum &mdash; Assessment Platform</p>
+  <p>Discussion Hub &mdash; Assessment Platform</p>
   <p style='margin-top:10px;font-size:10px;opacity:.75'>
     Report Type: <strong>{$type}</strong> &nbsp;|&nbsp;
     User: <strong>{$userName}</strong> &nbsp;|&nbsp;
@@ -320,7 +320,7 @@ class StatisticsService
   </table>
 </div>
 
-<div class='footer'>Smart Discussion Forum &mdash; Analytics System &mdash; Confidential</div>
+<div class='footer'>Discussion Hub &mdash; Analytics System &mdash; Confidential</div>
 </body></html>";
 
         return Pdf::loadHTML($html)->setPaper('a4', 'portrait')->output();

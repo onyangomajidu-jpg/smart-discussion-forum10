@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Topics - Smart Discussion Forum</title>
+    <title>Topics - Discussion Hub</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; height: 100vh; }
@@ -147,7 +147,7 @@
 
 {{-- Navbar --}}
 <nav class="navbar">
-    <h1><img src="{{ asset('images/forum.png') }}" alt="SmartForum" style="height:34px;vertical-align:middle;margin-right:8px;">Smart Discussion Forum</h1>
+    <h1><img src="{{ asset('images/forum.png') }}" alt="Discussion Hub" style="height:34px;vertical-align:middle;margin-right:8px;">Discussion Hub</h1>
     <div class="navbar-right">
         <button class="notif-btn" id="notifBtn" onclick="loadNotifications()">
             🔔
@@ -543,7 +543,7 @@
         const topicUrl = encodeURIComponent(window.location.href);
         const text = encodeURIComponent(conversation);
         const twitterText = encodeURIComponent(
-            '📚 "' + document.querySelector('.conv-header h2').textContent.trim() + '" — join the discussion on SmartForum'
+            '📚 "' + document.querySelector('.conv-header h2').textContent.trim() + '" — join the discussion on Discussion Hub'
         );
         const shareUrls = {
             whatsapp: 'https://wa.me/?text=' + text,
@@ -645,5 +645,65 @@
     const msgs = document.getElementById('messages');
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
 </script>
+@auth
+@if(auth()->user()->isMember())
+<style>
+.qpop-overlay{position:fixed;inset:0;background:rgba(15,23,42,.92);z-index:99999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);}
+.qpop-overlay.active{display:flex!important;}
+.qpop-box{background:#fff;border-radius:24px;padding:44px 40px;max-width:460px;width:90%;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.5);animation:qpopIn .35s cubic-bezier(.34,1.56,.64,1);}
+@keyframes qpopIn{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes qpopBell{from{transform:rotate(-15deg)}to{transform:rotate(15deg)}}
+.qpop-icon{font-size:52px;margin-bottom:14px;}
+.qpop-title{font-size:21px;font-weight:900;color:#0f172a;margin-bottom:8px;}
+.qpop-name{font-size:16px;font-weight:700;color:#6366f1;background:#ede9fe;border-radius:10px;padding:9px 14px;margin-bottom:12px;}
+.qpop-meta{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;font-size:12px;color:#64748b;font-weight:600;margin-bottom:14px;}
+.qpop-desc{font-size:13px;color:#64748b;line-height:1.6;margin-bottom:24px;}
+.qpop-btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;text-decoration:none;border-radius:12px;padding:13px 32px;font-size:15px;font-weight:800;box-shadow:0 8px 24px rgba(99,102,241,.45);transition:all .2s;}
+.qpop-btn:hover{opacity:.9;transform:translateY(-2px);}
+body.qpop-locked{overflow:hidden;pointer-events:none;}
+body.qpop-locked .qpop-overlay{pointer-events:all;}
+</style>
+<div id="qpop-container"></div>
+<script>
+(function(){
+    function isDismissed(id){return localStorage.getItem('quiz_started_'+id)==='1';}
+    window.qpopClose=function(id){
+        localStorage.setItem('quiz_started_'+id,'1');
+        var el=document.getElementById('qpop_'+id);
+        if(el)el.classList.remove('active');
+        if(!document.querySelector('.qpop-overlay.active'))document.body.classList.remove('qpop-locked');
+    };
+    function showPopup(q){
+        if(isDismissed(q.id))return;
+        if(document.getElementById('qpop_'+q.id))return;
+        var deadline=q.hard_deadline?'<span>🏁 Due '+q.hard_deadline+'</span>':'';
+        var html='<div id="qpop_'+q.id+'" class="qpop-overlay active">'
+            +'<div class="qpop-box">'
+            +'<div class="qpop-icon"><i class="fa-solid fa-bell" style="color:#f59e0b;animation:qpopBell .6s ease infinite alternate"></i></div>'
+            +'<div class="qpop-title">Quiz is Live Now!</div>'
+            +'<div class="qpop-name">'+q.title+'</div>'
+            +'<div class="qpop-meta"><span>👥 '+q.group+'</span><span>⏱ '+q.duration+' min</span>'+deadline+'</div>'
+            +'<div class="qpop-desc">This quiz is now open. Click Start Quiz to begin.</div>'
+            +'<a href="'+q.url+'" class="qpop-btn" onclick="qpopClose('+q.id+')">▶ Start Quiz Now</a>'
+            +'</div></div>';
+        document.getElementById('qpop-container').insertAdjacentHTML('beforeend',html);
+        document.body.classList.add('qpop-locked');
+    }
+    document.addEventListener('DOMContentLoaded',function(){
+        fetch('/quiz/live-check',{headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},credentials:'same-origin'})
+        .then(function(r){return r.json();})
+        .then(function(quizzes){
+            quizzes.forEach(function(q){
+                if(isDismissed(q.id))return;
+                var now=Date.now();
+                if(q.unlock_ms===0||now>=q.unlock_ms){showPopup(q);}
+                else{setTimeout(function(){showPopup(q);},q.unlock_ms-now);}
+            });
+        }).catch(function(){});
+    });
+})();
+</script>
+@endif
+@endauth
 </body>
 </html>

@@ -56,14 +56,6 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
 
-        \Log::info('PROFILE UPDATE', [
-            'has_file'    => $request->hasFile('avatar'),
-            'all_files'   => array_keys($request->allFiles()),
-            'content_type'=> $request->header('Content-Type'),
-            'method'      => $request->method(),
-            'file_error'  => $request->hasFile('avatar') ? $request->file('avatar')->getError() : 'no file',
-        ]);
-
         $request->validate([
             'name'             => ['required', 'string', 'max:255'],
             'email'            => ['required', 'email', Rule::unique('users')->ignore($user->id)],
@@ -88,7 +80,6 @@ class ProfileController extends Controller
             $filename = $file->hashName();
             $destDir  = public_path('storage/avatars');
             if (!is_dir($destDir)) mkdir($destDir, 0755, true);
-            // Delete old avatar
             if ($user->avatar) {
                 $old = public_path('storage/' . $user->avatar);
                 if (file_exists($old)) unlink($old);

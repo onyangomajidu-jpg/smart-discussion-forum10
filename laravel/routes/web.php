@@ -46,6 +46,8 @@ Route::middleware('auth')->group(function () {
 
 // ── Member Routes ──────────────────────────────────────────────────
 Route::middleware(['auth', App\Http\Middleware\MemberMiddleware::class])->group(function () {
+    Route::get('/quiz/live-check', [QuizController::class, 'liveCheck'])->name('quizzes.live-check');
+
     // Student quiz routes (SDD §4.2 — Student quiz screen Fig 6.6)
     Route::get('/quizzes',                [QuizController::class, 'index'])->name('quizzes.index');
     Route::get('/quizzes/{quiz}',         [QuizController::class, 'take'])->name('quizzes.take');
@@ -107,6 +109,7 @@ Route::middleware(['auth', App\Http\Middleware\LecturerMiddleware::class])->grou
     Route::post('/lecturer/quizzes/{quiz}/publish', [QuizController::class, 'publish'])->name('lecturer.quizzes.publish');
     Route::post('/lecturer/quizzes/{quiz}/remind',  [QuizController::class, 'remind'])->name('lecturer.quizzes.remind');
     Route::get('/lecturer/quizzes/{quiz}/results',  [QuizController::class, 'results'])->name('lecturer.quizzes.results');
+    Route::delete('/lecturer/quizzes/{quiz}',        [QuizController::class, 'destroy'])->name('lecturer.quizzes.destroy');
 
     // Lecturer group management
     Route::get('/lecturer/groups',              [GroupController::class, 'index'])->name('lecturer.groups.index');

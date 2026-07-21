@@ -48,7 +48,7 @@ class ExportController extends Controller
         $topic    = Topic::with('author')->findOrFail($topicId);
         $platform = $request->platform;
         $url      = config('app.url') . '/topics/' . $topic->id;
-        $text     = '📚 "' . $topic->title . '" — join the discussion on SmartForum';
+        $text     = '📚 "' . $topic->title . '" — join the discussion on Discussion Hub';
 
         if ($platform === 'whatsapp') {
             return response()->json([
@@ -117,7 +117,7 @@ class ExportController extends Controller
     private function buildShareText(Post $post): string
     {
         $snippet = str($post->body)->limit(200)->toString();
-        return "💬 \"{$snippet}\" — {$post->author->name} on SmartForum";
+        return "💬 \"{$snippet}\" — {$post->author->name} on Discussion Hub";
     }
 
     private function shareTwitter(string $text, string $url): string
