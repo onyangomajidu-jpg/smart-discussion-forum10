@@ -32,7 +32,7 @@ Route::middleware('auth')->group(function () {
 
     // Profile
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     // AI Recommendations — displayRecommendation() (AI sequence, Fig 3.13)
     Route::get('/recommendations', [App\Http\Controllers\Api\RecommendationController::class, 'index'])->name('recommendations');
@@ -66,6 +66,7 @@ Route::middleware(['auth', App\Http\Middleware\MemberMiddleware::class])->group(
 // ── Export & Social Sharing (Week 3) ─────────────────────────────
 Route::middleware('auth')->group(function () {
     Route::get('/topics/{topicId}/export-pdf', [App\Http\Controllers\ExportController::class, 'exportDiscussionPDF'])->name('topics.export-pdf');
+    Route::post('/topics/{topicId}/share',     [App\Http\Controllers\ExportController::class, 'shareDiscussion'])->name('topics.share');
     Route::post('/posts/{postId}/share',       [App\Http\Controllers\ExportController::class, 'forwardToSocialMedia'])->name('posts.share');
 });
 
@@ -76,6 +77,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/topics/{topic}', [App\Http\Controllers\TopicController::class, 'show'])->name('topics.show');
     Route::delete('/topics/{topic}', [App\Http\Controllers\TopicController::class, 'destroy'])->name('topics.destroy');
     Route::delete('/topics/{topic}/users/{userId}', [App\Http\Controllers\TopicController::class, 'removeUser'])->name('topics.removeUser');
+    Route::post('/topics/{topic}/users/{userId}/unremove', [App\Http\Controllers\TopicController::class, 'unremoveUser'])->name('topics.unremoveUser');
     Route::post('/topics/{topic}/users/{userId}/block', [App\Http\Controllers\TopicController::class, 'blockUser'])->name('topics.blockUser');
     Route::post('/topics/{topic}/users/{userId}/unblock', [App\Http\Controllers\TopicController::class, 'unblockUser'])->name('topics.unblockUser');
     Route::post('/topics/{topicId}/participate', [App\Http\Controllers\TopicController::class, 'participate'])->name('topics.participate');

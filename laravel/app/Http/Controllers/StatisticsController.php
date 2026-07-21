@@ -74,6 +74,59 @@ class StatisticsController extends Controller
         ));
     }
 
+    public function apiLecturerAnalytics(Request $request)
+    {
+        $lecturer = $request->user();
+
+        $quizzes = Quiz::where('created_by', $lecturer->id)
+            ->withCount(['questions', 'attempts', 'participationRecords'])
+            ->with('group')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $roster = ParticipationRecord::whereIn('quiz_id', $quizzes->pluck('id'))
+            ->with('user:id,name,email', 'quiz:id,title')
+            ->orderByDesc('completed_at')
+            ->get()
+            ->map(fn($r) => [
+                'student_name'  => $r->user?->name,
+                'student_email' => $r->user?->email,
+                'quiz_title'    => $r->quiz?->title,
+                'score'         => $r->score,
+                'max_score'     => $r->max_score,
+                'percentage'    => $r->percentage,
+                'grade'         => $r->grade,
+                'completed_at'  => $r->completed_at,
+            ]);
+
+        $compliance = $quizzes->map(function ($quiz) {
+            $groupSize = $quiz->group?->members()->count() ?? 0;
+            $submitted = $quiz->participation_records_count;
+            $rate      = $groupSize > 0 ? round(($submitted / $groupSize) * 100) : 0;
+            return [
+                'quiz_title' => $quiz->title,
+                'status'     => $quiz->status,
+                'group_size' => $groupSize,
+                'submitted'  => $submitted,
+                'pending'    => max($groupSize - $submitted, 0),
+                'rate'       => $rate,
+            ];
+        });
+
+        return response()->json([
+            'total_quizzes'    => $quizzes->count(),
+            'total_students'   => User::where('role', 'member')
+                ->whereHas('groups', fn($q) => $q->where('created_by', $lecturer->id))->count(),
+            'total_submissions'=> ParticipationRecord::whereIn('quiz_id', $quizzes->pluck('id'))->count(),
+            'avg_score'        => round(ParticipationRecord::whereIn('quiz_id', $quizzes->pluck('id'))->avg('percentage') ?? 0, 1),
+            'draft_count'      => $quizzes->where('status', 'draft')->count(),
+            'published_count'  => $quizzes->where('status', 'published')->count(),
+            'closed_count'     => $quizzes->where('status', 'closed')->count(),
+            'roster'           => $roster,
+            'compliance'       => $compliance,
+        ]);
+    }
+
     // ── Export Report ────────────────────────────────────────────────────────
 
     public function export(Request $request)

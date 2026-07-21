@@ -130,7 +130,35 @@
 .qi-published { background:#d1fae5; color:#065f46; }
 .qi-closed    { background:#fee2e2; color:#991b1b; }
 
-/* Export Bar */
+/* ── Roster search ──────────────────────────────────────────────── */
+.roster-search-bar {
+    padding:12px 16px; border-bottom:1px solid #e2e8f0;
+    background:#fafbff;
+}
+.roster-search-input {
+    width:100%; max-width:300px;
+    padding:8px 12px 8px 34px;
+    border:1.5px solid #e2e8f0; border-radius:8px;
+    font-size:13px; font-family:inherit; color:#0f172a;
+    background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 10px center;
+    transition:border-color .2s, box-shadow .2s;
+}
+.roster-search-input:focus { outline:none; border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.1); }
+.roster-count { font-size:11px; color:#94a3b8; margin-top:6px; }
+.roster-no-results {
+    text-align:center; padding:40px; color:#94a3b8; font-size:13px; display:none;
+}
+
+/* ── Compliance 100% badge ─────────────────────────────────────── */
+.compliance-perfect {
+    display:inline-flex; align-items:center; gap:5px;
+    background:#d1fae5; color:#065f46;
+    font-size:10px; font-weight:700; padding:3px 9px;
+    border-radius:20px; border:1px solid #6ee7b7;
+    flex-shrink:0;
+}
+
+/* ── Export Bar ───────────────────────────────────────────────────── */
 .export-bar {
     background:#fff; border-radius:14px; padding:18px 22px;
     border:1px solid #e2e8f0; display:flex; align-items:center;
@@ -220,8 +248,15 @@
         </div>
 
         @if($roster->count())
+        {{-- Search bar --}}
+        <div class="roster-search-bar">
+            <input type="text" id="rosterSearch" class="roster-search-input"
+                   placeholder="Search by student name or email…"
+                   oninput="filterRoster(this.value)">
+            <div class="roster-count" id="rosterCount">{{ $roster->count() }} result{{ $roster->count() !== 1 ? 's' : '' }}</div>
+        </div>
         <div style="overflow-x:auto">
-            <table class="roster-table">
+            <table class="roster-table" id="rosterTable">
                 <thead>
                     <tr>
                         <th><i class="fa-solid fa-user"></i> Student</th>
@@ -279,6 +314,10 @@
                     @endforeach
                 </tbody>
             </table>
+            <div class="roster-no-results" id="rosterNoResults">
+                <i class="fa-solid fa-magnifying-glass" style="font-size:28px;opacity:.3;display:block;margin-bottom:10px"></i>
+                No students match your search.
+            </div>
         </div>
         @else
         <div style="text-align:center;padding:60px 40px;color:#94a3b8">
@@ -302,7 +341,12 @@
                 <div class="compliance-row">
                     <div class="compliance-quiz-name">
                         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $c['quiz']->title }}</span>
-                        <span class="badge badge-{{ $c['quiz']->status }}" style="margin-left:8px;flex-shrink:0">{{ ucfirst($c['quiz']->status) }}</span>
+                        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px">
+                            @if($c['rate'] === 100)
+                                <span class="compliance-perfect"><i class="fa-solid fa-circle-check"></i> 100%</span>
+                            @endif
+                            <span class="badge badge-{{ $c['quiz']->status }}">{{ ucfirst($c['quiz']->status) }}</span>
+                        </div>
                     </div>
                     <div class="compliance-meta">
                         <span><i class="fa-solid fa-users" style="color:#6366f1"></i> {{ $c['group_size'] }} enrolled</span>
@@ -364,18 +408,7 @@
             </div>
         </div>
 
-        {{-- Quick Links --}}
-        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:16px">
-            <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:12px">
-                <i class="fa-solid fa-bolt" style="color:#f59e0b"></i> Quick Actions
-            </div>
-            <a href="{{ route('lecturer.quizzes.create') }}" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-bottom:8px">
-                <i class="fa-solid fa-plus"></i> Create New Quiz
-            </a>
-            <a href="{{ route('lecturer.quizzes.index') }}" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center">
-                <i class="fa-solid fa-list"></i> View All Quizzes
-            </a>
-        </div>
+
 
     </div>
 </div>
@@ -397,3 +430,22 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+function filterRoster(query) {
+    const q     = query.trim().toLowerCase();
+    const rows  = document.querySelectorAll('#rosterTable tbody tr');
+    let   shown = 0;
+    rows.forEach(row => {
+        const name  = row.querySelector('td:first-child')?.textContent.toLowerCase() ?? '';
+        const match = !q || name.includes(q);
+        row.style.display = match ? '' : 'none';
+        if (match) shown++;
+    });
+    document.getElementById('rosterCount').textContent =
+        shown + ' result' + (shown !== 1 ? 's' : '') + (q ? ' for "' + query.trim() + '"' : '');
+    document.getElementById('rosterNoResults').style.display = shown === 0 ? 'block' : 'none';
+}
+</script>
+@endpush

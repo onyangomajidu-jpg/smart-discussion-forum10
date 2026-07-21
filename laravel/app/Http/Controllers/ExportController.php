@@ -35,20 +35,68 @@ class ExportController extends Controller
     }
 
     /**
-     * forwardToSocialMedia(postId, platform)
-     * Connect to platform API, share content, confirm.
-     * Supported platforms: twitter, linkedin, facebook
+     * shareDiscussion(topicId, platform)
+     * Share the whole discussion thread to a social platform.
+     * WhatsApp is handled client-side; twitter/linkedin/facebook post via API.
+     */
+    public function shareDiscussion(Request $request, int $topicId)
+    {
+        $request->validate([
+            'platform' => 'required|in:twitter,linkedin,facebook,whatsapp',
+        ]);
+
+        $topic    = Topic::with('author')->findOrFail($topicId);
+        $platform = $request->platform;
+        $url      = config('app.url') . '/topics/' . $topic->id;
+        $text     = '📚 "' . $topic->title . '" — join the discussion on SmartForum';
+
+        if ($platform === 'whatsapp') {
+            return response()->json([
+                'shared'      => true,
+                'platform'    => 'whatsapp',
+                'client_side' => true,
+                'wa_url'      => 'https://wa.me/?text=' . rawurlencode($text . ' ' . $url),
+                'url'         => $url,
+            ]);
+        }
+
+        $result = match ($platform) {
+            'twitter'  => $this->shareTwitter($text, $url),
+            'linkedin' => $this->shareLinkedIn($text, $url),
+            'facebook' => $this->shareFacebook($text, $url),
+        };
+
+        return response()->json([
+            'shared'   => true,
+            'platform' => $platform,
+            'message'  => $result,
+            'url'      => $url,
+        ]);
+    }
+
+    /**
+     * forwardToSocialMedia(postId, platform) — kept for per-post sharing.
      */
     public function forwardToSocialMedia(Request $request, int $postId)
     {
         $request->validate([
-            'platform' => 'required|in:twitter,linkedin,facebook',
+            'platform' => 'required|in:twitter,linkedin,facebook,whatsapp',
         ]);
 
         $post     = Post::with(['author', 'topic'])->findOrFail($postId);
         $platform = $request->platform;
+        $url      = config('app.url') . '/topics/' . $post->topic_id;
         $text     = $this->buildShareText($post);
-        $url      = config('app.url') . '/topics?topic=' . $post->topic_id;
+
+        if ($platform === 'whatsapp') {
+            return response()->json([
+                'shared'      => true,
+                'platform'    => 'whatsapp',
+                'client_side' => true,
+                'wa_url'      => 'https://wa.me/?text=' . rawurlencode($text . ' ' . $url),
+                'url'         => $url,
+            ]);
+        }
 
         $result = match ($platform) {
             'twitter'  => $this->shareTwitter($text, $url),

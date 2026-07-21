@@ -24,20 +24,39 @@
         .forum-layout { display: flex; flex: 1; overflow: hidden; }
 
         .sidebar { width: 300px; background: white; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; flex-shrink: 0; }
-        .sidebar-header { padding: 16px; border-bottom: 1px solid #e2e8f0; }
-        .search-bar { width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; margin-bottom: 10px; outline: none; }
-        .search-bar:focus { border-color: #667eea; }
-        .btn-create { width: 100%; padding: 9px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; }
-        .btn-create:hover { opacity: 0.9; }
-        .topic-list { flex: 1; overflow-y: auto; }
-        .topic-item { padding: 14px 16px; border-bottom: 1px solid #f0f2f5; cursor: pointer; transition: background 0.2s; }
-        .topic-item:hover, .topic-item.active { background: #f0f0ff; }
-        .topic-item h4 { font-size: 14px; color: #2d3748; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .topic-meta { font-size: 12px; color: #718096; display: flex; justify-content: space-between; }
-        .topic-badges { display: flex; gap: 4px; margin-top: 4px; }
-        .badge { font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 600; }
+        .sidebar-header { padding: 18px 16px 14px; border-bottom: 1px solid #e2e8f0; }
+        .sidebar-title { font-size: 11px; font-weight: 700; color: #a0aec0; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 12px; }
+        .search-bar { width: 100%; padding: 9px 12px 9px 36px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 13px; outline: none; background: #f7fafc; color: #2d3748; }
+        .search-bar::placeholder { color: #a0aec0; }
+        .search-bar:focus { border-color: #667eea; background: white; }
+        .search-wrap { position: relative; margin-bottom: 12px; }
+        .search-wrap::before { content: '🔍'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; pointer-events: none; }
+        .btn-create { width: 100%; padding: 10px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 13px; letter-spacing: 0.3px; transition: opacity 0.2s, transform 0.1s; }
+        .btn-create:hover { opacity: 0.9; transform: translateY(-1px); }
+        .topic-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+        .topic-list::-webkit-scrollbar { width: 4px; }
+        .topic-list::-webkit-scrollbar-track { background: transparent; }
+        .topic-list::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+        .topic-item { margin: 4px 10px; border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: background 0.18s; position: relative; }
+        .topic-item:hover { background: #f0f0ff; }
+        .topic-item.active { background: #ede9fe; box-shadow: inset 0 0 0 1px #c4b5fd; }
+        .topic-item-inner { display: flex; gap: 11px; align-items: flex-start; }
+        .topic-avatar { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: white; flex-shrink: 0; text-transform: uppercase; }
+        .topic-avatar.locked { background: linear-gradient(135deg, #f87171, #ef4444); }
+        .topic-avatar.pinned { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+        .topic-content { flex: 1; min-width: 0; }
+        .topic-item h4 { font-size: 13px; font-weight: 600; color: #2d3748; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .topic-item.active h4 { color: #4c1d95; }
+        .topic-author { font-size: 11px; color: #a0aec0; margin-bottom: 5px; }
+        .topic-stats { display: flex; gap: 10px; }
+        .topic-stat { display: flex; align-items: center; gap: 3px; font-size: 11px; color: #718096; }
+        .topic-badges { display: flex; gap: 4px; margin-top: 5px; }
+        .badge { font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 700; }
         .badge-locked { background: #fed7d7; color: #9b2c2c; }
         .badge-pinned { background: #fefcbf; color: #744210; }
+        .topic-delete-btn { position: absolute; top: 10px; right: 10px; opacity: 0; font-size: 11px; color: #e53e3e; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px; padding: 2px 7px; cursor: pointer; transition: opacity 0.15s; }
+        .topic-item:hover .topic-delete-btn { opacity: 1; }
+        .topics-count { padding: 6px 20px 2px; font-size: 11px; color: #a0aec0; font-weight: 600; }
 
         .participants-panel { width: 230px; background: white; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
         .participants-panel h4 { padding: 14px 16px; font-size: 13px; font-weight: 700; color: #4a5568; border-bottom: 1px solid #e2e8f0; margin: 0; }
@@ -104,15 +123,15 @@
         .btn-cancel { padding: 8px 18px; border: 1px solid #e2e8f0; border-radius: 7px; cursor: pointer; background: white; }
         .btn-submit { padding: 8px 18px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 600; }
 
-        .alert { padding: 10px 16px; border-radius: 7px; margin-bottom: 12px; font-size: 14px; }
-        .alert-success { background: #c6f6d5; color: #276749; }
-        .alert-error { background: #fed7d7; color: #9b2c2c; }
+        .btn-share { background: linear-gradient(135deg,#25d366,#128c7e); color: white; border: none; }
+        .share-card { display:flex; align-items:center; gap:10px; padding:12px 14px; border:2px solid #e2e8f0; border-radius:10px; background:white; cursor:pointer; font-size:14px; font-weight:600; color:#2d3748; width:100%; }
+        #shareStatus { font-size:13px; min-height:20px; margin-bottom:8px; }
     </style>
 </head>
 <body>
 
 <nav class="navbar">
-    <h1>🎓 Smart Discussion Forum — Lecturer</h1>
+    <h1><img src="{{ asset('images/forum.png') }}" alt="SmartForum" style="height:34px;vertical-align:middle;margin-right:8px;">Smart Discussion Forum</h1>
     <div class="navbar-right">
         <button class="notif-btn" onclick="loadNotifications()">
             🔔
@@ -134,35 +153,51 @@
     {{-- Sidebar --}}
     <aside class="sidebar">
         <div class="sidebar-header">
+            <div class="sidebar-title">📚 Topics</div>
             <form method="GET" action="{{ route('lecturer.topics.index') }}">
-                <input type="text" name="search" class="search-bar" placeholder="🔍 Search topics..."
-                    value="{{ request('search') }}" oninput="this.form.submit()">
+                <div class="search-wrap">
+                    <input type="text" name="search" class="search-bar" placeholder="Search topics..."
+                        value="{{ request('search') }}" oninput="this.form.submit()">
+                </div>
             </form>
             <button class="btn-create" onclick="document.getElementById('createModal').classList.add('open')">
-                + Create Topic
+                + New Topic
             </button>
         </div>
+        <div class="topics-count">{{ $topics->count() }} topic{{ $topics->count() !== 1 ? 's' : '' }}</div>
         <div class="topic-list">
             @forelse($topics as $topic)
+                @php $initials = strtoupper(substr($topic->title, 0, 2)); @endphp
                 <div class="topic-item {{ isset($activeTopic) && $activeTopic->id === $topic->id ? 'active' : '' }}"
                      onclick="window.location='{{ route('lecturer.topics.show', $topic) }}'">
-                    <h4>{{ $topic->title }}</h4>
-                    <div class="topic-meta">
-                        <span>{{ $topic->author->name }}</span>
-                        <span>{{ $topic->posts_count }} posts · {{ $topic->views }} views</span>
-                    </div>
-                    <div class="topic-badges">
-                        @if($topic->is_pinned) <span class="badge badge-pinned">📌 Pinned</span> @endif
-                        @if($topic->is_locked) <span class="badge badge-locked">🔒 Locked</span> @endif
+                    <div class="topic-item-inner">
+                        <div class="topic-avatar {{ $topic->is_locked ? 'locked' : ($topic->is_pinned ? 'pinned' : '') }}">{{ $initials }}</div>
+                        <div class="topic-content">
+                            <h4>{{ $topic->title }}</h4>
+                            <div class="topic-author">by {{ $topic->author->name }}</div>
+                            <div class="topic-stats">
+                                <span class="topic-stat">💬 {{ $topic->posts_count }}</span>
+                                <span class="topic-stat">👁 {{ $topic->views }}</span>
+                            </div>
+                            @if($topic->is_pinned || $topic->is_locked)
+                                <div class="topic-badges">
+                                    @if($topic->is_pinned) <span class="badge badge-pinned">📌 Pinned</span> @endif
+                                    @if($topic->is_locked) <span class="badge badge-locked">🔒 Locked</span> @endif
+                                </div>
+                            @endif
+                        </div>
                     </div>
                     <form action="{{ route('lecturer.topics.destroy', $topic) }}" method="POST"
-                          onsubmit="return confirm('Delete this topic?')" onclick="event.stopPropagation()" style="margin-top:6px;">
+                          onsubmit="return confirm('Delete this topic?')" onclick="event.stopPropagation()">
                         @csrf @method('DELETE')
-                        <button type="submit" style="font-size:11px;color:#e53e3e;background:none;border:1px solid #e53e3e;border-radius:4px;padding:2px 8px;cursor:pointer;">🗑 Delete</button>
+                        <button type="submit" class="topic-delete-btn">🗑 Delete</button>
                     </form>
                 </div>
             @empty
-                <div style="padding:20px;text-align:center;color:#a0aec0;font-size:14px;">No topics yet.</div>
+                <div style="padding:40px 20px;text-align:center;color:rgba(255,255,255,0.3);font-size:13px;">
+                    <div style="font-size:32px;margin-bottom:8px;">📭</div>
+                    No topics yet.
+                </div>
             @endforelse
         </div>
     </aside>
@@ -195,6 +230,9 @@
                             {{ $activeTopic->is_locked ? '🔓 Unlock' : '🔒 Lock' }}
                         </button>
                     </form>
+                    <button class="btn-action btn-share" onclick="openShareModal({{ $activeTopic->id }})">
+                        🌐 Share
+                    </button>
                 </div>
             </div>
 
@@ -225,8 +263,10 @@
                         <div class="post-body" id="post-body-{{ $post->id }}">{{ $post->body }}</div>
                         <div class="post-actions">
                             <button class="btn-sm btn-reply" onclick="toggleReplyForm({{ $post->id }})">↩ Reply</button>
-                            <button class="btn-sm btn-edit" onclick="editPost({{ $post->id }}, `{{ addslashes($post->body) }}`)">✏ Edit</button>
-                            <button class="btn-sm btn-delete" onclick="deletePost({{ $post->id }})">🗑 Delete</button>
+                            @if($post->user_id === auth()->id())
+                                <button class="btn-sm btn-edit" onclick="editPost({{ $post->id }}, `{{ addslashes($post->body) }}`)">✏ Edit</button>
+                                <button class="btn-sm btn-delete" onclick="deletePost({{ $post->id }})">🗑 Delete</button>
+                            @endif
                         </div>
 
                         <form id="reply-form-{{ $post->id }}" style="display:none;margin-top:10px;"
@@ -291,13 +331,8 @@
                 <span class="participant-name">{{ $participant->name }}</span>
                 @if($participant->id === $activeTopic->user_id)
                     <span style="font-size:11px;color:#667eea;">creator</span>
-                @else
+                @elseif(auth()->id() === $activeTopic->user_id)
                     <div class="participant-actions">
-                        <form action="{{ route('lecturer.topics.blockUser', [$activeTopic, $participant->id]) }}" method="POST"
-                              onsubmit="return confirm('Block {{ addslashes($participant->name) }}?')">
-                            @csrf
-                            <button type="submit" class="btn-block-user">Block</button>
-                        </form>
                         <form action="{{ route('lecturer.topics.removeUser', [$activeTopic, $participant->id]) }}" method="POST"
                               onsubmit="return confirm('Remove {{ addslashes($participant->name) }}?')">
                             @csrf @method('DELETE')
@@ -310,18 +345,7 @@
             <div style="padding:10px 14px;font-size:13px;color:#a0aec0;">No active participants.</div>
         @endforelse
 
-        <div class="section-label" style="margin-top:8px;">🚫 Blocked</div>
-        @forelse($activeTopic->blockedParticipants as $blocked)
-            <div class="participant-item blocked-item">
-                <span class="participant-name">{{ $blocked->name }}</span>
-                <form action="{{ route('lecturer.topics.unblockUser', [$activeTopic, $blocked->id]) }}" method="POST">
-                    @csrf
-                    <button type="submit" class="btn-unblock-user">Unblock</button>
-                </form>
-            </div>
-        @empty
-            <div style="padding:10px 14px;font-size:13px;color:#a0aec0;">No blocked users.</div>
-        @endforelse
+
     </aside>
     @endif
 </div>
@@ -363,10 +387,102 @@
     </div>
 </div>
 
+{{-- Share Modal --}}
+<div class="modal-overlay" id="shareModal">
+    <div class="modal" style="width:500px;">
+        <h3>🌐 Share Discussion</h3>
+        <p style="font-size:13px;color:#718096;margin-bottom:14px;">Choose a platform to share the entire conversation.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+            <button class="share-card" data-platform="whatsapp" onclick="selectSharePlatform(this)">
+                <span style="font-size:22px;">💬</span> WhatsApp
+            </button>
+            <button class="share-card" data-platform="twitter" onclick="selectSharePlatform(this)">
+                <span style="font-size:22px;">𝕏</span> Twitter / X
+            </button>
+            <button class="share-card" data-platform="facebook" onclick="selectSharePlatform(this)">
+                <span style="font-size:22px;">📘</span> Facebook
+            </button>
+            <button class="share-card" data-platform="linkedin" onclick="selectSharePlatform(this)">
+                <span style="font-size:22px;">💼</span> LinkedIn
+            </button>
+        </div>
+        <div id="shareStatus"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="document.getElementById('shareModal').classList.remove('open')">Cancel</button>
+            <button class="btn-submit" id="shareBtn" onclick="submitShare()" disabled style="opacity:0.5;">🚀 Share Now</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     let editingPostId = null;
+    let selectedPlatform = null;
     let typingTimer = null;
+
+    function openShareModal(topicId) {
+        selectedPlatform = null;
+        document.getElementById('shareStatus').textContent = '';
+        document.getElementById('shareBtn').disabled = true;
+        document.getElementById('shareBtn').style.opacity = '0.5';
+        document.querySelectorAll('.share-card').forEach(c => { c.style.borderColor = '#e2e8f0'; c.style.background = 'white'; });
+        document.getElementById('shareModal').classList.add('open');
+    }
+
+    function selectSharePlatform(btn) {
+        document.querySelectorAll('.share-card').forEach(c => { c.style.borderColor = '#e2e8f0'; c.style.background = 'white'; });
+        btn.style.borderColor = '#667eea';
+        btn.style.background = '#f0f0ff';
+        selectedPlatform = btn.dataset.platform;
+        document.getElementById('shareBtn').disabled = false;
+        document.getElementById('shareBtn').style.opacity = '1';
+        document.getElementById('shareStatus').textContent = '';
+    }
+
+    function buildConversationText() {
+        const title = document.querySelector('.conv-header h2').textContent.trim();
+        let lines = ['📚 Discussion: "' + title + '"', ''];
+        const topicBody   = document.querySelector('.post-card[style*="border-left"] .post-body');
+        const topicAuthor = document.querySelector('.post-card[style*="border-left"] .post-author');
+        const topicTime   = document.querySelector('.post-card[style*="border-left"] .post-time');
+        if (topicAuthor && topicBody)
+            lines.push('[' + (topicTime ? topicTime.textContent.trim() : '') + '] ' + topicAuthor.textContent.trim() + ': ' + topicBody.textContent.trim(), '');
+        document.querySelectorAll('.post-card:not([style*="border-left"])').forEach(card => {
+            const author = card.querySelector('.post-author');
+            const body   = card.querySelector('.post-body');
+            const time   = card.querySelector('.post-time');
+            if (author && body) {
+                lines.push('[' + (time ? time.textContent.trim() : '') + '] ' + author.textContent.trim() + ': ' + body.textContent.trim());
+                card.querySelectorAll('.reply-card').forEach(r => {
+                    const ra = r.querySelector('.reply-author');
+                    const rb = r.querySelector('.reply-body');
+                    const rt = r.querySelector('span[style*="color:#a0aec0"]');
+                    if (ra && rb) lines.push('  ↩ [' + (rt ? rt.textContent.trim() : '') + '] ' + ra.textContent.trim() + ': ' + rb.textContent.trim());
+                });
+                lines.push('');
+            }
+        });
+        lines.push(window.location.href);
+        return lines.join('\n');
+    }
+
+    function submitShare() {
+        if (!selectedPlatform) return;
+        const conversation = buildConversationText();
+        const topicUrl  = encodeURIComponent(window.location.href);
+        const text      = encodeURIComponent(conversation);
+        const shortText = encodeURIComponent('📚 "' + document.querySelector('.conv-header h2').textContent.trim() + '" — join the discussion on SmartForum');
+        const urls = {
+            whatsapp: 'https://wa.me/?text=' + text,
+            twitter:  'https://twitter.com/intent/tweet?text=' + shortText + '&url=' + topicUrl,
+            facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + topicUrl + '&quote=' + text,
+            linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + topicUrl,
+        };
+        window.open(urls[selectedPlatform], '_blank', 'noopener,noreferrer');
+        const statusEl = document.getElementById('shareStatus');
+        statusEl.style.color = '#276749';
+        statusEl.textContent = '✅ ' + selectedPlatform.charAt(0).toUpperCase() + selectedPlatform.slice(1) + ' opened in a new tab.';
+    }
 
     function toggleReplyForm(postId) {
         const form = document.getElementById('reply-form-' + postId);
