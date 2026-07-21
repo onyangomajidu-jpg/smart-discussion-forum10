@@ -63,6 +63,70 @@
         .topnav-brand .sub  { font-size:10px; opacity:.7; font-weight:500; letter-spacing:.3px; text-transform:uppercase; }
         .topnav-right { display:flex; align-items:center; gap:10px; }
 
+        /* Notification bell + dropdown */
+        .notif-wrap { position:relative; }
+        .notif-badge {
+            position:absolute; top:-4px; right:-4px;
+            width:16px; height:16px; border-radius:50%;
+            background:#ef4444; color:#fff;
+            font-size:9px; font-weight:800;
+            display:flex; align-items:center; justify-content:center;
+            border:2px solid transparent; pointer-events:none;
+        }
+        .notif-dropdown {
+            display:none; position:absolute; top:calc(100% + 10px); right:0;
+            width:320px; background:#fff; border-radius:14px;
+            border:1px solid #e2e8f0; box-shadow:0 12px 40px rgba(0,0,0,.14);
+            z-index:400; overflow:hidden;
+        }
+        .notif-dropdown.open { display:block; }
+        .notif-dd-header {
+            padding:14px 18px; border-bottom:1px solid #f1f5f9;
+            display:flex; align-items:center; justify-content:space-between;
+        }
+        .notif-dd-title { font-size:13px; font-weight:700; color:#0f172a; }
+        .notif-mark-all {
+            font-size:11px; color:#6366f1; font-weight:600;
+            background:none; border:none; cursor:pointer; font-family:inherit;
+            padding:0;
+        }
+        .notif-mark-all:hover { text-decoration:underline; }
+        .notif-item {
+            display:flex; align-items:flex-start; gap:12px;
+            padding:12px 18px; border-bottom:1px solid #f8fafc;
+            transition:background .15s; cursor:default;
+        }
+        .notif-item:last-child { border-bottom:none; }
+        .notif-item.unread { background:#fafbff; }
+        .notif-item:hover { background:#f1f5f9; }
+        .notif-icon {
+            width:34px; height:34px; border-radius:10px; flex-shrink:0;
+            display:flex; align-items:center; justify-content:center; font-size:14px;
+        }
+        .notif-icon.info    { background:#eff6ff; color:#3b82f6; }
+        .notif-icon.success { background:#ecfdf5; color:#10b981; }
+        .notif-icon.warning { background:#fffbeb; color:#f59e0b; }
+        .notif-icon.danger  { background:#fef2f2; color:#ef4444; }
+        .notif-body { flex:1; min-width:0; }
+        .notif-text { font-size:12px; color:#374151; line-height:1.5; }
+        .notif-time { font-size:10px; color:#94a3b8; margin-top:3px; }
+        .notif-unread-dot {
+            width:7px; height:7px; border-radius:50%;
+            background:#6366f1; flex-shrink:0; margin-top:5px;
+        }
+        .notif-empty {
+            padding:36px 18px; text-align:center;
+            color:#94a3b8; font-size:13px;
+        }
+        .notif-empty i { font-size:28px; display:block; margin-bottom:10px; opacity:.35; }
+        .notif-dd-footer {
+            padding:10px 18px; border-top:1px solid #f1f5f9; text-align:center;
+        }
+        .notif-dd-footer a {
+            font-size:12px; color:#6366f1; font-weight:600; text-decoration:none;
+        }
+        .notif-dd-footer a:hover { text-decoration:underline; }
+
         /* Notification button */
         .topnav-icon-btn {
             width:36px; height:36px; border-radius:9px;
@@ -281,9 +345,28 @@
     <div class="topnav-right">
         @auth
         {{-- Notification bell --}}
-        <button class="topnav-icon-btn" title="Notifications">
-            <i class="fa-solid fa-bell"></i>
-        </button>
+        <div class="notif-wrap">
+            <button class="topnav-icon-btn" id="notifBtn" title="Notifications" aria-haspopup="true" aria-expanded="false">
+                <i class="fa-solid fa-bell"></i>
+            </button>
+            <span class="notif-badge" id="notifBadge" style="display:none"></span>
+
+            <div class="notif-dropdown" id="notifDropdown" role="menu">
+                <div class="notif-dd-header">
+                    <span class="notif-dd-title"><i class="fa-solid fa-bell" style="color:#6366f1"></i> Notifications</span>
+                    <button class="notif-mark-all" id="notifMarkAll">Mark all as read</button>
+                </div>
+                <div id="notifList">
+                    <div class="notif-empty">
+                        <i class="fa-solid fa-bell-slash"></i>
+                        No notifications yet
+                    </div>
+                </div>
+                <div class="notif-dd-footer">
+                    <a href="#">View all notifications</a>
+                </div>
+            </div>
+        </div>
 
         {{-- Divider --}}
         <div class="topnav-divider"></div>
@@ -433,5 +516,80 @@
 </div>
 
 @stack('scripts')
+<script>
+// ── Notification bell ────────────────────────────────────────────────
+(function () {
+    const btn      = document.getElementById('notifBtn');
+    const dropdown = document.getElementById('notifDropdown');
+    const badge    = document.getElementById('notifBadge');
+    const list     = document.getElementById('notifList');
+    const markAll  = document.getElementById('notifMarkAll');
+    if (!btn) return;
+
+    // Seed with system-generated notifications based on session flash / role
+    const raw = [
+        @auth
+        @if(session('success'))
+        { type:'success', text: {{ Js::from(session('success')) }}, time:'Just now', unread:true },
+        @endif
+        @if(session('info'))
+        { type:'info',    text: {{ Js::from(session('info')) }},    time:'Just now', unread:true },
+        @endif
+        @if(session('error'))
+        { type:'danger',  text: {{ Js::from(session('error')) }},   time:'Just now', unread:true },
+        @endif
+        @endauth
+    ];
+
+    const ICONS = { info:'fa-circle-info', success:'fa-circle-check', warning:'fa-triangle-exclamation', danger:'fa-circle-xmark' };
+
+    function render(items) {
+        if (!items.length) {
+            list.innerHTML = '<div class="notif-empty"><i class="fa-solid fa-bell-slash"></i>No notifications yet</div>';
+            badge.style.display = 'none';
+            return;
+        }
+        const unread = items.filter(n => n.unread).length;
+        badge.textContent    = unread > 9 ? '9+' : unread;
+        badge.style.display  = unread ? 'flex' : 'none';
+        list.innerHTML = items.map(n => `
+            <div class="notif-item ${n.unread ? 'unread' : ''}">
+                <div class="notif-icon ${n.type}"><i class="fa-solid ${ICONS[n.type] ?? 'fa-bell'}"></i></div>
+                <div class="notif-body">
+                    <div class="notif-text">${n.text}</div>
+                    <div class="notif-time">${n.time}</div>
+                </div>
+                ${n.unread ? '<div class="notif-unread-dot"></div>' : ''}
+            </div>`).join('');
+    }
+
+    render(raw);
+
+    btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const open = dropdown.classList.toggle('open');
+        btn.setAttribute('aria-expanded', open);
+    });
+
+    markAll.addEventListener('click', function () {
+        raw.forEach(n => n.unread = false);
+        render(raw);
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!dropdown.contains(e.target) && e.target !== btn) {
+            dropdown.classList.remove('open');
+            btn.setAttribute('aria-expanded', 'false');
+        }
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            dropdown.classList.remove('open');
+            btn.setAttribute('aria-expanded', 'false');
+        }
+    });
+}());
+</script>
 </body>
 </html>
