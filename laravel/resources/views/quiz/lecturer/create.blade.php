@@ -118,6 +118,11 @@
 
 .marks-input { width: 90px !important; }
 .section-divider { height: 1px; background: linear-gradient(90deg, #6366f1, transparent); margin: 20px 0; opacity: .2; }
+
+.quiz-create-grid { display: grid; grid-template-columns: 1fr 380px; gap: 22px; align-items: start; }
+@media (max-width: 900px) {
+    .quiz-create-grid { grid-template-columns: 1fr; }
+}
 </style>
 @endpush
 
@@ -140,7 +145,7 @@
 <form action="{{ route('lecturer.quizzes.store') }}" method="POST" id="quizForm">
 @csrf
 
-<div style="display:grid;grid-template-columns:1fr 380px;gap:22px;align-items:start">
+<div class="quiz-create-grid">
 
     {{-- LEFT --}}
     <div>

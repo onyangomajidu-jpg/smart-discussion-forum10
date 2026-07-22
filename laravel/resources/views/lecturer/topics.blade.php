@@ -69,6 +69,36 @@
         .btn-block-user { font-size: 11px; color: #d69e2e; background: none; border: 1px solid #d69e2e; border-radius: 4px; padding: 2px 6px; cursor: pointer; }
         .btn-unblock-user { font-size: 11px; color: #38a169; background: none; border: 1px solid #38a169; border-radius: 4px; padding: 2px 6px; cursor: pointer; }
 
+        /* Mobile toggle buttons — hidden on desktop */
+        .mobile-toggle-btn {
+            display: none; background: rgba(255,255,255,0.2); border: none; color: white;
+            width: 34px; height: 34px; border-radius: 6px; align-items: center; justify-content: center;
+            font-size: 15px; cursor: pointer; flex-shrink: 0;
+        }
+        .panel-backdrop {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+            z-index: 499; opacity: 0; transition: opacity .2s;
+        }
+        .panel-backdrop.show { display: block; opacity: 1; }
+
+        @media (max-width: 768px) {
+            .mobile-toggle-btn { display: flex; }
+            .navbar h1 span.full-title { display: none; }
+
+            .sidebar, .participants-panel {
+                position: fixed; top: 0; height: 100vh; z-index: 500;
+                transition: transform .25s ease;
+            }
+            .sidebar { left: 0; transform: translateX(-100%); width: 85%; max-width: 300px; }
+            .sidebar.open { transform: translateX(0); }
+            .participants-panel { right: 0; transform: translateX(100%); width: 80%; max-width: 230px; }
+            .participants-panel.open { transform: translateX(0); }
+
+            .conversation { width: 100%; }
+            .conv-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .conv-header-actions { flex-wrap: wrap; }
+        }
+
         .conversation { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .conv-header { padding: 16px 20px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
         .conv-header h2 { font-size: 18px; color: #2d3748; }
@@ -131,7 +161,10 @@
 <body>
 
 <nav class="navbar">
-    <h1><img src="{{ asset('images/forum.png') }}" alt="Discussion Hub" style="height:34px;vertical-align:middle;margin-right:8px;">Discussion Hub</h1>
+    <div style="display:flex;align-items:center;gap:10px;">
+        <button class="mobile-toggle-btn" id="topicsToggleBtn" type="button" aria-label="Toggle topics list">☰</button>
+        <h1><img src="{{ asset('images/forum.png') }}" alt="Discussion Hub" style="height:34px;vertical-align:middle;margin-right:8px;"><span class="full-title">Discussion Hub</span></h1>
+    </div>
     <div class="navbar-right">
         <button class="notif-btn" onclick="loadNotifications()">
             🔔
@@ -149,7 +182,7 @@
 </nav>
 
 <div class="forum-layout">
-
+    <div class="panel-backdrop" id="panelBackdrop"></div>
     {{-- Sidebar --}}
     <aside class="sidebar">
         <div class="sidebar-header">
@@ -234,6 +267,9 @@
                     </form>
                     <button class="btn-action btn-share" onclick="openShareModal({{ $activeTopic->id }})">
                         🌐 Share
+                    </button>
+                    <button class="mobile-toggle-btn" id="participantsToggleBtn" type="button" aria-label="Toggle participants list" style="background:#ede9fe;color:#4c1d95;">
+                        👥
                     </button>
                 </div>
             </div>
@@ -421,6 +457,34 @@
     let editingPostId = null;
     let selectedPlatform = null;
     let typingTimer = null;
+
+    // Mobile off-canvas toggling for topics list / participants panel
+    (function () {
+        var sidebar = document.querySelector('.sidebar');
+        var participants = document.querySelector('.participants-panel');
+        var backdrop = document.getElementById('panelBackdrop');
+        var topicsBtn = document.getElementById('topicsToggleBtn');
+        var participantsBtn = document.getElementById('participantsToggleBtn');
+        if (!backdrop) return;
+
+        function closeAll() {
+            if (sidebar) sidebar.classList.remove('open');
+            if (participants) participants.classList.remove('open');
+            backdrop.classList.remove('show');
+        }
+        function openPanel(panel) {
+            closeAll();
+            if (panel) { panel.classList.add('open'); backdrop.classList.add('show'); }
+        }
+
+        if (topicsBtn) topicsBtn.addEventListener('click', function () {
+            sidebar && sidebar.classList.contains('open') ? closeAll() : openPanel(sidebar);
+        });
+        if (participantsBtn) participantsBtn.addEventListener('click', function () {
+            participants && participants.classList.contains('open') ? closeAll() : openPanel(participants);
+        });
+        backdrop.addEventListener('click', closeAll);
+    })();
 
     function openShareModal(topicId) {
         selectedPlatform = null;
