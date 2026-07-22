@@ -572,22 +572,17 @@
     function buildConversationText() {
         const title = document.querySelector('.conv-header h2').textContent.trim();
         let lines = ['📚 Discussion: "' + title + '"', ''];
-        const topicBody   = document.querySelector('.post-card[style*="border-left"] .post-body');
-        const topicAuthor = document.querySelector('.post-card[style*="border-left"] .post-author');
-        const topicTime   = document.querySelector('.post-card[style*="border-left"] .post-time');
-        if (topicAuthor && topicBody)
-            lines.push('[' + (topicTime ? topicTime.textContent.trim() : '') + '] ' + topicAuthor.textContent.trim() + ': ' + topicBody.textContent.trim(), '');
-        document.querySelectorAll('.post-card:not([style*="border-left"])').forEach(card => {
-            const author = card.querySelector('.post-author');
-            const body   = card.querySelector('.post-body');
-            const time   = card.querySelector('.post-time');
+        document.querySelectorAll('#messages .chat-row').forEach(row => {
+            const author = row.querySelector('.chat-meta .author');
+            const time   = row.querySelector('.chat-meta span:not(.author)');
+            const body   = row.querySelector('.chat-bubble');
             if (author && body) {
-                lines.push('[' + (time ? time.textContent.trim() : '') + '] ' + author.textContent.trim() + ': ' + body.textContent.trim());
-                card.querySelectorAll('.reply-card').forEach(r => {
+                const prefix = row.classList.contains('topic-origin') ? '[Topic] ' : '';
+                lines.push(prefix + '[' + (time ? time.textContent.trim() : '') + '] ' + author.textContent.trim() + ': ' + body.textContent.trim());
+                row.querySelectorAll('.reply-bubble').forEach(r => {
                     const ra = r.querySelector('.reply-author');
-                    const rb = r.querySelector('.reply-body');
-                    const rt = r.querySelector('span[style*="color:#a0aec0"]');
-                    if (ra && rb) lines.push('  ↩ [' + (rt ? rt.textContent.trim() : '') + '] ' + ra.textContent.trim() + ': ' + rb.textContent.trim());
+                    const rb = r.lastChild;
+                    if (ra) lines.push('  ↩ ' + ra.textContent.trim() + ': ' + (rb ? rb.textContent.trim() : ''));
                 });
                 lines.push('');
             }
