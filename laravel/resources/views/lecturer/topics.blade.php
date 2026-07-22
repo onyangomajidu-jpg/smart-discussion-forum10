@@ -463,6 +463,9 @@
                         <div class="chat-meta">
                             <span class="author">{{ $isMe ? 'You' : $post->author->name }}</span>
                             <span>{{ $post->created_at->diffForHumans() }}</span>
+                            @if(!$isMe)
+                                <a href="{{ route('messages.show', $post->user_id) }}" class="btn-sm btn-reply" style="text-decoration:none;" title="Message {{ $post->author->name }} privately">&#9993; Message</a>
+                            @endif
                         </div>
                         <div class="chat-bubble" id="post-body-{{ $post->id }}">{{ $post->body }}</div>
                         @if($post->audio_path)
