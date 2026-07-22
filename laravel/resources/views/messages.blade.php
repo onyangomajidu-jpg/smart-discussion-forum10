@@ -526,11 +526,15 @@
     }
 
     // ── Send/mic toggle ──
-    function onMsgInput() {
-        const val = document.getElementById('messageInput').value.trim();
-        document.getElementById('micIcon').style.display  = val ? 'none'  : 'block';
-        document.getElementById('sendIcon').style.display = val ? 'block' : 'none';
+    function updateSendBtn() {
+        const val = document.getElementById('messageInput') && document.getElementById('messageInput').value.trim();
+        const show = !!val;
+        const mi = document.getElementById('micIcon');
+        const si = document.getElementById('sendIcon');
+        if (mi) mi.style.display = show ? 'none'  : 'block';
+        if (si) si.style.display = show ? 'block' : 'none';
     }
+    function onMsgInput() { updateSendBtn(); }
     document.getElementById('micBtn') && document.getElementById('micBtn').addEventListener('click', function () {
         const val = document.getElementById('messageInput') && document.getElementById('messageInput').value.trim();
         if (val) { document.getElementById('messageForm').requestSubmit(); }
@@ -549,17 +553,11 @@
         const removeBtn    = document.getElementById('attachRemoveBtn');
         if (!imgBtn) return;
 
-        function showPreview(name, thumbHtml) {
-            previewThumb.innerHTML = thumbHtml;
-            previewName.textContent = name;
-            previewBar.style.display = 'flex';
-        }
-        function clearPreview() {
-            previewBar.style.display = 'none';
-            previewThumb.innerHTML = '';
-            previewName.textContent = '';
-            imgInput.value = '';
-            docInput.value = '';
+        function sendAttachment(formEl) {
+            const fd = new FormData(formEl);
+            fd.delete('body');
+            fetch(formEl.action, { method: 'POST', body: fd })
+                .then(r => r.redirected ? window.location.href = r.url : window.location.reload());
         }
 
         imgBtn.addEventListener('click', () => imgInput.click());
@@ -568,11 +566,11 @@
 
         imgInput.addEventListener('change', function () {
             if (!this.files[0]) return;
-            showPreview(this.files[0].name, '<img src="' + URL.createObjectURL(this.files[0]) + '">');
+            sendAttachment(document.getElementById('messageForm'));
         });
         docInput.addEventListener('change', function () {
             if (!this.files[0]) return;
-            showPreview(this.files[0].name, '&#128196; ');
+            sendAttachment(document.getElementById('messageForm'));
         });
 
         // Camera
@@ -616,8 +614,8 @@
                 var dt = new DataTransfer();
                 dt.items.add(file);
                 imgInput.files = dt.files;
-                showPreview(file.name, '<img src="' + URL.createObjectURL(blob) + '">');
                 stopCam();
+                sendAttachment(document.getElementById('messageForm'));
             }, 'image/jpeg', 0.92);
         });
     })();

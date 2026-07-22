@@ -1051,15 +1051,17 @@
     }
 
     // ── Send/mic toggle ──
-    function onMsgInput() {
+    function updateSendBtn() {
         const val = document.getElementById('postInput') && document.getElementById('postInput').value.trim();
+        const show = !!val;
         const mi = document.getElementById('micIcon');
         const si = document.getElementById('sendIcon');
-        if (mi) mi.style.display  = val ? 'none'  : 'block';
-        if (si) si.style.display = val ? 'block' : 'none';
+        if (mi) mi.style.display = show ? 'none'  : 'block';
+        if (si) si.style.display = show ? 'block' : 'none';
     }
+    function onMsgInput() { updateSendBtn(); }
 
-    // standalone send handler (fires when micBtn is clicked while text is present)
+    // standalone send handler (fires when micBtn is clicked while text or attachment is present)
     document.getElementById('micBtn') && document.getElementById('micBtn').addEventListener('click', function () {
         const val = document.getElementById('postInput') && document.getElementById('postInput').value.trim();
         if (val) { document.getElementById('postForm').requestSubmit(); }
@@ -1157,17 +1159,11 @@
         const removeBtn    = document.getElementById('attachRemoveBtn');
         if (!imgBtn) return;
 
-        function showPreview(name, thumbHtml) {
-            previewThumb.innerHTML = thumbHtml;
-            previewName.textContent = name;
-            previewBar.style.display = 'flex';
-        }
-        function clearPreview() {
-            previewBar.style.display = 'none';
-            previewThumb.innerHTML = '';
-            previewName.textContent = '';
-            imgInput.value = '';
-            docInput.value = '';
+        function sendAttachment(formEl) {
+            const fd = new FormData(formEl);
+            fd.delete('body');
+            fetch(formEl.action, { method: 'POST', body: fd })
+                .then(r => r.redirected ? window.location.href = r.url : window.location.reload());
         }
 
         imgBtn.addEventListener('click', () => imgInput.click());
@@ -1176,11 +1172,11 @@
 
         imgInput.addEventListener('change', function () {
             if (!this.files[0]) return;
-            showPreview(this.files[0].name, '<img src="' + URL.createObjectURL(this.files[0]) + '">');
+            sendAttachment(document.getElementById('postForm'));
         });
         docInput.addEventListener('change', function () {
             if (!this.files[0]) return;
-            showPreview(this.files[0].name, '&#128196;');
+            sendAttachment(document.getElementById('postForm'));
         });
 
         const camModal  = document.getElementById('camModal');
@@ -1216,8 +1212,8 @@
                 var dt = new DataTransfer();
                 dt.items.add(file);
                 imgInput.files = dt.files;
-                showPreview(file.name, '<img src="' + URL.createObjectURL(blob) + '">');
                 stopCam();
+                sendAttachment(document.getElementById('postForm'));
             }, 'image/jpeg', 0.92);
         });
     })();
