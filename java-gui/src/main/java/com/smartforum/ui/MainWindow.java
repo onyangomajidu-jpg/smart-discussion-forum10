@@ -81,7 +81,7 @@ public class MainWindow extends JFrame {
         });
 
         // ── Layout ────────────────────────────────────────────────────────
-        setTitle("Smart Discussion Forum — " + user.getName());
+        setTitle("Discussion Hub — " + user.getName());
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(1200, 720);
         setLocationRelativeTo(null);
@@ -192,7 +192,7 @@ public class MainWindow extends JFrame {
         bar.setBackground(PRIMARY);
         bar.setBorder(new EmptyBorder(10, 20, 10, 20));
 
-        JLabel title = new JLabel("🎓 Smart Discussion Forum");
+        JLabel title = new JLabel("🎓 Discussion Hub");
         title.setFont(new Font("Segoe UI", Font.BOLD, 18));
         title.setForeground(Color.WHITE);
 

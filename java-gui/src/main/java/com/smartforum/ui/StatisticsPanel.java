@@ -400,33 +400,28 @@ public class StatisticsPanel extends JPanel {
         int engPct = Math.min(totalPosts * 5, 100);
         barEngagement.setValue(engPct);          lblEngPct.setText(totalPosts + " posts");
 
-        // Best/lowest from scoreDistribution buckets
-        JsonNode dist = s.path("scoreDistribution");
-        String bestBucket = "—", lowestBucket = "—";
-        if (!dist.isMissingNode()) {
-            if (dist.path("85-100").asInt(0) > 0) { bestBucket = "85-100%"; }
-            else if (dist.path("70-84").asInt(0) > 0) { bestBucket = "70-84%"; }
-            else if (dist.path("50-69").asInt(0) > 0) { bestBucket = "50-69%"; }
-            else if (dist.path("0-49").asInt(0) > 0)  { bestBucket = "0-49%"; }
-            if (dist.path("0-49").asInt(0) > 0) { lowestBucket = "0-49%"; }
-            else if (dist.path("50-69").asInt(0) > 0) { lowestBucket = "50-69%"; }
-            else if (dist.path("70-84").asInt(0) > 0) { lowestBucket = "70-84%"; }
-            else if (dist.path("85-100").asInt(0) > 0){ lowestBucket = "85-100%"; }
-        }
-        barBestScore.setValue(totalAttempts > 0 ? (int) Math.round(avgScore) : 0);
-        lblBestPct.setText(bestBucket);
+        // Best/lowest from real API fields
+        double bestScore  = s.path("bestScore").asDouble(0);
+        double minScore   = s.path("minScore").asDouble(0);
+        String bestStr    = totalAttempts > 0 ? Math.round(bestScore) + "%" : "—";
+        String lowestStr  = totalAttempts > 0 ? Math.round(minScore)  + "%" : "—";
+
+        barBestScore.setValue((int) Math.round(bestScore));
+        lblBestPct.setText(bestStr);
 
         // Quick stats
         lblQsTotalAttempts.setText(String.valueOf(totalAttempts));
-        lblQsBestScore.setText(bestBucket);
-        lblQsLowestScore.setText(lowestBucket);
+        lblQsBestScore.setText(bestStr);
+        lblQsLowestScore.setText(lowestStr);
         lblQsTotalPosts.setText(String.valueOf(totalPosts));
         lblQsTopicsJoined.setText(String.valueOf(topicsJoined));
-        lblQsSubjects.setText(String.valueOf(dist.size()));
+        JsonNode dist = s.path("scoreDistribution");
+        int subjectCount = (dist != null && dist.isObject()) ? dist.size() : 0;
+        lblQsSubjects.setText(String.valueOf(subjectCount));
 
         // Charts
         renderBarChart(s.path("postsPerDay"));
-        renderPieChart(s.path("scoreDistribution"), totalAttempts, availableQuizzes);
+        renderPieChart(dist, totalAttempts, availableQuizzes);
     }
 
     private void renderBarChart(JsonNode postsPerDay) {

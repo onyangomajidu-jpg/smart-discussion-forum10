@@ -31,6 +31,8 @@ public class LecturerAnalyticsPanel extends JPanel {
 
     private JLabel lblTotalQuizzes, lblTotalStudents, lblTotalSubmissions, lblAvgScore;
     private DefaultTableModel rosterModel;
+    private JTable rosterTable;
+    private JTextField rosterSearchField;
     private JPanel compliancePanel;
     private JLabel lblDraft, lblPublished, lblClosed;
     private JLabel statusLbl;
@@ -117,13 +119,30 @@ public class LecturerAnalyticsPanel extends JPanel {
             new String[]{"Student", "Email", "Quiz", "Score", "Grade", "Status", "Submitted"}, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
-        JTable rosterTable = new JTable(rosterModel);
+        rosterTable = new JTable(rosterModel);
         rosterTable.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         rosterTable.setRowHeight(28);
         rosterTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
         rosterTable.setGridColor(BORDER_C);
+
+        // Search bar above roster table
+        rosterSearchField = new JTextField();
+        rosterSearchField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        rosterSearchField.putClientProperty("JTextField.placeholderText", "🔍 Search by student name or email…");
+        rosterSearchField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER_C, 1),
+            new EmptyBorder(6, 10, 6, 10)));
+        rosterSearchField.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override public void keyReleased(java.awt.event.KeyEvent e) { filterRoster(); }
+        });
+        JPanel searchBar = new JPanel(new BorderLayout());
+        searchBar.setBackground(new Color(0xFA, 0xFB, 0xFF));
+        searchBar.setBorder(new EmptyBorder(8, 10, 8, 10));
+        searchBar.add(rosterSearchField, BorderLayout.CENTER);
+
         JPanel rosterBody = new JPanel(new BorderLayout());
         rosterBody.setBackground(SURFACE);
+        rosterBody.add(searchBar, BorderLayout.NORTH);
         rosterBody.add(new JScrollPane(rosterTable), BorderLayout.CENTER);
         rosterCard.add(rosterBody, BorderLayout.CENTER);
         rosterCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 320));
@@ -264,6 +283,19 @@ public class LecturerAnalyticsPanel extends JPanel {
                 }
             }
         }.execute();
+    }
+
+    private void filterRoster() {
+        String query = rosterSearchField.getText().trim().toLowerCase();
+        javax.swing.table.TableRowSorter<DefaultTableModel> sorter =
+            new javax.swing.table.TableRowSorter<>(rosterModel);
+        rosterTable.setRowSorter(sorter);
+        if (query.isEmpty()) {
+            sorter.setRowFilter(null);
+        } else {
+            sorter.setRowFilter(javax.swing.RowFilter.regexFilter(
+                "(?i)" + java.util.regex.Pattern.quote(query), 0, 1));
+        }
     }
 
     private JPanel kpiCard(String icon, JLabel valLbl, String caption, Color accent) {

@@ -51,7 +51,7 @@ public LoginWindow(AuthService authService, ApiClient api, LocalCacheDatabase ca
     // ── UI construction ───────────────────────────────────────────────────
 
     private void buildUI() {
-        setTitle("Smart Discussion Forum — Login");
+        setTitle("Discussion Hub — Login");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setResizable(false);
 
@@ -84,12 +84,12 @@ public LoginWindow(AuthService authService, ApiClient api, LocalCacheDatabase ca
         ));
         panel.putClientProperty("arc", 15);
 
-        JLabel logo = new JLabel("🎓 Smart Discussion Forum", SwingConstants.CENTER);
+        JLabel logo = new JLabel("🎓 Discussion Hub", SwingConstants.CENTER);
         logo.setFont(new Font("Segoe UI", Font.BOLD, 22));
         logo.setForeground(PRIMARY);
         logo.setAlignmentX(CENTER_ALIGNMENT);
 
-        JLabel sub = new JLabel("Welcome back! Please login to your account", SwingConstants.CENTER);
+        JLabel sub = new JLabel("Welcome back! Please login to your account.", SwingConstants.CENTER);
         sub.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         sub.setForeground(TEXT_MUTE);
         sub.setAlignmentX(CENTER_ALIGNMENT);
