@@ -346,16 +346,33 @@
                 box-shadow:4px 0 24px rgba(0,0,0,.15);
             }
             .sidebar.open { transform:translateX(0); }
-            .main { padding:16px; }
+            .main { padding:12px; }
             .form-row { grid-template-columns:1fr; }
             .stats-grid { grid-template-columns:repeat(2,1fr); }
 
             /* Keep the top bar from overflowing on narrow phones */
-            .topnav { padding:0 12px; gap:8px; }
+            .topnav { padding:0 10px; gap:6px; }
             .topnav-brand .sub { display:none; }
+            .topnav-brand .name { font-size:14px; }
             .topnav-user-info { display:none; }
             .topnav-logout-btn span { display:none; }
-            .topnav-logout-btn { padding:7px 10px; }
+            .topnav-logout-btn { padding:7px 9px; }
+            .topnav-divider { display:none; }
+
+            /* Notification dropdown full-width on mobile */
+            .notif-dropdown { width:calc(100vw - 20px); right:-10px; }
+
+            /* Cards & tables */
+            .card-body { padding:14px; }
+            .card-header { padding:12px 14px; }
+            thead th, tbody td { padding:10px 10px; font-size:12px; }
+            .btn { padding:9px 14px; font-size:12px; }
+            .page-header h1 { font-size:20px; }
+        }
+        @media(max-width:480px) {
+            .topnav-brand .name { font-size:13px; }
+            .stats-grid { grid-template-columns:1fr 1fr; }
+            .main { padding:10px; }
         }
     </style>
     @stack('styles')

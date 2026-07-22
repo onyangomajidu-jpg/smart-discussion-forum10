@@ -90,7 +90,15 @@
 
         @media (max-width: 768px) {
             .mobile-toggle-btn { display: flex; }
+
+            /* Navbar: prevent overflow */
+            .navbar { padding: 8px 10px; gap: 6px; flex-wrap: nowrap; }
+            .navbar h1 { font-size: 15px; }
             .navbar h1 span.full-title { display: none; }
+            .navbar-right { gap: 6px; }
+            .navbar-right > span { display: none; } /* hide username text */
+            .btn-logout { padding: 5px 8px; font-size: 12px; }
+            .notif-btn { padding: 5px 8px; }
 
             .sidebar, .participants-panel {
                 position: fixed; top: 0; height: 100vh; z-index: 500;
@@ -98,11 +106,28 @@
             }
             .sidebar { left: 0; transform: translateX(-100%); width: 85%; max-width: 300px; }
             .sidebar.open { transform: translateX(0); }
-            .participants-panel { right: 0; transform: translateX(100%); width: 80%; max-width: 230px; }
+            .participants-panel { right: 0; transform: translateX(100%); width: 80%; max-width: 260px; }
             .participants-panel.open { transform: translateX(0); }
 
-            .conversation { width: 100%; }
-            .conv-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .conversation { width: 100%; min-width: 0; }
+            .conv-header { flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 14px; }
+            .conv-header h2 { font-size: 15px; }
+            .conv-header > div:last-child { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+            .conv-header > div:last-child a,
+            .conv-header > div:last-child button { font-size: 12px; padding: 6px 10px; }
+
+            .messages { padding: 12px; gap: 12px; }
+            .post-card { padding: 12px; }
+            .input-area { padding: 10px 12px; }
+            .msg-input { font-size: 13px; }
+            .btn-send { padding: 8px 14px; font-size: 13px; }
+
+            /* Modal full-width on mobile */
+            .modal { width: 95vw; padding: 20px 16px; }
+        }
+        @media (max-width: 480px) {
+            .navbar h1 img { height: 26px; }
+            .replies { padding-left: 10px; }
         }
 
         /* Conversation Panel */
@@ -187,7 +212,7 @@
                 <span class="notif-badge">{{ auth()->user()->unreadNotifications->count() }}</span>
             @endif
         </button>
-        <span>{{ auth()->user()->name }}</span>
+        <span class="d-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;">{{ auth()->user()->name }}</span>
         <a href="{{ route('dashboard') }}" class="btn-logout" style="text-decoration:none;">&#8592; Dashboard</a>
         <form action="{{ route('logout') }}" method="POST">
             @csrf
