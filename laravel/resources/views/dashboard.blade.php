@@ -164,6 +164,16 @@
         .panel-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 540px) {
+        .stats-row { grid-template-columns: 1fr 1fr; }
+        .dash-stat-card { padding: 14px; }
+        .dash-stat-card .value { font-size: 22px; }
+        .panel-body { padding: 12px 14px; }
+        .panel-header { padding: 12px 14px; font-size: 13px; }
+        .quiz-announce { padding: 10px 12px; }
+        .quiz-announce-item { flex-wrap: wrap; gap: 6px; }
+        .group-chip { padding: 8px 10px; }
+    }
+    @media (max-width: 360px) {
         .stats-row { grid-template-columns: 1fr; }
     }
 </style>

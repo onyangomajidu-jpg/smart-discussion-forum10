@@ -223,8 +223,25 @@
         }
         .btn-return:hover { opacity: .9; transform: translateY(-1px); }
 
-        /* ── Auto-submit Modal ────────────────────────────────────────── */
-        #autoSubmitModal {
+        /* ── Responsive ────────────────────────────────────────────── */
+        @media (max-width: 768px) {
+            .quiz-header { padding: 0 14px; height: auto; min-height: 60px; flex-wrap: wrap; gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+            .quiz-title-text { font-size: 13px; }
+            .quiz-meta-text { font-size: 10px; gap: 6px; flex-wrap: wrap; }
+            .timer-box { min-width: 90px; padding: 7px 12px; }
+            .timer-time { font-size: 20px; letter-spacing: 2px; }
+            .progress-strip { padding: 10px 14px; gap: 10px; flex-direction: column; }
+            .container { padding: 0 12px; margin: 16px auto; }
+            .question-card { padding: 18px 16px; }
+            .q-text { font-size: 15px; }
+            .option-label { padding: 11px 12px; font-size: 13px; gap: 10px; }
+            .opt-letter { width: 26px; height: 26px; font-size: 11px; }
+            .submit-bar { flex-direction: column; gap: 14px; padding: 16px; text-align: center; }
+            .btn-submit { width: 100%; justify-content: center; }
+            .focus-warn-box { padding: 28px 20px; }
+            .focus-warn-title { font-size: 20px; }
+            .modal-box { padding: 28px 20px; }
+        }
             display: none;
             position: fixed; inset: 0;
             background: rgba(15,23,42,.85);
