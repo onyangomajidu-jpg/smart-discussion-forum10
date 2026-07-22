@@ -91,6 +91,9 @@ class ContentManagementService implements IContentManagement
             'user_id'    => Auth::id(),
             'body'       => $data['body'] ?? '',
             'audio_path' => $data['audio_path'] ?? null,
+            'image_path' => $data['image_path'] ?? null,
+            'file_path'  => $data['file_path'] ?? null,
+            'file_name'  => $data['file_name'] ?? null,
         ]);
 
         broadcast(new NewPost($topicId, Auth::id(), $data['body'] ?? '', 'post'))->toOthers();

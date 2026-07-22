@@ -12,7 +12,7 @@ class Post extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['topic_id', 'user_id', 'body', 'audio_path', 'is_best_answer', 'upvotes', 'downvotes'];
+    protected $fillable = ['topic_id', 'user_id', 'body', 'audio_path', 'image_path', 'file_path', 'file_name', 'is_best_answer', 'upvotes', 'downvotes'];
 
     protected $casts = ['is_best_answer' => 'boolean'];
 

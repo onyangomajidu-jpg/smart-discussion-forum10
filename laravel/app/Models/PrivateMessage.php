@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PrivateMessage extends Model
 {
-    protected $fillable = ['sender_id', 'recipient_id', 'body', 'audio_path', 'read_at'];
+    protected $fillable = ['sender_id', 'recipient_id', 'body', 'audio_path', 'image_path', 'file_path', 'file_name', 'read_at'];
 
     protected $casts = ['read_at' => 'datetime'];
 
