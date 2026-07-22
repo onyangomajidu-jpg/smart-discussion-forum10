@@ -63,6 +63,20 @@
         .topnav-brand .sub  { font-size:10px; opacity:.7; font-weight:500; letter-spacing:.3px; text-transform:uppercase; }
         .topnav-right { display:flex; align-items:center; gap:10px; }
 
+        /* Mobile sidebar toggle — hidden on desktop, shown via media query below */
+        .mobile-menu-btn {
+            display:none; background:rgba(255,255,255,.15); border:1.5px solid rgba(255,255,255,.3);
+            color:#fff; width:38px; height:38px; border-radius:9px; align-items:center; justify-content:center;
+            font-size:16px; cursor:pointer; flex-shrink:0;
+        }
+        .mobile-menu-btn:hover { background:rgba(255,255,255,.25); }
+
+        .sidebar-backdrop {
+            display:none; position:fixed; inset:0; background:rgba(15,23,42,.5);
+            z-index:399; opacity:0; transition:opacity .2s;
+        }
+        .sidebar-backdrop.show { display:block; opacity:1; }
+
         /* Notification bell + dropdown */
         .notif-wrap { position:relative; }
         .notif-badge {
@@ -323,10 +337,25 @@
 
         /* ── Responsive ─────────────────────────────────────────────── */
         @media(max-width:768px) {
-            .sidebar { display:none; }
+            .mobile-menu-btn { display:flex; }
+            .sidebar {
+                position:fixed; top:64px; left:0; z-index:400;
+                width:260px; height:calc(100vh - 64px);
+                transform:translateX(-100%);
+                transition:transform .25s ease;
+                box-shadow:4px 0 24px rgba(0,0,0,.15);
+            }
+            .sidebar.open { transform:translateX(0); }
             .main { padding:16px; }
             .form-row { grid-template-columns:1fr; }
             .stats-grid { grid-template-columns:repeat(2,1fr); }
+
+            /* Keep the top bar from overflowing on narrow phones */
+            .topnav { padding:0 12px; gap:8px; }
+            .topnav-brand .sub { display:none; }
+            .topnav-user-info { display:none; }
+            .topnav-logout-btn span { display:none; }
+            .topnav-logout-btn { padding:7px 10px; }
         }
     </style>
     @stack('styles')
@@ -335,6 +364,9 @@
 <body>
 
 <nav class="topnav">
+    <button class="mobile-menu-btn" id="sidebarToggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false">
+        <i class="fa-solid fa-bars"></i>
+    </button>
     <a href="{{ auth()->check() && auth()->user()->isLecturer() ? route('lecturer.dashboard') : (auth()->check() && auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard')) }}" class="topnav-brand">
         <div class="brand-icon"><img src="{{ asset('images/forum.png') }}" alt="SmartForum Logo"></div>
         <div>
@@ -411,6 +443,7 @@
 </nav>
 
 <div class="app-body">
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
     <aside class="sidebar">
         @auth
         <div class="sidebar-nav">
@@ -520,6 +553,36 @@
 </div>
 
 @stack('scripts')
+
+<script>
+    (function () {
+        var toggleBtn = document.getElementById('sidebarToggle');
+        var sidebar = document.querySelector('.sidebar');
+        var backdrop = document.getElementById('sidebarBackdrop');
+        if (!toggleBtn || !sidebar || !backdrop) return;
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            backdrop.classList.remove('show');
+            toggleBtn.setAttribute('aria-expanded', 'false');
+        }
+        function openSidebar() {
+            sidebar.classList.add('open');
+            backdrop.classList.add('show');
+            toggleBtn.setAttribute('aria-expanded', 'true');
+        }
+
+        toggleBtn.addEventListener('click', function () {
+            sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+        });
+        backdrop.addEventListener('click', closeSidebar);
+
+        // Close the drawer automatically after tapping a nav link on mobile
+        sidebar.querySelectorAll('a').forEach(function (link) {
+            link.addEventListener('click', closeSidebar);
+        });
+    })();
+</script>
 
 @auth
 @if(auth()->user()->isMember())
