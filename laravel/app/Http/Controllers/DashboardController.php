@@ -18,6 +18,10 @@ class DashboardController extends Controller
         $groups = $user->groups()->orderBy('name')->get();
         $uid    = $user->id;
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> e3101813 (Fix personal access tokens migration and update dashboard controller)
         // KPI cards
         $topicsJoined = DB::table('topic_user')->where('user_id', $uid)->count();
         if ($topicsJoined === 0) {
@@ -78,8 +82,21 @@ class DashboardController extends Controller
                 'score' => $r->score,
             ]);
 
+<<<<<<< HEAD
         // Quiz announcements — reminder banners for member
         $quizAnnouncements = [];
+=======
+        return view('dashboard', compact(
+            'user', 'groups',
+            'topicsJoined', 'postsMade', 'quizAttempts', 'avgScore',
+            'recentTopics', 'recentAttempts',
+            'engPct', 'compPct', 'avgPct',
+            'recommendations'
+        ));
+
+        $quizAnnouncements  = [];
+        $quizModalTriggers  = [];
+>>>>>>> e3101813 (Fix personal access tokens migration and update dashboard controller)
         if ($user->role === 'member') {
             $allPending = Quiz::published()
                 ->whereHas('group.members', fn ($q) => $q->where('users.id', $user->id))
@@ -92,6 +109,7 @@ class DashboardController extends Controller
                 ->values();
         }
 
+<<<<<<< HEAD
         return view('dashboard', compact(
             'user', 'groups',
             'topicsJoined', 'postsMade', 'quizAttempts', 'avgScore',
@@ -99,5 +117,9 @@ class DashboardController extends Controller
             'engPct', 'compPct', 'avgPct',
             'recommendations', 'quizAnnouncements'
         ));
+=======
+        return view('dashboard', compact('user', 'groups', 'quizAnnouncements'));
+
+>>>>>>> e3101813 (Fix personal access tokens migration and update dashboard controller)
     }
 }
