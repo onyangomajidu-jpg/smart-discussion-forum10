@@ -34,7 +34,7 @@ class MessageController extends Controller
 
         $other = User::findOrFail($userId);
 
-        $messages = PrivateMessage::between($me, $other->id)->orderBy('created_at')->get();
+        $messages = PrivateMessage::with('replyTo')->between($me, $other->id)->orderBy('created_at')->get();
 
         // Mark anything they sent us as read now that we've opened the thread.
         PrivateMessage::where('sender_id', $other->id)
@@ -62,10 +62,11 @@ class MessageController extends Controller
         $other = User::findOrFail($userId);
 
         $request->validate([
-            'body'  => 'nullable|string',
-            'audio' => 'nullable|file|mimes:webm,ogg,mp4,wav,mp3|max:10240',
-            'image' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
-            'file'  => 'nullable|file|max:20480',
+            'body'       => 'nullable|string',
+            'audio'      => 'nullable|file|mimes:webm,ogg,mp4,wav,mp3|max:10240',
+            'image'      => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
+            'file'       => 'nullable|file|max:20480',
+            'reply_to_id'=> 'nullable|integer|exists:private_messages,id',
         ]);
 
         if (!$request->filled('body') && !$request->hasFile('audio') && !$request->hasFile('image') && !$request->hasFile('file')) {
@@ -76,6 +77,7 @@ class MessageController extends Controller
             'sender_id'    => $me,
             'recipient_id' => $other->id,
             'body'         => $request->input('body', ''),
+            'reply_to_id'  => $request->input('reply_to_id'),
         ];
 
         if ($request->hasFile('audio')) {
@@ -95,6 +97,20 @@ class MessageController extends Controller
         $other->notify(new PrivateMessageNotification($message));
 
         return redirect()->route('messages.show', $other->id);
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $msg = PrivateMessage::where('id', $id)->where('sender_id', auth()->id())->firstOrFail();
+        $msg->update(['body' => $request->validate(['body' => 'required|string'])['body']]);
+        return response()->json(['success' => true, 'body' => $msg->body]);
+    }
+
+    public function destroy(int $id)
+    {
+        $msg = PrivateMessage::where('id', $id)->where('sender_id', auth()->id())->firstOrFail();
+        $msg->delete();
+        return response()->json(['success' => true]);
     }
 
     // Total unread private-message count — used for the nav badge.

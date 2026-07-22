@@ -271,6 +271,38 @@
         .alert { padding: 10px 16px; border-radius: 7px; margin-bottom: 12px; font-size: 14px; }
         .alert-success { background: #c6f6d5; color: #276749; }
         .alert-error { background: #fed7d7; color: #9b2c2c; }
+
+        /* ── Chat actions ── */
+        .chat-actions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; opacity: 0; transition: opacity .15s; pointer-events: none; }
+        .chat-row.selected .chat-actions { opacity: 1; pointer-events: auto; }
+        .chat-row.mine .chat-actions { justify-content: flex-end; }
+        .btn-sm { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid #e2e8f0; border-radius: 50%; cursor: pointer; background: white; transition: all .15s; padding: 0; }
+        .btn-sm:hover { background: #f1f5f9; transform: scale(1.1); }
+        .btn-reply-msg { color: #667eea; border-color: #c7d2fe; }
+        .btn-edit-msg  { color: #38a169; border-color: #a7f3d0; }
+        .btn-delete-msg{ color: #e53e3e; border-color: #fecaca; }
+
+        /* ── Reply preview (quoted message) ── */
+        .reply-preview {
+            border-left: 3px solid #667eea; background: #f0f0ff;
+            border-radius: 6px; padding: 6px 10px; margin-bottom: 4px;
+            font-size: 12px; color: #4a5568; max-width: 100%;
+        }
+        .reply-preview .rp-author { font-weight: 700; color: #667eea; margin-bottom: 2px; }
+        .reply-preview .rp-body { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .chat-row.mine .reply-preview { border-color: rgba(255,255,255,.6); background: rgba(255,255,255,.15); color: rgba(255,255,255,.85); }
+        .chat-row.mine .reply-preview .rp-author { color: #fff; }
+
+        /* ── Reply bar above input ── */
+        .reply-bar {
+            display: none; align-items: center; gap: 8px;
+            padding: 8px 14px; background: #e8e6ff; border-radius: 12px; margin-bottom: 6px;
+            font-size: 13px; color: #4a5568;
+        }
+        .reply-bar .rb-author { font-weight: 700; color: #667eea; }
+        .reply-bar .rb-body { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .btn-cancel-reply { background: none; border: none; color: #a0aec0; cursor: pointer; font-size: 18px; flex-shrink: 0; line-height: 1; }
+        .btn-cancel-reply:hover { color: #e53e3e; }
     </style>
 </head>
 <body>
@@ -390,15 +422,21 @@
 
                 @forelse($messages as $msg)
                     @php $isMe = $msg->sender_id === auth()->id(); @endphp
-                    <div class="chat-row {{ $isMe ? 'mine' : '' }}">
+                    <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="msg-{{ $msg->id }}">
                         <div class="chat-avatar">{{ strtoupper(substr(($isMe ? auth()->user()->name : $other->name), 0, 1)) }}</div>
                         <div class="chat-bubble-wrap">
                             <div class="chat-meta">
                                 <span class="author">{{ $isMe ? 'You' : $other->name }}</span>
                                 <span>{{ $msg->created_at->diffForHumans() }}</span>
                             </div>
+                            @if($msg->replyTo)
+                                <div class="reply-preview">
+                                    <div class="rp-author">{{ $msg->replyTo->sender_id === auth()->id() ? 'You' : $other->name }}</div>
+                                    <div class="rp-body">{{ $msg->replyTo->body ?: '📎 Attachment' }}</div>
+                                </div>
+                            @endif
                             @if($msg->body)
-                                <div class="chat-bubble">{{ $msg->body }}</div>
+                                <div class="chat-bubble" id="msg-body-{{ $msg->id }}">{{ $msg->body }}</div>
                             @endif
                             @if($msg->image_path)
                                 <div class="img-msg-bubble" onclick="this.querySelector('img').requestFullscreen&&this.querySelector('img').requestFullscreen()">
@@ -429,6 +467,15 @@
                                     <audio preload="auto" src="{{ asset('storage/' . $msg->audio_path) }}" style="display:none"></audio>
                                 </div>
                             @endif
+                            <div class="chat-actions">
+                                <button class="btn-sm btn-reply-msg" title="Reply" onclick="setReply({{ $msg->id }}, '{{ $isMe ? 'You' : addslashes($other->name) }}', '{{ addslashes(Str::limit($msg->body ?: 'Attachment', 60)) }}')">&#8617;</button>
+                                @if($isMe)
+                                    @if($msg->body)
+                                        <button class="btn-sm btn-edit-msg" title="Edit" onclick="editMsg({{ $msg->id }}, '{{ addslashes($msg->body) }}')">&#9998;</button>
+                                    @endif
+                                    <button class="btn-sm btn-delete-msg" title="Delete" onclick="deleteMsg({{ $msg->id }})">&#128465;</button>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 @empty
@@ -444,6 +491,14 @@
                     @csrf
                     <input type="file" id="imgInput" name="image" accept="image/*" style="display:none">
                     <input type="file" id="docInput" name="file" style="display:none">
+                    <input type="hidden" name="reply_to_id" id="replyToId">
+                    <div class="reply-bar" id="replyBar">
+                        <div style="flex:1;min-width:0;">
+                            <div class="rb-author" id="replyBarAuthor"></div>
+                            <div class="rb-body" id="replyBarBody"></div>
+                        </div>
+                        <button type="button" class="btn-cancel-reply" onclick="cancelReply()">&#10005;</button>
+                    </div>
                     <div class="attach-preview-bar" id="attachPreviewBar">
                         <span id="attachPreviewThumb"></span>
                         <span class="attach-name" id="attachPreviewName"></span>
@@ -520,6 +575,16 @@
     const msgs = document.getElementById('messages');
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
 
+    // ── Select message row on click to reveal actions ──
+    document.getElementById('messages') && document.getElementById('messages').addEventListener('click', function (e) {
+        const row = e.target.closest('.chat-row');
+        if (!row) { document.querySelectorAll('.chat-row.selected').forEach(r => r.classList.remove('selected')); return; }
+        if (e.target.closest('.btn-sm, .audio-play-btn, .btn-file-dl, audio, a')) return;
+        const wasSelected = row.classList.contains('selected');
+        document.querySelectorAll('.chat-row.selected').forEach(r => r.classList.remove('selected'));
+        if (!wasSelected) row.classList.add('selected');
+    });
+
     function fmtTime(s) {
         if (!isFinite(s) || isNaN(s)) return '0:00';
         return Math.floor(s/60)+':'+(Math.floor(s%60)).toString().padStart(2,'0');
@@ -562,7 +627,6 @@
 
         imgBtn.addEventListener('click', () => imgInput.click());
         docBtn.addEventListener('click', () => docInput.click());
-        removeBtn.addEventListener('click', clearPreview);
 
         imgInput.addEventListener('change', function () {
             if (!this.files[0]) return;
@@ -720,244 +784,62 @@
             document.querySelector('.notif-badge') && document.querySelector('.notif-badge').remove();
         });
     }
-</script>
-</body>
-</html>
 
-<script>
-    // ── Mobile sidebar toggle ──
-    (function () {
-        const toggleBtn = document.getElementById('convToggleBtn');
-        const sidebar    = document.querySelector('.sidebar');
-        const backdrop   = document.getElementById('panelBackdrop');
-        if (!toggleBtn) return;
-        function openSidebar()  { sidebar.classList.add('open'); backdrop.classList.add('show'); }
-        function closeSidebar() { sidebar.classList.remove('open'); backdrop.classList.remove('show'); }
-        toggleBtn.addEventListener('click', openSidebar);
-        backdrop.addEventListener('click', closeSidebar);
-    })();
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
-    const msgs = document.getElementById('messages');
-    if (msgs) msgs.scrollTop = msgs.scrollHeight;
-
-    function fmtTime(s) {
-        if (!isFinite(s) || isNaN(s)) return '0:00';
-        return Math.floor(s/60)+':'+(Math.floor(s%60)).toString().padStart(2,'0');
+    // ── Reply ──
+    function setReply(id, author, body) {
+        document.getElementById('replyToId').value = id;
+        document.getElementById('replyBarAuthor').textContent = author;
+        document.getElementById('replyBarBody').textContent = body;
+        document.getElementById('replyBar').style.display = 'flex';
+        document.getElementById('messageInput').focus();
+    }
+    function cancelReply() {
+        document.getElementById('replyToId').value = '';
+        document.getElementById('replyBar').style.display = 'none';
     }
 
-    // ── Attachment toolbar ──
-    (function () {
-        const imgBtn    = document.getElementById('imgBtn');
-        const docBtn    = document.getElementById('docBtn');
-        const camBtn    = document.getElementById('camBtn');
-        const imgInput  = document.getElementById('imgInput');
-        const docInput  = document.getElementById('docInput');
-        const previewBar  = document.getElementById('attachPreviewBar');
-        const previewThumb = document.getElementById('attachPreviewThumb');
-        const previewName  = document.getElementById('attachPreviewName');
-        const removeBtn    = document.getElementById('attachRemoveBtn');
-        if (!imgBtn) return;
-
-        function showPreview(name, thumbHtml) {
-            previewThumb.innerHTML = thumbHtml;
-            previewName.textContent = name;
-            previewBar.style.display = 'flex';
-        }
-        function clearPreview() {
-            previewBar.style.display = 'none';
-            previewThumb.innerHTML = '';
-            previewName.textContent = '';
-            imgInput.value = '';
-            docInput.value = '';
-        }
-
-        imgBtn.addEventListener('click', () => imgInput.click());
-        docBtn.addEventListener('click', () => docInput.click());
-        removeBtn.addEventListener('click', clearPreview);
-
-        imgInput.addEventListener('change', function () {
-            if (!this.files[0]) return;
-            const url = URL.createObjectURL(this.files[0]);
-            showPreview(this.files[0].name, `<img src="${url}">`);
-        });
-        docInput.addEventListener('change', function () {
-            if (!this.files[0]) return;
-            showPreview(this.files[0].name, '📄');
-        });
-
-        // Camera capture
-        const camModal  = document.getElementById('camModal');
-        const camVideo  = document.getElementById('camVideo');
-        const camCanvas = document.getElementById('camCanvas');
-        const snapBtn   = document.getElementById('camSnapBtn');
-        const closeBtn  = document.getElementById('camCloseBtn');
-        let camStream   = null;
-
-        camBtn.addEventListener('click', async function () {
-            try {
-                camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-                camVideo.srcObject = camStream;
-                camModal.classList.add('open');
-            } catch (e) {
-                alert('Camera access denied.');
+    // ── Edit ──
+    let editingMsgId = null;
+    function editMsg(id, body) {
+        editingMsgId = id;
+        const input = document.getElementById('messageInput');
+        input.value = body;
+        input.focus();
+        updateSendBtn();
+        // swap send to confirm edit on submit
+        document.getElementById('messageForm').dataset.editing = id;
+    }
+    document.getElementById('messageForm') && document.getElementById('messageForm').addEventListener('submit', function (e) {
+        const editId = this.dataset.editing;
+        if (!editId) return; // normal send
+        e.preventDefault();
+        const body = document.getElementById('messageInput').value.trim();
+        if (!body) return;
+        fetch('/messages/' + editId + '/edit', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ body })
+        }).then(r => r.json()).then(data => {
+            if (data.success) {
+                document.getElementById('msg-body-' + editId).textContent = data.body;
+                document.getElementById('messageInput').value = '';
+                delete document.getElementById('messageForm').dataset.editing;
+                updateSendBtn();
             }
         });
-
-        function stopCam() {
-            if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
-            camModal.classList.remove('open');
-        }
-
-        closeBtn.addEventListener('click', stopCam);
-
-        snapBtn.addEventListener('click', function () {
-            camCanvas.width  = camVideo.videoWidth;
-            camCanvas.height = camVideo.videoHeight;
-            camCanvas.getContext('2d').drawImage(camVideo, 0, 0);
-            camCanvas.toBlob(function (blob) {
-                const file = new File([blob], 'photo-' + Date.now() + '.jpg', { type: 'image/jpeg' });
-                const dt = new DataTransfer();
-                dt.items.add(file);
-                imgInput.files = dt.files;
-                const url = URL.createObjectURL(blob);
-                showPreview(file.name, `<img src="${url}">`);
-                stopCam();
-            }, 'image/jpeg', 0.92);
-        });
-    })();
-
-    // ── Audio bubble player ──
-    document.querySelectorAll('.audio-msg-bubble').forEach(function(bubble) {
-        const audio = bubble.querySelector('audio');
-        const durEl = bubble.querySelector('.audio-duration');
-        let fixingDuration = false;
-
-        function setDurationText(seconds) {
-            if (isFinite(seconds)) durEl.textContent = fmtTime(seconds);
-        }
-
-        audio.addEventListener('loadedmetadata', function() {
-            if (audio.duration === Infinity || isNaN(audio.duration)) {
-                fixingDuration = true;
-                audio.currentTime = 1e101;
-                audio.addEventListener('timeupdate', function onFix() {
-                    audio.removeEventListener('timeupdate', onFix);
-                    audio.currentTime = 0;
-                    fixingDuration = false;
-                    setDurationText(audio.duration);
-                }, { once: true });
-            } else {
-                setDurationText(audio.duration);
-            }
-        });
-        audio.addEventListener('durationchange', function() {
-            if (!fixingDuration) setDurationText(audio.duration);
-        });
-        audio.addEventListener('timeupdate', function() {
-            if (!fixingDuration) durEl.textContent = fmtTime(audio.currentTime);
-        });
-        audio.addEventListener('ended', function() {
-            bubble.querySelector('.audio-play-btn').innerHTML = '&#9654;';
-            bubble.querySelector('.audio-waveform').classList.remove('playing');
-            setDurationText(audio.duration);
-        });
-        audio.addEventListener('error', function() { durEl.textContent = 'err'; });
     });
 
-    function toggleAudio(btn) {
-        const bubble = btn.closest('.audio-msg-bubble');
-        const audio  = bubble.querySelector('audio');
-        const wave   = bubble.querySelector('.audio-waveform');
-        document.querySelectorAll('.audio-msg-bubble audio').forEach(function(a) {
-            if (a !== audio && !a.paused) {
-                a.pause();
-                const b = a.closest('.audio-msg-bubble');
-                b.querySelector('.audio-play-btn').innerHTML = '&#9654;';
-                b.querySelector('.audio-waveform').classList.remove('playing');
-            }
+    // ── Delete ──
+    function deleteMsg(id) {
+        if (!confirm('Delete this message?')) return;
+        fetch('/messages/' + id, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': csrfToken }
+        }).then(r => r.json()).then(data => {
+            if (data.success) document.getElementById('msg-' + id).remove();
         });
-        if (audio.paused) {
-            audio.play().catch(function(e) { console.warn('Audio play failed:', e); });
-            btn.innerHTML = '&#9646;&#9646;';
-            wave.classList.add('playing');
-        } else {
-            audio.pause();
-            btn.innerHTML = '&#9654;';
-            wave.classList.remove('playing');
-        }
-    }
-
-    // ── Audio Recorder ──
-    (function () {
-        const micBtn       = document.getElementById('micBtn');
-        const audioPreview = document.getElementById('audioPreview');
-        const discardBtn   = document.getElementById('discardAudio');
-        const recTimerEl   = document.getElementById('recTimer');
-        const sendAudioBtn = document.getElementById('sendAudioBtn');
-        const messageForm  = document.getElementById('messageForm');
-        if (!micBtn) return;
-
-        let mediaRecorder, audioChunks = [], recInterval, recSeconds = 0, audioBlob = null;
-
-        function fmtSecs(s) { return Math.floor(s/60)+':'+(s%60).toString().padStart(2,'0'); }
-
-        micBtn.addEventListener('click', async function () {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                mediaRecorder.stop();
-                return;
-            }
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                audioChunks = []; recSeconds = 0;
-                recTimerEl.textContent = '0:00';
-                const preferredTypes = ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'];
-                const supportedType = preferredTypes.find(t => window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
-                mediaRecorder = supportedType ? new MediaRecorder(stream, { mimeType: supportedType }) : new MediaRecorder(stream);
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                mediaRecorder.onstop = function () {
-                    stream.getTracks().forEach(t => t.stop());
-                    audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
-                    audioPreview.style.display = 'flex';
-                    micBtn.classList.remove('recording');
-                    micBtn.title = 'Record audio message';
-                    clearInterval(recInterval);
-                };
-                mediaRecorder.start();
-                micBtn.classList.add('recording');
-                micBtn.title = 'Stop recording';
-                recInterval = setInterval(() => { recSeconds++; recTimerEl.textContent = fmtSecs(recSeconds); }, 1000);
-            } catch (err) {
-                alert('Microphone access denied. Please allow microphone permission.');
-            }
-        });
-
-        discardBtn.addEventListener('click', function () {
-            audioBlob = null;
-            audioPreview.style.display = 'none';
-            recTimerEl.textContent = '0:00';
-        });
-
-        sendAudioBtn.addEventListener('click', async function () {
-            if (!audioBlob) return;
-            const fd = new FormData();
-            const ext = audioBlob.type.includes('mp4') ? 'mp4' : audioBlob.type.includes('ogg') ? 'ogg' : 'webm';
-            fd.append('_token', document.querySelector('meta[name="csrf-token"]').content);
-            fd.append('audio', audioBlob, 'voice-message.' + ext);
-            fd.append('body', '');
-            const res = await fetch(messageForm.action, { method: 'POST', body: fd });
-            if (res.redirected) { window.location.href = res.url; }
-            else { window.location.reload(); }
-        });
-    })();
-
-    function loadNotifications() {
-        fetch('/notifications')
-            .then(r => r.json())
-            .then(data => {
-                const list = data.map(n => `• ${n.data.user}: ${n.data.excerpt}`).join('\n');
-                alert(list || 'No notifications.');
-                document.querySelector('.notif-badge') && (document.querySelector('.notif-badge').remove());
-            });
     }
 </script>
 </body>
