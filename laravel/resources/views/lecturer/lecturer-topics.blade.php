@@ -11,15 +11,16 @@
 
         .navbar {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 12px 20px; color: white;
+            padding: 0 16px; height: 58px; color: white;
             display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0;
         }
-        .navbar h1 { font-size: 20px; }
-        .navbar-right { display: flex; align-items: center; gap: 15px; }
-        .notif-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; position: relative; }
+        .navbar h1 { font-size: 17px; display:flex; align-items:center; gap:8px; }
+        .navbar-right { display: flex; align-items: center; gap: 8px; flex-shrink:0; }
+        .notif-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 10px; border-radius: 6px; cursor: pointer; position: relative; }
         .notif-badge { position: absolute; top: -4px; right: -4px; background: #e53e3e; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; display: flex; align-items: center; justify-content: center; }
-        .btn-logout { background: rgba(255,255,255,0.2); padding: 6px 14px; border: 1px solid white; border-radius: 6px; color: white; cursor: pointer; text-decoration: none; font-size: 14px; }
+        .btn-logout { background: rgba(255,255,255,0.2); padding: 6px 11px; border: 1px solid rgba(255,255,255,.5); border-radius: 6px; color: white; cursor: pointer; text-decoration: none; font-size: 13px; white-space:nowrap; }
+        .nav-username { font-size:13px; font-weight:600; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
         .forum-layout { display: flex; flex: 1; overflow: hidden; }
 
@@ -84,6 +85,8 @@
         @media (max-width: 768px) {
             .mobile-toggle-btn { display: flex; }
             .navbar h1 span.full-title { display: none; }
+            .nav-username { display: none; }
+            .btn-logout span { display: none; }
 
             .sidebar, .participants-panel {
                 position: fixed; top: 0; height: 100vh; z-index: 500;
@@ -91,12 +94,16 @@
             }
             .sidebar { left: 0; transform: translateX(-100%); width: 85%; max-width: 300px; }
             .sidebar.open { transform: translateX(0); }
-            .participants-panel { right: 0; transform: translateX(100%); width: 80%; max-width: 230px; }
+            .participants-panel { right: 0; transform: translateX(100%); width: 80%; max-width: 260px; }
             .participants-panel.open { transform: translateX(0); }
 
-            .conversation { width: 100%; }
-            .conv-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .conv-header-actions { flex-wrap: wrap; }
+            .conversation { width: 100%; min-width: 0; }
+            .conv-header { flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 12px; }
+            .conv-header h2 { font-size: 15px; }
+            .conv-header-actions { flex-wrap: wrap; gap: 6px; }
+            .messages { padding: 12px; gap: 10px; }
+            .input-area { padding: 10px 12px; }
+            .modal { width: 95vw; padding: 20px 16px; }
         }
 
         .conversation { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -109,22 +116,72 @@
         .btn-pin { background: #fefcbf; color: #744210; }
         .btn-del-topic { background: #fed7d7; color: #9b2c2c; }
 
-        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-        .post-card { background: white; border-radius: 10px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-        .post-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .post-author { font-weight: 600; font-size: 14px; color: #4a5568; }
-        .post-time { font-size: 12px; color: #a0aec0; }
-        .post-body { font-size: 14px; color: #2d3748; line-height: 1.6; }
-        .post-actions { margin-top: 10px; display: flex; gap: 8px; }
-        .btn-sm { padding: 4px 10px; font-size: 12px; border: 1px solid #e2e8f0; border-radius: 5px; cursor: pointer; background: white; }
-        .btn-reply { color: #667eea; border-color: #667eea; }
-        .btn-edit { color: #38a169; border-color: #38a169; }
-        .btn-delete { color: #e53e3e; border-color: #e53e3e; }
+        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; background: #f0f2f5; }
 
-        .replies { margin-top: 12px; padding-left: 20px; border-left: 3px solid #e2e8f0; display: flex; flex-direction: column; gap: 10px; }
-        .reply-card { background: #f7fafc; border-radius: 8px; padding: 10px 14px; }
-        .reply-author { font-weight: 600; font-size: 13px; color: #4a5568; }
-        .reply-body { font-size: 13px; color: #4a5568; margin-top: 4px; }
+        /* ── Chat bubble styles ── */
+        .chat-row { display: flex; align-items: flex-end; gap: 10px; }
+        .chat-row.mine { flex-direction: row-reverse; }
+
+        .chat-avatar {
+            width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 800; color: #fff;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 2px 6px rgba(0,0,0,.15);
+        }
+        .chat-row.mine .chat-avatar { background: linear-gradient(135deg, #10b981, #059669); }
+        .chat-row.topic-origin .chat-avatar { background: linear-gradient(135deg, #f59e0b, #d97706); }
+
+        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 72%; }
+        .chat-row.mine .chat-bubble-wrap { align-items: flex-end; }
+
+        .chat-meta { font-size: 11px; color: #94a3b8; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+        .chat-row.mine .chat-meta { flex-direction: row-reverse; }
+        .chat-meta .author { font-weight: 700; color: #475569; }
+        .chat-row.mine .chat-meta .author { color: #059669; }
+        .chat-row.topic-origin .chat-meta .author { color: #d97706; }
+
+        .chat-bubble {
+            background: #fff;
+            border-radius: 18px 18px 18px 4px;
+            padding: 11px 15px;
+            font-size: 14px; color: #1e293b; line-height: 1.55;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+            word-break: break-word;
+        }
+        .chat-row.mine .chat-bubble {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border-radius: 18px 18px 4px 18px;
+            box-shadow: 0 2px 10px rgba(102,126,234,.35);
+        }
+        .chat-row.topic-origin .chat-bubble {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            color: #78350f;
+            border-radius: 18px 18px 18px 4px;
+            border: 1px solid #fcd34d;
+        }
+
+        .chat-actions { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+        .chat-row.mine .chat-actions { justify-content: flex-end; }
+        .btn-sm { padding: 3px 9px; font-size: 11px; border: 1px solid #e2e8f0; border-radius: 20px; cursor: pointer; background: white; font-weight: 600; transition: all .15s; }
+        .btn-sm:hover { background: #f1f5f9; }
+        .btn-reply { color: #667eea; border-color: #c7d2fe; }
+        .btn-edit   { color: #38a169; border-color: #a7f3d0; }
+        .btn-delete { color: #e53e3e; border-color: #fecaca; }
+
+        /* Replies as threaded bubbles */
+        .replies { margin-top: 8px; padding-left: 44px; display: flex; flex-direction: column; gap: 8px; }
+        .reply-bubble {
+            background: #f8fafc;
+            border-radius: 12px 12px 12px 4px;
+            padding: 8px 12px;
+            font-size: 13px; color: #374151;
+            border-left: 3px solid #c7d2fe;
+            box-shadow: 0 1px 3px rgba(0,0,0,.05);
+        }
+        .reply-author { font-weight: 700; font-size: 12px; color: #6366f1; margin-bottom: 2px; }
+        .reply-time   { font-size: 10px; color: #94a3b8; margin-left: 6px; }
 
         .typing-indicator { padding: 6px 20px; font-size: 13px; color: #718096; font-style: italic; min-height: 28px; }
         .typing-dots span { display: inline-block; width: 6px; height: 6px; background: #718096; border-radius: 50%; margin: 0 2px; animation: bounce 1.2s infinite; }
@@ -161,9 +218,12 @@
 <body>
 
 <nav class="navbar">
-    <div style="display:flex;align-items:center;gap:10px;">
+    <div style="display:flex;align-items:center;gap:8px;min-width:0">
         <button class="mobile-toggle-btn" id="topicsToggleBtn" type="button" aria-label="Toggle topics list">☰</button>
-        <h1><img src="{{ asset('images/forum.png') }}" alt="Discussion Hub" style="height:34px;vertical-align:middle;margin-right:8px;"><span class="full-title">Discussion Hub</span></h1>
+        <h1>
+            <img src="{{ asset('images/forum.png') }}" alt="Discussion Hub" style="height:30px;vertical-align:middle;flex-shrink:0">
+            <span class="full-title">Discussion Hub</span>
+        </h1>
     </div>
     <div class="navbar-right">
         <button class="notif-btn" onclick="loadNotifications()">
@@ -172,9 +232,9 @@
                 <span class="notif-badge">{{ auth()->user()->unreadNotifications->count() }}</span>
             @endif
         </button>
-        <span>{{ auth()->user()->name }}</span>
-        <a href="{{ route('lecturer.dashboard') }}" class="btn-logout">← Dashboard</a>
-        <form action="{{ route('logout') }}" method="POST">
+        <span class="nav-username">{{ auth()->user()->name }}</span>
+        <a href="{{ route('lecturer.dashboard') }}" class="btn-logout">← <span>Dashboard</span></a>
+        <form action="{{ route('logout') }}" method="POST" style="margin:0">
             @csrf
             <button type="submit" class="btn-logout">Logout</button>
         </form>
@@ -276,58 +336,62 @@
 
             <div class="messages" id="messages">
                 @if(session('success'))
-                    <div class="alert alert-success">{{ session('success') }}</div>
+                    <div style="background:#d1fae5;color:#065f46;padding:10px 14px;border-radius:8px;font-size:13px">{{ session('success') }}</div>
                 @endif
                 @if($errors->any())
-                    <div class="alert alert-error">{{ $errors->first() }}</div>
+                    <div style="background:#fee2e2;color:#991b1b;padding:10px 14px;border-radius:8px;font-size:13px">{{ $errors->first() }}</div>
                 @endif
 
-                {{-- Original topic body --}}
-                <div class="post-card" style="border-left: 4px solid #667eea;">
-                    <div class="post-header">
-                        <span class="post-author">{{ $activeTopic->author->name }}</span>
-                        <span class="post-time">{{ $activeTopic->created_at->diffForHumans() }}</span>
+                {{-- Topic origin bubble --}}
+                <div class="chat-row topic-origin">
+                    <div class="chat-avatar">{{ strtoupper(substr($activeTopic->author->name,0,1)) }}</div>
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-meta">
+                            <span class="author">{{ $activeTopic->author->name }}</span>
+                            <span>{{ $activeTopic->created_at->diffForHumans() }}</span>
+                            <span style="background:#fde68a;color:#92400e;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:700">Topic</span>
+                        </div>
+                        <div class="chat-bubble">{{ $activeTopic->body }}</div>
                     </div>
-                    <div class="post-body">{{ $activeTopic->body }}</div>
                 </div>
 
-                {{-- Posts --}}
                 @foreach($posts as $post)
-                    <div class="post-card" id="post-{{ $post->id }}">
-                        <div class="post-header">
-                            <span class="post-author">{{ $post->author->name }}</span>
-                            <span class="post-time">{{ $post->created_at->diffForHumans() }}</span>
+                @php $isMe = $post->user_id === auth()->id(); @endphp
+                <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="post-{{ $post->id }}">
+                    @if(!$isMe)<div class="chat-avatar">{{ strtoupper(substr($post->author->name,0,1)) }}</div>@endif
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-meta">
+                            <span class="author">{{ $isMe ? 'You' : $post->author->name }}</span>
+                            <span>{{ $post->created_at->diffForHumans() }}</span>
                         </div>
-                        <div class="post-body" id="post-body-{{ $post->id }}">{{ $post->body }}</div>
-                        <div class="post-actions">
-                            <button class="btn-sm btn-reply" onclick="toggleReplyForm({{ $post->id }})">↩ Reply</button>
+                        <div class="chat-bubble" id="post-body-{{ $post->id }}">{{ $post->body }}</div>
+                        <div class="chat-actions">
+                            <button class="btn-sm btn-reply" onclick="toggleReplyForm({{ $post->id }})">&#8617; Reply</button>
                             @if($post->user_id === auth()->id())
-                                <button class="btn-sm btn-edit" onclick="editPost({{ $post->id }}, `{{ addslashes($post->body) }}`)">✏ Edit</button>
-                                <button class="btn-sm btn-delete" onclick="deletePost({{ $post->id }})">🗑 Delete</button>
+                                <button class="btn-sm btn-edit" onclick="editPost({{ $post->id }}, `{{ addslashes($post->body) }}`)">&#9998; Edit</button>
+                                <button class="btn-sm btn-delete" onclick="deletePost({{ $post->id }})">&#128465; Delete</button>
                             @endif
                         </div>
-
-                        <form id="reply-form-{{ $post->id }}" style="display:none;margin-top:10px;"
-                              action="{{ route('lecturer.topics.answer', $post->id) }}" method="POST">
+                        <form id="reply-form-{{ $post->id }}" style="display:none;margin-top:8px;" action="{{ route('lecturer.topics.answer', $post->id) }}" method="POST">
                             @csrf
                             <div style="display:flex;gap:8px;">
-                                <input type="text" name="body" placeholder="Write a reply..." class="msg-input" style="flex:1;padding:8px 12px;">
+                                <input type="text" name="body" placeholder="Write a reply..." class="msg-input" style="flex:1;padding:8px 12px;min-width:0">
                                 <button type="submit" class="btn-send" style="padding:8px 14px;">Send</button>
                             </div>
                         </form>
-
                         @if($post->replies->count())
-                            <div class="replies">
-                                @foreach($post->replies as $reply)
-                                    <div class="reply-card">
-                                        <span class="reply-author">{{ $reply->author->name }}</span>
-                                        <span style="font-size:11px;color:#a0aec0;margin-left:8px;">{{ $reply->created_at->diffForHumans() }}</span>
-                                        <div class="reply-body">{{ $reply->body }}</div>
-                                    </div>
-                                @endforeach
+                        <div class="replies">
+                            @foreach($post->replies as $reply)
+                            <div class="reply-bubble">
+                                <div class="reply-author">{{ $reply->author->name }}<span class="reply-time">{{ $reply->created_at->diffForHumans() }}</span></div>
+                                <div>{{ $reply->body }}</div>
                             </div>
+                            @endforeach
+                        </div>
                         @endif
                     </div>
+                    @if($isMe)<div class="chat-avatar" style="background:linear-gradient(135deg,#10b981,#059669)">{{ strtoupper(substr($post->author->name,0,1)) }}</div>@endif
+                </div>
                 @endforeach
             </div>
 
