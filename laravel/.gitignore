@@ -1,2 +1,9 @@
 public/hot 
 public/hot 
+
+# The public/storage entry must always be Laravel's symlink to
+# storage/app/public (created by `php artisan storage:link`), never a
+# real, committed directory — a real directory here silently breaks
+# `storage:link` (it refuses to overwrite an existing path), which is
+# why uploaded voice notes/avatars 404'd in production.
+/public/storage

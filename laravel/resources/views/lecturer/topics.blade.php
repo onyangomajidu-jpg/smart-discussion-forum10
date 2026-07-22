@@ -832,16 +832,40 @@
     document.querySelectorAll('.audio-msg-bubble').forEach(function(bubble) {
         const audio = bubble.querySelector('audio');
         const durEl = bubble.querySelector('.audio-duration');
+        let fixingDuration = false;
+
+        function setDurationText(seconds) {
+            if (isFinite(seconds)) durEl.textContent = fmtTime(seconds);
+        }
+
         audio.addEventListener('loadedmetadata', function() {
-            if (isFinite(audio.duration)) durEl.textContent = fmtTime(audio.duration);
+            // Chrome-family browsers often report duration = Infinity for
+            // MediaRecorder-produced webm blobs, since no duration is written
+            // into the file header while recording. Forcing a seek past the
+            // end and back makes the browser recompute the real duration.
+            if (audio.duration === Infinity || isNaN(audio.duration)) {
+                fixingDuration = true;
+                audio.currentTime = 1e101;
+                audio.addEventListener('timeupdate', function onFix() {
+                    audio.removeEventListener('timeupdate', onFix);
+                    audio.currentTime = 0;
+                    fixingDuration = false;
+                    setDurationText(audio.duration);
+                }, { once: true });
+            } else {
+                setDurationText(audio.duration);
+            }
+        });
+        audio.addEventListener('durationchange', function() {
+            if (!fixingDuration) setDurationText(audio.duration);
         });
         audio.addEventListener('timeupdate', function() {
-            durEl.textContent = fmtTime(audio.currentTime);
+            if (!fixingDuration) durEl.textContent = fmtTime(audio.currentTime);
         });
         audio.addEventListener('ended', function() {
             bubble.querySelector('.audio-play-btn').innerHTML = '&#9654;';
             bubble.querySelector('.audio-waveform').classList.remove('playing');
-            if (isFinite(audio.duration)) durEl.textContent = fmtTime(audio.duration);
+            setDurationText(audio.duration);
         });
         audio.addEventListener('error', function() { durEl.textContent = 'err'; });
     });
@@ -892,11 +916,23 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 audioChunks = []; recSeconds = 0;
                 recTimerEl.textContent = '0:00';
-                mediaRecorder = new MediaRecorder(stream);
+                // Not every browser supports the same container — Safari/iOS
+                // can't record audio/webm at all. Ask for whatever this
+                // browser actually supports instead of assuming webm.
+                const preferredTypes = [
+                    'audio/webm;codecs=opus',
+                    'audio/webm',
+                    'audio/mp4',
+                    'audio/ogg;codecs=opus',
+                ];
+                const supportedType = preferredTypes.find(t => window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+                mediaRecorder = supportedType ? new MediaRecorder(stream, { mimeType: supportedType }) : new MediaRecorder(stream);
                 mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
                 mediaRecorder.onstop = function () {
                     stream.getTracks().forEach(t => t.stop());
-                    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    // Tag the Blob with whatever mimeType the recorder actually
+                    // used, not a hardcoded guess.
+                    audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
                     audioPreview.style.display = 'flex';
                     micBtn.classList.remove('recording');
                     micBtn.title = 'Record audio message';
@@ -921,8 +957,11 @@
         sendAudioBtn.addEventListener('click', async function () {
             if (!audioBlob) return;
             const fd = new FormData();
+            const ext = audioBlob.type.includes('mp4') ? 'mp4'
+                : audioBlob.type.includes('ogg') ? 'ogg'
+                : 'webm';
             fd.append('_token', document.querySelector('meta[name="csrf-token"]').content);
-            fd.append('audio', audioBlob, 'voice-message.webm');
+            fd.append('audio', audioBlob, 'voice-message.' + ext);
             fd.append('body', '');
             const res = await fetch(postForm.action, { method: 'POST', body: fd });
             if (res.redirected) { window.location.href = res.url; }
