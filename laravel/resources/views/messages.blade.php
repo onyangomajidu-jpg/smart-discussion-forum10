@@ -74,7 +74,8 @@
             .sidebar { position: fixed; top: 0; left: 0; height: 100vh; z-index: 500; transition: transform .25s ease; transform: translateX(-100%); width: 85%; max-width: 300px; }
             .sidebar.open { transform: translateX(0); }
             .conversation { width: 100%; min-width: 0; }
-            .conv-header { padding: 12px 14px; }
+            .conv-header { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
+            .btn-back-group { font-size: 12px; padding: 6px 10px; }
             .messages { padding: 12px; gap: 10px; }
             .input-area { padding: 10px 12px; }
             .msg-input { font-size: 13px; }
@@ -127,23 +128,36 @@
 
         /* ── Modern audio bubble ── */
         .audio-msg-bubble {
-            display: flex; align-items: center; gap: 10px; background: #fff;
-            border-radius: 18px 18px 18px 4px; padding: 10px 14px; margin-top: 4px;
-            box-shadow: 0 1px 4px rgba(0,0,0,.08); min-width: 220px;
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px;
+            border-radius: 20px 20px 20px 6px;
+            background: #fff;
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
+            min-width: 240px; max-width: 320px;
+            margin-top: 4px;
+            border: 1px solid #f1f5f9;
         }
         .chat-row.mine .audio-msg-bubble {
-            background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
-            border-radius: 18px 18px 4px 18px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 20px 20px 6px 20px;
+            box-shadow: 0 4px 16px rgba(102,126,234,.4);
+            border: none;
         }
         .audio-play-btn {
-            width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer; flex-shrink: 0;
-            background: #ede9fe; color: #6d28d9; display: flex; align-items: center; justify-content: center; font-size: 13px;
-            transition: transform .15s;
+            width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px; flex-shrink: 0; transition: all .2s;
+            background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
+            box-shadow: 0 3px 10px rgba(102,126,234,.45);
         }
-        .chat-row.mine .audio-play-btn { background: rgba(255,255,255,.25); color: #fff; }
+        .chat-row.mine .audio-play-btn {
+            background: rgba(255,255,255,.22); color: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+            backdrop-filter: blur(4px);
+        }
         .audio-play-btn:hover { transform: scale(1.12); }
-        .audio-waveform { display: flex; align-items: center; gap: 2px; height: 30px; }
-        .audio-waveform span { display: inline-block; width: 3px; border-radius: 3px; background: #c7d2fe; }
+        .audio-waveform { flex: 1; display: flex; align-items: center; gap: 2.5px; height: 32px; }
+        .audio-waveform span { display: inline-block; width: 3px; border-radius: 4px; background: #e2e8f0; transition: background .25s; transform-origin: center; }
         .chat-row.mine .audio-waveform span { background: rgba(255,255,255,.35); }
         .audio-waveform.playing span { background: #667eea; animation: waveAnim .55s ease-in-out infinite alternate; }
         .chat-row.mine .audio-waveform.playing span { background: rgba(255,255,255,.9); }
@@ -152,7 +166,7 @@
         .audio-waveform span:nth-child(4n)   { animation-delay: .12s; }
         .audio-waveform span:nth-child(5n)   { animation-delay: .22s; }
         .audio-waveform span:nth-child(7n)   { animation-delay: .05s; }
-        @keyframes waveAnim { from { transform: scaleY(.4); } to { transform: scaleY(1); } }
+        @keyframes waveAnim { from { transform: scaleY(.3); opacity: .7; } to { transform: scaleY(1.3); opacity: 1; } }
         .audio-duration { font-size: 11px; font-weight: 700; color: #94a3b8; min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
         .chat-row.mine .audio-duration { color: rgba(255,255,255,.75); }
         .audio-label { font-size: 10px; font-weight: 600; color: #a0aec0; letter-spacing: .4px; text-transform: uppercase; }
@@ -168,24 +182,54 @@
             width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             font-size: 19px; flex-shrink: 0; transition: all .25s;
-            background: linear-gradient(135deg,#ede9fe,#ddd6fe); color: #6d28d9;
-            box-shadow: 0 2px 10px rgba(109,40,217,.18);
+            background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
+            box-shadow: 0 4px 14px rgba(102,126,234,.45);
         }
-        .btn-mic:hover { background: linear-gradient(135deg,#ddd6fe,#c4b5fd); transform: scale(1.07); }
-        .btn-mic.recording { background: linear-gradient(135deg,#ef4444,#dc2626); color: #fff; animation: micPulse 1s ease-in-out infinite; }
-        @keyframes micPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.5); } 50% { box-shadow: 0 0 0 12px rgba(239,68,68,0); } }
+        .btn-mic:hover { opacity: .88; transform: scale(1.07); box-shadow: 0 6px 18px rgba(102,126,234,.55); }
+        .btn-mic.recording {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff; animation: micPulse 1s ease-in-out infinite;
+            box-shadow: 0 4px 14px rgba(239,68,68,.45);
+        }
+        @keyframes micPulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.5); }
+            50%     { box-shadow: 0 0 0 12px rgba(239,68,68,0); }
+        }
         .audio-preview {
             display: none; align-items: center; gap: 10px; margin-top: 10px;
-            padding: 8px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+            background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+            border: 1.5px solid #c4b5fd;
+            border-radius: 16px;
+            padding: 10px 14px;
+            box-shadow: 0 2px 8px rgba(109,40,217,.08);
         }
-        .rec-timer { font-size: 12px; font-weight: 700; color: #ef4444; min-width: 34px; }
-        .btn-discard { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 15px; flex-shrink: 0; }
-        .btn-discard:hover { color: #ef4444; }
+        .rec-timer { font-size: 13px; font-weight: 800; color: #6d28d9; min-width: 40px; letter-spacing: .5px; font-variant-numeric: tabular-nums; }
+        .btn-discard {
+            width: 30px; height: 30px; border-radius: 50%; border: none;
+            background: #fee2e2; color: #dc2626; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; flex-shrink: 0; transition: all .15s;
+            box-shadow: 0 1px 4px rgba(220,38,38,.15);
+        }
+        .btn-discard:hover { background: #fecaca; transform: scale(1.08); }
         .btn-send-audio {
-            width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer; flex-shrink: 0;
-            background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; display: flex; align-items: center; justify-content: center;
+            width: 38px; height: 38px; border-radius: 50%; border: none;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff; cursor: pointer; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; transition: all .2s;
+            box-shadow: 0 4px 12px rgba(102,126,234,.45);
         }
         .btn-send-audio:hover { opacity: .9; transform: scale(1.1); }
+        /* Back to group chat button */
+        .btn-back-group {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+            background: linear-gradient(135deg, #ede9fe, #ddd6fe); color: #5b21b6;
+            border: 1.5px solid #c4b5fd; cursor: pointer; text-decoration: none;
+            transition: all .2s; flex-shrink: 0;
+        }
+        .btn-back-group:hover { background: linear-gradient(135deg, #ddd6fe, #c4b5fd); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(109,40,217,.2); }
 
         /* Alerts */
         .alert { padding: 10px 16px; border-radius: 7px; margin-bottom: 12px; font-size: 14px; }
@@ -292,9 +336,12 @@
                     <div class="topic-avatar">{{ strtoupper(substr($other->name,0,1)) }}</div>
                     <div style="min-width:0;">
                         <h2>{{ $other->name }}</h2>
-                        <div class="conv-header-meta">{{ ucfirst($other->role) }}</div>
+                        <div class="conv-header-meta">{{ ucfirst($other->role) }} &middot; Private Message</div>
                     </div>
                 </div>
+                <a href="{{ route('topics.index') }}" class="btn-back-group" title="Back to Group Chat">
+                    &#8592; Group Chat
+                </a>
             </div>
 
             <div class="messages" id="messages">
