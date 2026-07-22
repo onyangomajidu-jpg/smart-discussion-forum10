@@ -333,15 +333,6 @@
                         <option value="5">Year 5+</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="group_id">Join a Group</label>
-                    <select id="group_id" name="group_id">
-                        <option value="">-- Select a Group (optional) --</option>
-                        @foreach($groups as $group)
-                            <option value="{{ $group->id }}" {{ old('group_id') == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
             </div>
 
             <!-- Lecturer-specific fields -->
