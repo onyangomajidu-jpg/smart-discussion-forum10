@@ -118,16 +118,26 @@ class TopicController extends Controller
         $request->validate([
             'body'  => 'nullable|string',
             'audio' => 'nullable|file|mimes:webm,ogg,mp4,wav,mp3|max:10240',
+            'image' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
+            'file'  => 'nullable|file|max:20480',
         ]);
 
-        if (!$request->filled('body') && !$request->hasFile('audio')) {
-            return back()->withErrors(['body' => 'Please enter a message or record audio.']);
+        if (!$request->filled('body') && !$request->hasFile('audio') && !$request->hasFile('image') && !$request->hasFile('file')) {
+            return back()->withErrors(['body' => 'Please enter a message or attach a file.']);
         }
 
         $data = ['body' => $request->input('body', '')];
 
         if ($request->hasFile('audio')) {
             $data['audio_path'] = $request->file('audio')->store('audio/posts', 'public');
+        }
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('images/posts', 'public');
+        }
+        if ($request->hasFile('file')) {
+            $uploaded = $request->file('file');
+            $data['file_path'] = $uploaded->store('files/posts', 'public');
+            $data['file_name'] = $uploaded->getClientOriginalName();
         }
 
         try {

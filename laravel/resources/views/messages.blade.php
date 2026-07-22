@@ -173,11 +173,58 @@
         .chat-row.mine .audio-label { color: rgba(255,255,255,.6); }
 
         /* Input area */
-        .input-area { padding: 16px 20px; background: white; border-top: 1px solid #e2e8f0; }
+        .input-area { padding: 14px 20px; background: white; border-top: 1px solid #e2e8f0; }
+        .attach-toolbar { display: flex; gap: 6px; margin-bottom: 8px; }
+        .btn-attach {
+            width: 36px; height: 36px; border-radius: 10px; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            transition: all .2s; font-size: 16px;
+        }
+        .btn-attach.img { background: linear-gradient(135deg,#dbeafe,#bfdbfe); color: #1d4ed8; }
+        .btn-attach.img:hover { background: linear-gradient(135deg,#bfdbfe,#93c5fd); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(29,78,216,.2); }
+        .btn-attach.doc { background: linear-gradient(135deg,#dcfce7,#bbf7d0); color: #15803d; }
+        .btn-attach.doc:hover { background: linear-gradient(135deg,#bbf7d0,#86efac); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(21,128,61,.2); }
+        .btn-attach.cam { background: linear-gradient(135deg,#fef9c3,#fef08a); color: #a16207; }
+        .btn-attach.cam:hover { background: linear-gradient(135deg,#fef08a,#fde047); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(161,98,7,.2); }
+        .attach-preview-bar {
+            display: none; align-items: center; gap: 10px; margin-bottom: 8px;
+            padding: 8px 12px; background: #f8fafc; border: 1.5px solid #e2e8f0;
+            border-radius: 12px; font-size: 13px; color: #475569;
+        }
+        .attach-preview-bar img { max-height: 48px; border-radius: 6px; object-fit: cover; }
+        .attach-preview-bar .attach-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .btn-attach-remove { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 16px; flex-shrink: 0; }
+        .btn-attach-remove:hover { color: #ef4444; }
         .input-row { display: flex; gap: 10px; align-items: flex-end; }
         .msg-input { flex: 1; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; resize: none; outline: none; font-family: inherit; }
         .msg-input:focus { border-color: #667eea; }
         .btn-send { padding: 10px 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        /* Image bubble */
+        .img-msg-bubble { margin-top: 4px; border-radius: 14px; overflow: hidden; max-width: 280px; box-shadow: 0 2px 10px rgba(0,0,0,.1); cursor: pointer; }
+        .img-msg-bubble img { width: 100%; display: block; }
+        .chat-row.mine .img-msg-bubble { border-radius: 14px 14px 4px 14px; }
+        /* File bubble */
+        .file-msg-bubble {
+            display: flex; align-items: center; gap: 10px; margin-top: 4px;
+            padding: 10px 14px; border-radius: 14px; background: #f8fafc;
+            border: 1.5px solid #e2e8f0; max-width: 280px; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+        }
+        .chat-row.mine .file-msg-bubble { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.3); border-radius: 14px 14px 4px 14px; }
+        .file-icon { font-size: 26px; flex-shrink: 0; }
+        .file-info { flex: 1; min-width: 0; }
+        .file-info .fname { font-size: 13px; font-weight: 600; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .chat-row.mine .file-info .fname { color: #fff; }
+        .file-info .fsize { font-size: 11px; color: #94a3b8; }
+        .chat-row.mine .file-info .fsize { color: rgba(255,255,255,.65); }
+        .btn-file-dl { width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer; flex-shrink: 0; background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 2px 8px rgba(102,126,234,.35); transition: all .2s; }
+        .btn-file-dl:hover { transform: scale(1.1); }
+        /* Camera modal */
+        .cam-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:600; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
+        .cam-modal.open { display:flex; }
+        .cam-modal video { border-radius:14px; max-width:90vw; max-height:60vh; background:#000; }
+        .cam-actions { display:flex; gap:12px; }
+        .btn-cam-snap { padding:10px 28px; background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; }
+        .btn-cam-close { padding:10px 20px; background:#374151; color:#fff; border:none; border-radius:10px; font-size:15px; cursor:pointer; }
         .btn-mic {
             width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
@@ -364,6 +411,21 @@
                             @if($msg->body)
                                 <div class="chat-bubble">{{ $msg->body }}</div>
                             @endif
+                            @if($msg->image_path)
+                                <div class="img-msg-bubble" onclick="this.querySelector('img').requestFullscreen&&this.querySelector('img').requestFullscreen()">
+                                    <img src="{{ asset('storage/' . $msg->image_path) }}" alt="Image" loading="lazy">
+                                </div>
+                            @endif
+                            @if($msg->file_path)
+                                <div class="file-msg-bubble">
+                                    <span class="file-icon">📄</span>
+                                    <div class="file-info">
+                                        <div class="fname">{{ $msg->file_name ?? 'Document' }}</div>
+                                        <div class="fsize">Attachment</div>
+                                    </div>
+                                    <a href="{{ asset('storage/' . $msg->file_path) }}" download="{{ $msg->file_name }}" class="btn-file-dl" title="Download">&#8595;</a>
+                                </div>
+                            @endif
                             @if($msg->audio_path)
                                 @php $heights = [8,14,20,28,22,16,26,18,10,24,20,14,22,8,18,26,12,20,30,14]; @endphp
                                 <div class="audio-msg-bubble">
@@ -391,6 +453,18 @@
             <div class="input-area">
                 <form action="{{ route('messages.store', $other->id) }}" method="POST" id="messageForm" enctype="multipart/form-data">
                     @csrf
+                    <input type="file" id="imgInput" name="image" accept="image/*" style="display:none">
+                    <input type="file" id="docInput" name="file" style="display:none">
+                    <div class="attach-toolbar">
+                        <button type="button" class="btn-attach img" id="imgBtn" title="Send image">&#128444;</button>
+                        <button type="button" class="btn-attach doc" id="docBtn" title="Send document">&#128196;</button>
+                        <button type="button" class="btn-attach cam" id="camBtn" title="Take photo">&#128247;</button>
+                    </div>
+                    <div class="attach-preview-bar" id="attachPreviewBar">
+                        <span id="attachPreviewThumb"></span>
+                        <span class="attach-name" id="attachPreviewName"></span>
+                        <button type="button" class="btn-attach-remove" id="attachRemoveBtn" title="Remove">&#10005;</button>
+                    </div>
                     <div class="input-row">
                         <button type="button" class="btn-mic" id="micBtn" title="Record audio message">&#127897;</button>
                         <textarea name="body" id="messageInput" class="msg-input" rows="2"
@@ -419,6 +493,16 @@
     </main>
 </div>
 
+{{-- Camera modal --}}
+<div class="cam-modal" id="camModal">
+    <video id="camVideo" autoplay playsinline></video>
+    <canvas id="camCanvas"></canvas>
+    <div class="cam-actions">
+        <button class="btn-cam-snap" id="camSnapBtn">&#128247; Capture</button>
+        <button class="btn-cam-close" id="camCloseBtn">&#10005; Cancel</button>
+    </div>
+</div>
+
 <script>
     // ── Mobile sidebar toggle ──
     (function () {
@@ -440,6 +524,87 @@
         return Math.floor(s/60)+':'+(Math.floor(s%60)).toString().padStart(2,'0');
     }
 
+    // ── Attachment toolbar ──
+    (function () {
+        const imgBtn    = document.getElementById('imgBtn');
+        const docBtn    = document.getElementById('docBtn');
+        const camBtn    = document.getElementById('camBtn');
+        const imgInput  = document.getElementById('imgInput');
+        const docInput  = document.getElementById('docInput');
+        const previewBar  = document.getElementById('attachPreviewBar');
+        const previewThumb = document.getElementById('attachPreviewThumb');
+        const previewName  = document.getElementById('attachPreviewName');
+        const removeBtn    = document.getElementById('attachRemoveBtn');
+        if (!imgBtn) return;
+
+        function showPreview(name, thumbHtml) {
+            previewThumb.innerHTML = thumbHtml;
+            previewName.textContent = name;
+            previewBar.style.display = 'flex';
+        }
+        function clearPreview() {
+            previewBar.style.display = 'none';
+            previewThumb.innerHTML = '';
+            previewName.textContent = '';
+            imgInput.value = '';
+            docInput.value = '';
+        }
+
+        imgBtn.addEventListener('click', () => imgInput.click());
+        docBtn.addEventListener('click', () => docInput.click());
+        removeBtn.addEventListener('click', clearPreview);
+
+        imgInput.addEventListener('change', function () {
+            if (!this.files[0]) return;
+            const url = URL.createObjectURL(this.files[0]);
+            showPreview(this.files[0].name, `<img src="${url}">`);
+        });
+        docInput.addEventListener('change', function () {
+            if (!this.files[0]) return;
+            showPreview(this.files[0].name, '📄');
+        });
+
+        // Camera capture
+        const camModal  = document.getElementById('camModal');
+        const camVideo  = document.getElementById('camVideo');
+        const camCanvas = document.getElementById('camCanvas');
+        const snapBtn   = document.getElementById('camSnapBtn');
+        const closeBtn  = document.getElementById('camCloseBtn');
+        let camStream   = null;
+
+        camBtn.addEventListener('click', async function () {
+            try {
+                camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+                camVideo.srcObject = camStream;
+                camModal.classList.add('open');
+            } catch (e) {
+                alert('Camera access denied.');
+            }
+        });
+
+        function stopCam() {
+            if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+            camModal.classList.remove('open');
+        }
+
+        closeBtn.addEventListener('click', stopCam);
+
+        snapBtn.addEventListener('click', function () {
+            camCanvas.width  = camVideo.videoWidth;
+            camCanvas.height = camVideo.videoHeight;
+            camCanvas.getContext('2d').drawImage(camVideo, 0, 0);
+            camCanvas.toBlob(function (blob) {
+                const file = new File([blob], 'photo-' + Date.now() + '.jpg', { type: 'image/jpeg' });
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                imgInput.files = dt.files;
+                const url = URL.createObjectURL(blob);
+                showPreview(file.name, `<img src="${url}">`);
+                stopCam();
+            }, 'image/jpeg', 0.92);
+        });
+    })();
+
     // ── Audio bubble player ──
     document.querySelectorAll('.audio-msg-bubble').forEach(function(bubble) {
         const audio = bubble.querySelector('audio');
@@ -451,10 +616,6 @@
         }
 
         audio.addEventListener('loadedmetadata', function() {
-            // Chrome-family browsers often report duration = Infinity for
-            // MediaRecorder-produced webm blobs, since no duration is written
-            // into the file header while recording. Forcing a seek past the
-            // end and back makes the browser recompute the real duration.
             if (audio.duration === Infinity || isNaN(audio.duration)) {
                 fixingDuration = true;
                 audio.currentTime = 1e101;
@@ -479,9 +640,7 @@
             bubble.querySelector('.audio-waveform').classList.remove('playing');
             setDurationText(audio.duration);
         });
-        audio.addEventListener('error', function() {
-            durEl.textContent = 'err';
-        });
+        audio.addEventListener('error', function() { durEl.textContent = 'err'; });
     });
 
     function toggleAudio(btn) {
@@ -530,22 +689,12 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 audioChunks = []; recSeconds = 0;
                 recTimerEl.textContent = '0:00';
-                // Not every browser supports the same container — Safari/iOS
-                // can't record audio/webm at all. Ask for whatever this
-                // browser actually supports instead of assuming webm.
-                const preferredTypes = [
-                    'audio/webm;codecs=opus',
-                    'audio/webm',
-                    'audio/mp4',
-                    'audio/ogg;codecs=opus',
-                ];
+                const preferredTypes = ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'];
                 const supportedType = preferredTypes.find(t => window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
                 mediaRecorder = supportedType ? new MediaRecorder(stream, { mimeType: supportedType }) : new MediaRecorder(stream);
                 mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
                 mediaRecorder.onstop = function () {
                     stream.getTracks().forEach(t => t.stop());
-                    // Tag the Blob with whatever mimeType the recorder actually
-                    // used, not a hardcoded guess.
                     audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
                     audioPreview.style.display = 'flex';
                     micBtn.classList.remove('recording');
@@ -567,13 +716,10 @@
             recTimerEl.textContent = '0:00';
         });
 
-        // Send audio independently — no text required
         sendAudioBtn.addEventListener('click', async function () {
             if (!audioBlob) return;
             const fd = new FormData();
-            const ext = audioBlob.type.includes('mp4') ? 'mp4'
-                : audioBlob.type.includes('ogg') ? 'ogg'
-                : 'webm';
+            const ext = audioBlob.type.includes('mp4') ? 'mp4' : audioBlob.type.includes('ogg') ? 'ogg' : 'webm';
             fd.append('_token', document.querySelector('meta[name="csrf-token"]').content);
             fd.append('audio', audioBlob, 'voice-message.' + ext);
             fd.append('body', '');
