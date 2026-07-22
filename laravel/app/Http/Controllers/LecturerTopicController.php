@@ -77,7 +77,20 @@ class LecturerTopicController extends Controller
 
     public function participate(Request $request, int $topicId)
     {
-        $data = $request->validate(['body' => 'required|string']);
+        $request->validate([
+            'body'  => 'nullable|string',
+            'audio' => 'nullable|file|mimes:webm,ogg,mp4,wav,mp3|max:10240',
+        ]);
+
+        if (!$request->filled('body') && !$request->hasFile('audio')) {
+            return back()->withErrors(['body' => 'Please enter a message or record audio.']);
+        }
+
+        $data = ['body' => $request->input('body', '')];
+
+        if ($request->hasFile('audio')) {
+            $data['audio_path'] = $request->file('audio')->store('audio/posts', 'public');
+        }
 
         try {
             $this->cms->participateDiscussion($topicId, $data);

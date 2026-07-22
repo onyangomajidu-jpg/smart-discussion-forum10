@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/forum-favicon.png') }}">
     <title>Topics - Discussion Hub</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -217,6 +218,18 @@
         .msg-input { flex: 1; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; resize: none; outline: none; font-family: inherit; }
         .msg-input:focus { border-color: #667eea; }
         .btn-send { padding: 10px 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        /* Audio recorder */
+        .btn-mic { width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; transition: all .2s; background: #f1f5f9; color: #667eea; }
+        .btn-mic.recording { background: #fee2e2; color: #e53e3e; animation: micPulse 1s infinite; }
+        @keyframes micPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+        .audio-preview { display: none; align-items: center; gap: 8px; margin-top: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; }
+        .audio-preview audio { flex: 1; height: 32px; min-width: 0; }
+        .btn-discard { background: none; border: none; color: #e53e3e; cursor: pointer; font-size: 18px; flex-shrink: 0; line-height: 1; }
+        .rec-timer { font-size: 12px; font-weight: 700; color: #e53e3e; min-width: 36px; }
+        /* Audio bubble player */
+        .audio-bubble { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,.25); margin-top: 4px; }
+        .chat-row.mine .audio-bubble { background: rgba(255,255,255,.2); }
+        .audio-bubble audio { height: 32px; min-width: 160px; max-width: 260px; }
         .syndicate-row { margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #718096; }
 
         /* Empty state */
@@ -385,6 +398,12 @@
                             <span>{{ $post->created_at->diffForHumans() }}</span>
                         </div>
                         <div class="chat-bubble" id="post-body-{{ $post->id }}">{{ $post->body }}</div>
+                        @if($post->audio_path)
+                        <div class="audio-bubble">
+                            <span style="font-size:16px">🎙️</span>
+                            <audio controls src="{{ asset('storage/' . $post->audio_path) }}"></audio>
+                        </div>
+                        @endif
                         <div class="chat-actions">
                             <button class="btn-sm btn-reply" onclick="toggleReplyForm({{ $post->id }})">&#8617; Reply</button>
                             @if(auth()->id() === $post->user_id || auth()->user()->isAdmin())
@@ -423,14 +442,22 @@
             {{-- Input area --}}
             @if(!$activeTopic->is_locked && !$isRemoved)
                 <div class="input-area">
-                    <form action="{{ route('topics.participate', $activeTopic->id) }}" method="POST" id="postForm">
+                    <form action="{{ route('topics.participate', $activeTopic->id) }}" method="POST" id="postForm" enctype="multipart/form-data">
                         @csrf
+                        <input type="hidden" name="audio" id="audioInput">
                         <div class="input-row">
+                            <button type="button" class="btn-mic" id="micBtn" title="Record audio message">🎙️</button>
                             <textarea name="body" id="postInput" class="msg-input" rows="2"
-                                placeholder="Write a message..." required
+                                placeholder="Write a message or record audio…"
                                 oninput="handleTyping()"
                                 onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();document.getElementById('postForm').requestSubmit();}"></textarea>
                             <button type="submit" class="btn-send">Send</button>
+                        </div>
+                        <div class="audio-preview" id="audioPreview">
+                            <span style="font-size:15px">🎙️</span>
+                            <span class="rec-timer" id="recTimer">0:00</span>
+                            <audio id="audioPlayback" controls></audio>
+                            <button type="button" class="btn-discard" id="discardAudio" title="Discard">✕</button>
                         </div>
                         <div class="syndicate-row">
                             <input type="checkbox" name="syndicate" id="syndicate" value="1">
@@ -770,6 +797,69 @@
 
     const msgs = document.getElementById('messages');
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
+
+    // ── Audio Recorder ────────────────────────────────────────────
+    (function () {
+        const micBtn      = document.getElementById('micBtn');
+        const audioPreview= document.getElementById('audioPreview');
+        const audioPlayback=document.getElementById('audioPlayback');
+        const discardBtn  = document.getElementById('discardAudio');
+        const recTimerEl  = document.getElementById('recTimer');
+        const audioInput  = document.getElementById('audioInput');
+        const postForm    = document.getElementById('postForm');
+        if (!micBtn) return;
+
+        let mediaRecorder, audioChunks = [], recInterval, recSeconds = 0, audioBlob = null;
+
+        function formatSecs(s) { return Math.floor(s/60)+':'+(s%60).toString().padStart(2,'0'); }
+
+        micBtn.addEventListener('click', async function () {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioChunks = []; recSeconds = 0;
+                recTimerEl.textContent = '0:00';
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = function () {
+                    stream.getTracks().forEach(t => t.stop());
+                    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    audioPlayback.src = URL.createObjectURL(audioBlob);
+                    audioPreview.style.display = 'flex';
+                    micBtn.classList.remove('recording');
+                    micBtn.title = 'Record audio message';
+                    clearInterval(recInterval);
+                };
+                mediaRecorder.start();
+                micBtn.classList.add('recording');
+                micBtn.title = 'Stop recording';
+                recInterval = setInterval(() => { recSeconds++; recTimerEl.textContent = formatSecs(recSeconds); }, 1000);
+            } catch (err) {
+                alert('Microphone access denied. Please allow microphone permission.');
+            }
+        });
+
+        discardBtn.addEventListener('click', function () {
+            audioBlob = null;
+            audioPlayback.src = '';
+            audioPreview.style.display = 'none';
+            audioInput.value = '';
+        });
+
+        postForm.addEventListener('submit', async function (e) {
+            if (!audioBlob) return; // no audio — normal text submit
+            e.preventDefault();
+            const fd = new FormData(postForm);
+            fd.delete('audio'); // remove hidden placeholder
+            fd.append('audio', audioBlob, 'voice-message.webm');
+            const res = await fetch(postForm.action, { method: 'POST', body: fd });
+            if (res.redirected) { window.location.href = res.url; }
+            else { window.location.reload(); }
+        });
+    })();
 </script>
 @auth
 @if(auth()->user()->isMember())
