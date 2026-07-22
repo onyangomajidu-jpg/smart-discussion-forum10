@@ -55,7 +55,7 @@ class ContentManagementService implements IContentManagement
 
     public function participateDiscussion(int $topicId, array $data): Post
     {
-        if ($this->filterContent($data['body'] ?? '')) {
+        if (!empty($data['body']) && $this->filterContent($data['body'])) {
             throw new \RuntimeException('Content flagged as spam.');
         }
 
@@ -87,12 +87,13 @@ class ContentManagementService implements IContentManagement
         }
 
         $post = Post::create([
-            'topic_id' => $topicId,
-            'user_id'  => Auth::id(),
-            'body'     => $data['body'],
+            'topic_id'   => $topicId,
+            'user_id'    => Auth::id(),
+            'body'       => $data['body'] ?? '',
+            'audio_path' => $data['audio_path'] ?? null,
         ]);
 
-        broadcast(new NewPost($topicId, Auth::id(), $data['body'], 'post'))->toOthers();
+        broadcast(new NewPost($topicId, Auth::id(), $data['body'] ?? '', 'post'))->toOthers();
 
         return $post;
     }
