@@ -534,6 +534,7 @@
                                 @endforeach
                             </div>
                             <button type="button" class="btn-send-audio" id="sendAudioBtn" title="Send voice message">&#9658;</button>
+                            <audio id="previewAudio" style="display:none" controls></audio>
                         </div>
                     </form>
                 </div>
@@ -906,7 +907,7 @@
         const postForm     = document.getElementById('postForm');
         if (!micBtn) return;
 
-        let mediaRecorder, audioChunks = [], recInterval, recSeconds = 0, audioBlob = null;
+        let mediaRecorder, audioChunks = [], recInterval, recSeconds = 0, audioBlob = null, mimeType = '';
 
         function fmtSecs(s) { return Math.floor(s/60)+':'+(s%60).toString().padStart(2,'0'); }
 
