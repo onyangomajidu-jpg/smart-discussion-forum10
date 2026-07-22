@@ -32,21 +32,35 @@ class StatisticsApiController extends Controller
             ->where('user_id', $user->id)
             ->count();
 
-        $quizAttempts = DB::table('quiz_attempts')
+        $quizAttempts = DB::table('participation_records')
             ->where('user_id', $user->id)
+            ->where('completed', true)
             ->count();
 
         $availableQuizzes = DB::table('quizzes')
+            ->where('status', 'published')
             ->whereNotIn('id', function ($q) use ($user) {
                 $q->select('quiz_id')
-                  ->from('quiz_attempts')
-                  ->where('user_id', $user->id);
+                  ->from('participation_records')
+                  ->where('user_id', $user->id)
+                  ->where('completed', true);
             })
             ->count();
 
-        $avgScore = DB::table('quiz_attempts')
+        $avgScore = DB::table('participation_records')
             ->where('user_id', $user->id)
-            ->avg('score') ?? 0;
+            ->where('completed', true)
+            ->avg('percentage') ?? 0;
+
+        $bestScore = DB::table('participation_records')
+            ->where('user_id', $user->id)
+            ->where('completed', true)
+            ->max('percentage') ?? 0;
+
+        $minScore = DB::table('participation_records')
+            ->where('user_id', $user->id)
+            ->where('completed', true)
+            ->min('percentage') ?? 0;
 
         // ── Posts per day — last 7 days (bar chart) ───────────────────────
         $postsPerDay = DB::table('posts')
@@ -68,9 +82,10 @@ class StatisticsApiController extends Controller
         }
 
         // ── Score distribution (pie chart) ────────────────────────────────
-        $scores = DB::table('quiz_attempts')
+        $scores = DB::table('participation_records')
             ->where('user_id', $user->id)
-            ->pluck('score');
+            ->where('completed', true)
+            ->pluck('percentage');
 
         $dist = ['0-49' => 0, '50-69' => 0, '70-84' => 0, '85-100' => 0];
         foreach ($scores as $s) {
@@ -87,6 +102,8 @@ class StatisticsApiController extends Controller
                 'quizAttempts'       => $quizAttempts,
                 'availableQuizzes'   => $availableQuizzes,
                 'avgScore'           => round((float) $avgScore, 1),
+                'bestScore'          => round((float) $bestScore, 1),
+                'minScore'           => round((float) $minScore, 1),
                 'postsPerDay'        => $barSeries,
                 'scoreDistribution'  => $dist,
             ],

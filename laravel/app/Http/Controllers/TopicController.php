@@ -26,17 +26,7 @@ class TopicController extends Controller
         // Get lecturer IDs whose groups the student has joined
         $lecturerIds = \App\Models\Group::whereIn('id', $userGroupIds)->pluck('created_by');
 
-        // Temporary debug — remove after fix
-        if (request()->has('debug_pin')) {
-            dd([
-                'user_id'       => auth()->id(),
-                'userGroupIds'  => $userGroupIds->toArray(),
-                'lecturerIds'   => $lecturerIds->toArray(),
-                'pinned_topics' => Topic::where('is_pinned', true)->get()->map(fn($t) => ['id'=>$t->id,'title'=>$t->title,'group_id'=>$t->group_id,'user_id'=>$t->user_id])->toArray(),
-            ]);
-        }
-
-        $topics = $query->latest()->get()
+$topics = $query->latest()->get()
             ->sortByDesc(fn($t) => $t->is_pinned && (
                 $userGroupIds->contains($t->group_id) ||
                 $lecturerIds->contains($t->user_id)

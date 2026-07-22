@@ -231,18 +231,27 @@ public class QuizPanel extends JPanel {
         int quizId = q.path("id").asInt();
 
         if (user.isLecturer() || user.isAdmin()) {
-            // Lecturer view: Publish (if draft) + Results
             String status = q.path("status").asText("draft");
             if ("draft".equals(status)) {
                 JButton publishBtn = new JButton("📤 Publish");
                 styleBtn(publishBtn, GREEN);
                 publishBtn.addActionListener(e -> publishQuiz(quizId));
                 actionPanel.add(publishBtn);
+            } else {
+                JButton remindBtn = new JButton("🔔 Remind");
+                styleBtn(remindBtn, AMBER);
+                remindBtn.addActionListener(e -> sendReminder(quizId, q.path("title").asText()));
+                actionPanel.add(remindBtn);
             }
             JButton resultsBtn = new JButton("📊 Results");
             styleBtn(resultsBtn, CYAN);
             resultsBtn.addActionListener(e -> showLecturerResults(quizId, q.path("title").asText()));
             actionPanel.add(resultsBtn);
+            JButton deleteBtn = new JButton("🗑");
+            styleBtn(deleteBtn, DANGER);
+            deleteBtn.setToolTipText("Delete Quiz");
+            deleteBtn.addActionListener(e -> deleteQuiz(quizId, q.path("title").asText()));
+            actionPanel.add(deleteBtn);
         } else if (attempted) {
             JButton resultBtn = new JButton("📋 View Result");
             styleBtn(resultBtn, PURPLE);
@@ -513,6 +522,55 @@ public class QuizPanel extends JPanel {
                 } catch (Exception e) {
                     JOptionPane.showMessageDialog(QuizPanel.this,
                         "Publish failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
+    }
+
+    // ── Send reminder ─────────────────────────────────────────────────────
+
+    private void sendReminder(int quizId, String quizTitle) {
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Send reminder to all group members for \"" + quizTitle + "\"?",
+            "Confirm Reminder", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) return;
+        new SwingWorker<JsonNode, Void>() {
+            @Override protected JsonNode doInBackground() throws Exception {
+                return mapper.readTree(api.post("/lecturer/quizzes/" + quizId + "/remind", Map.of()));
+            }
+            @Override protected void done() {
+                try {
+                    get();
+                    JOptionPane.showMessageDialog(QuizPanel.this,
+                        "Reminder sent successfully.", "Reminder Sent",
+                        JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(QuizPanel.this,
+                        "Reminder failed: " + e.getMessage(), "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
+    }
+
+    // ── Delete quiz ───────────────────────────────────────────────────────
+
+    private void deleteQuiz(int quizId, String quizTitle) {
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Delete quiz \"" + quizTitle + "\"? This cannot be undone.",
+            "Confirm Delete", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (confirm != JOptionPane.YES_OPTION) return;
+        new SwingWorker<Void, Void>() {
+            @Override protected Void doInBackground() throws Exception {
+                api.delete("/lecturer/quizzes/" + quizId);
+                return null;
+            }
+            @Override protected void done() {
+                try { get(); loadQuizzes(); }
+                catch (Exception e) {
+                    JOptionPane.showMessageDialog(QuizPanel.this,
+                        "Delete failed: " + e.getMessage(), "Error",
+                        JOptionPane.ERROR_MESSAGE);
                 }
             }
         }.execute();

@@ -156,14 +156,12 @@ public class LecturerGroupsPanel extends JPanel {
     public void loadGroups() {
         new SwingWorker<JsonNode, Void>() {
             @Override protected JsonNode doInBackground() throws Exception {
-                return mapper.readTree(api.get("/groups"));
+                return mapper.readTree(api.get("/lecturer/my-groups"));
             }
             @Override protected void done() {
                 try {
                     groupsModel.setRowCount(0);
                     for (JsonNode g : get()) {
-                        // API returns is_member; show only groups this lecturer created (created_by)
-                        // Fall back to showing all groups if created_by not present
                         String created = g.path("created_at").asText("—");
                         groupsModel.addRow(new Object[]{
                             g.path("id").asInt(),

@@ -117,7 +117,10 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     Route::get('/lecturer/quizzes',                  [QuizController::class, 'apiLecturerIndex']);
     Route::post('/lecturer/quizzes',                 [QuizController::class, 'apiStore']);
     Route::post('/lecturer/quizzes/{quiz}/publish',  [QuizController::class, 'apiPublish']);
+    Route::post('/lecturer/quizzes/{quiz}/remind',   [QuizController::class, 'remind']);
     Route::get('/lecturer/quizzes/{quiz}/results',   [QuizController::class, 'apiResults']);
+    Route::delete('/lecturer/quizzes/{quiz}',        [QuizController::class, 'destroy']);
+    Route::get('/lecturer/my-groups',               [GroupController::class, 'apiMyGroups']);
     Route::post('/lecturer/groups',                  [GroupController::class, 'apiStore']);
     Route::delete('/lecturer/groups/{group}',        [GroupController::class, 'apiDestroy']);
     Route::get('/lecturer/analytics',                [StatisticsController::class, 'apiLecturerAnalytics']);
