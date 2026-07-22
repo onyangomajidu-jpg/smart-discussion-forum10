@@ -197,90 +197,103 @@
         .btn-send { padding: 10px 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
         /* ── Mic / recorder button ── */
         .btn-mic {
-            width: 42px; height: 42px; border-radius: 50%; border: none; cursor: pointer;
+            width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            font-size: 18px; flex-shrink: 0; transition: all .2s;
-            background: #ede9fe; color: #667eea;
-            box-shadow: 0 2px 8px rgba(102,126,234,.2);
+            font-size: 19px; flex-shrink: 0; transition: all .25s;
+            background: linear-gradient(135deg,#ede9fe,#ddd6fe); color: #6d28d9;
+            box-shadow: 0 2px 10px rgba(109,40,217,.18);
         }
-        .btn-mic:hover { background: #ddd6fe; transform: scale(1.05); }
+        .btn-mic:hover { background: linear-gradient(135deg,#ddd6fe,#c4b5fd); transform: scale(1.07); }
         .btn-mic.recording {
             background: linear-gradient(135deg,#ef4444,#dc2626);
-            color: #fff; animation: micPulse .9s ease-in-out infinite;
-            box-shadow: 0 0 0 0 rgba(239,68,68,.5);
+            color: #fff; animation: micPulse 1s ease-in-out infinite;
         }
         @keyframes micPulse {
-            0%   { box-shadow: 0 0 0 0 rgba(239,68,68,.5); }
-            70%  { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
-            100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+            0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.5); }
+            50%     { box-shadow: 0 0 0 12px rgba(239,68,68,0); }
         }
         /* ── Audio preview bar (before send) ── */
         .audio-preview {
             display: none; align-items: center; gap: 10px;
             margin-top: 10px;
-            background: #f0f4ff;
-            border: 1.5px solid #c7d2fe;
-            border-radius: 14px;
+            background: linear-gradient(135deg,#f5f3ff,#ede9fe);
+            border: 1.5px solid #c4b5fd;
+            border-radius: 16px;
             padding: 10px 14px;
+            box-shadow: 0 2px 8px rgba(109,40,217,.08);
         }
-        .rec-timer { font-size: 12px; font-weight: 800; color: #667eea; min-width: 38px; letter-spacing: .5px; }
+        .rec-timer { font-size: 13px; font-weight: 800; color: #6d28d9; min-width: 40px; letter-spacing: .5px; font-variant-numeric: tabular-nums; }
         .btn-discard {
-            width: 28px; height: 28px; border-radius: 50%; border: none;
-            background: #fee2e2; color: #e53e3e; cursor: pointer;
+            width: 30px; height: 30px; border-radius: 50%; border: none;
+            background: #fee2e2; color: #dc2626; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            font-size: 13px; flex-shrink: 0; transition: background .15s;
+            font-size: 13px; flex-shrink: 0; transition: all .15s;
+            box-shadow: 0 1px 4px rgba(220,38,38,.15);
         }
-        .btn-discard:hover { background: #fecaca; }
+        .btn-discard:hover { background: #fecaca; transform: scale(1.08); }
         .btn-send-audio {
-            width: 36px; height: 36px; border-radius: 50%; border: none;
+            width: 38px; height: 38px; border-radius: 50%; border: none;
             background: linear-gradient(135deg,#667eea,#764ba2);
             color: #fff; cursor: pointer; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            font-size: 15px; transition: all .2s;
-            box-shadow: 0 3px 10px rgba(102,126,234,.4);
+            font-size: 16px; transition: all .2s;
+            box-shadow: 0 4px 12px rgba(102,126,234,.45);
         }
-        .btn-send-audio:hover { opacity: .9; transform: scale(1.08); }
-        /* ── WhatsApp-style audio bubble ── */
+        .btn-send-audio:hover { opacity: .9; transform: scale(1.1); }
+        /* ── Modern audio bubble ── */
         .audio-msg-bubble {
-            display: flex; align-items: center; gap: 10px;
-            padding: 10px 14px;
-            border-radius: 18px 18px 18px 4px;
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px;
+            border-radius: 20px 20px 20px 6px;
             background: #fff;
-            box-shadow: 0 1px 4px rgba(0,0,0,.1);
-            min-width: 220px; max-width: 300px;
-            margin-top: 2px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
+            min-width: 240px; max-width: 320px;
+            margin-top: 4px;
+            border: 1px solid #f1f5f9;
         }
         .chat-row.mine .audio-msg-bubble {
             background: linear-gradient(135deg,#667eea,#764ba2);
-            border-radius: 18px 18px 4px 18px;
-            box-shadow: 0 2px 10px rgba(102,126,234,.35);
+            border-radius: 20px 20px 6px 20px;
+            box-shadow: 0 4px 16px rgba(102,126,234,.4);
+            border: none;
         }
         .audio-play-btn {
-            width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer;
+            width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            font-size: 14px; flex-shrink: 0; transition: all .2s;
-            background: #667eea; color: #fff;
-            box-shadow: 0 2px 8px rgba(102,126,234,.4);
+            font-size: 15px; flex-shrink: 0; transition: all .2s;
+            background: linear-gradient(135deg,#667eea,#764ba2); color: #fff;
+            box-shadow: 0 3px 10px rgba(102,126,234,.45);
         }
-        .chat-row.mine .audio-play-btn { background: rgba(255,255,255,.25); color: #fff; box-shadow: none; }
-        .audio-play-btn:hover { transform: scale(1.1); }
+        .chat-row.mine .audio-play-btn {
+            background: rgba(255,255,255,.22); color: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+            backdrop-filter: blur(4px);
+        }
+        .audio-play-btn:hover { transform: scale(1.12); }
         .audio-waveform {
-            flex: 1; display: flex; align-items: center; gap: 2px; height: 28px;
+            flex: 1; display: flex; align-items: center; gap: 2.5px; height: 32px;
         }
         .audio-waveform span {
-            display: inline-block; width: 3px; border-radius: 3px;
-            background: #c7d2fe; transition: background .2s;
+            display: inline-block; width: 3px; border-radius: 4px;
+            background: #e2e8f0; transition: background .25s;
+            transform-origin: center;
         }
-        .chat-row.mine .audio-waveform span { background: rgba(255,255,255,.45); }
-        .audio-waveform.playing span { background: #667eea; animation: waveAnim .6s ease-in-out infinite alternate; }
-        .chat-row.mine .audio-waveform.playing span { background: #fff; }
-        .audio-waveform span:nth-child(2n) { animation-delay: .1s; }
-        .audio-waveform span:nth-child(3n) { animation-delay: .2s; }
-        .audio-waveform span:nth-child(4n) { animation-delay: .15s; }
-        .audio-waveform span:nth-child(5n) { animation-delay: .25s; }
-        @keyframes waveAnim { from{transform:scaleY(.4)} to{transform:scaleY(1.2)} }
-        .audio-duration { font-size: 11px; font-weight: 700; color: #94a3b8; min-width: 32px; text-align: right; }
-        .chat-row.mine .audio-duration { color: rgba(255,255,255,.7); }
+        .chat-row.mine .audio-waveform span { background: rgba(255,255,255,.35); }
+        .audio-waveform.playing span { background: #667eea; animation: waveAnim .55s ease-in-out infinite alternate; }
+        .chat-row.mine .audio-waveform.playing span { background: rgba(255,255,255,.9); }
+        .audio-waveform span:nth-child(2n)   { animation-delay: .08s; }
+        .audio-waveform span:nth-child(3n)   { animation-delay: .18s; }
+        .audio-waveform span:nth-child(4n)   { animation-delay: .12s; }
+        .audio-waveform span:nth-child(5n)   { animation-delay: .22s; }
+        .audio-waveform span:nth-child(7n)   { animation-delay: .05s; }
+        @keyframes waveAnim {
+            from { transform: scaleY(.3); opacity: .7; }
+            to   { transform: scaleY(1.3); opacity: 1; }
+        }
+        .audio-duration { font-size: 11px; font-weight: 700; color: #94a3b8; min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+        .chat-row.mine .audio-duration { color: rgba(255,255,255,.75); }
+        .audio-label { font-size: 10px; font-weight: 600; color: #a0aec0; letter-spacing: .4px; text-transform: uppercase; }
+        .chat-row.mine .audio-label { color: rgba(255,255,255,.6); }
 
         .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #a0aec0; }
         .empty-state p { margin-top: 10px; font-size: 15px; }
@@ -453,14 +466,17 @@
                         </div>
                         <div class="chat-bubble" id="post-body-{{ $post->id }}">{{ $post->body }}</div>
                         @if($post->audio_path)
-                        @php $heights = [10,16,22,28,20,14,24,18,12,26,20,16,22,10,18,24,14,20,28,16]; @endphp
-                        <div class="audio-msg-bubble" data-src="{{ asset('storage/' . $post->audio_path) }}">
+                        @php $heights = [8,14,20,28,22,16,26,18,10,24,20,14,22,8,18,26,12,20,30,14]; @endphp
+                        <div class="audio-msg-bubble">
                             <button class="audio-play-btn" onclick="toggleAudio(this)" type="button">&#9654;</button>
-                            <div class="audio-waveform">
-                                @foreach($heights as $h)<span style="height:{{ $h }}px"></span>@endforeach
+                            <div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;">
+                                <span class="audio-label">Voice message</span>
+                                <div class="audio-waveform">
+                                    @foreach($heights as $h)<span style="height:{{ $h }}px"></span>@endforeach
+                                </div>
                             </div>
                             <span class="audio-duration">0:00</span>
-                            <audio style="display:none" preload="metadata"></audio>
+                            <audio preload="auto" src="{{ asset('storage/' . $post->audio_path) }}" style="display:none"></audio>
                         </div>
                         @endif
                         <div class="chat-actions">
@@ -807,11 +823,15 @@
     const msgs = document.getElementById('messages');
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
 
-    // ── WhatsApp-style audio player for bubbles ──
+    function fmtTime(s) {
+        if (!isFinite(s) || isNaN(s)) return '0:00';
+        return Math.floor(s/60)+':'+(Math.floor(s%60)).toString().padStart(2,'0');
+    }
+
+    // ── Audio bubble player ──
     document.querySelectorAll('.audio-msg-bubble').forEach(function(bubble) {
         const audio = bubble.querySelector('audio');
         const durEl = bubble.querySelector('.audio-duration');
-        audio.src   = bubble.dataset.src;
         audio.addEventListener('loadedmetadata', function() {
             if (isFinite(audio.duration)) durEl.textContent = fmtTime(audio.duration);
         });
@@ -821,8 +841,9 @@
         audio.addEventListener('ended', function() {
             bubble.querySelector('.audio-play-btn').innerHTML = '&#9654;';
             bubble.querySelector('.audio-waveform').classList.remove('playing');
-            durEl.textContent = fmtTime(audio.duration);
+            if (isFinite(audio.duration)) durEl.textContent = fmtTime(audio.duration);
         });
+        audio.addEventListener('error', function() { durEl.textContent = 'err'; });
     });
 
     function toggleAudio(btn) {
@@ -830,14 +851,15 @@
         const audio  = bubble.querySelector('audio');
         const wave   = bubble.querySelector('.audio-waveform');
         document.querySelectorAll('.audio-msg-bubble audio').forEach(function(a) {
-            if (a !== audio) {
+            if (a !== audio && !a.paused) {
                 a.pause();
-                a.closest('.audio-msg-bubble').querySelector('.audio-play-btn').innerHTML = '&#9654;';
-                a.closest('.audio-msg-bubble').querySelector('.audio-waveform').classList.remove('playing');
+                const b = a.closest('.audio-msg-bubble');
+                b.querySelector('.audio-play-btn').innerHTML = '&#9654;';
+                b.querySelector('.audio-waveform').classList.remove('playing');
             }
         });
         if (audio.paused) {
-            audio.play();
+            audio.play().catch(function(e) { console.warn('Audio play failed:', e); });
             btn.innerHTML = '&#9646;&#9646;';
             wave.classList.add('playing');
         } else {
@@ -845,11 +867,6 @@
             btn.innerHTML = '&#9654;';
             wave.classList.remove('playing');
         }
-    }
-
-    function fmtTime(s) {
-        if (!isFinite(s)) return '0:00';
-        return Math.floor(s/60)+':'+(Math.floor(s%60)).toString().padStart(2,'0');
     }
 
     // ── Audio Recorder ──
