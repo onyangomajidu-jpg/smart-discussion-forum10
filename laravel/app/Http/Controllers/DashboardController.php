@@ -18,7 +18,7 @@ class DashboardController extends Controller
         $groups = $user->groups()->orderBy('name')->get();
         $uid    = $user->id;
 
-<<<<<<< HEAD
+
         // KPI cards
         $topicsJoined = DB::table('topic_user')->where('user_id', $uid)->count();
         if ($topicsJoined === 0) {
@@ -86,7 +86,7 @@ class DashboardController extends Controller
             'engPct', 'compPct', 'avgPct',
             'recommendations'
         ));
-=======
+
         $quizAnnouncements  = [];
         $quizModalTriggers  = [];
         if ($user->role === 'member') {
@@ -104,6 +104,6 @@ class DashboardController extends Controller
         }
 
         return view('dashboard', compact('user', 'groups', 'quizAnnouncements'));
->>>>>>> 0ecafb0740ad807b2cd5bf1b875e4b65cddfc27d
+
     }
 }
