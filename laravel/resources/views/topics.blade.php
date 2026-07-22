@@ -76,6 +76,35 @@
         .btn-unblock-user { font-size: 11px; color: #38a169; background: none; border: 1px solid #38a169; border-radius: 4px; padding: 2px 6px; cursor: pointer; }
         .btn-unblock-user:hover { background: #f0fff4; }
 
+        /* Mobile toggle buttons — hidden on desktop */
+        .mobile-toggle-btn {
+            display: none; background: rgba(255,255,255,0.2); border: none; color: white;
+            width: 34px; height: 34px; border-radius: 6px; align-items: center; justify-content: center;
+            font-size: 15px; cursor: pointer; flex-shrink: 0;
+        }
+        .panel-backdrop {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+            z-index: 499; opacity: 0; transition: opacity .2s;
+        }
+        .panel-backdrop.show { display: block; opacity: 1; }
+
+        @media (max-width: 768px) {
+            .mobile-toggle-btn { display: flex; }
+            .navbar h1 span.full-title { display: none; }
+
+            .sidebar, .participants-panel {
+                position: fixed; top: 0; height: 100vh; z-index: 500;
+                transition: transform .25s ease;
+            }
+            .sidebar { left: 0; transform: translateX(-100%); width: 85%; max-width: 300px; }
+            .sidebar.open { transform: translateX(0); }
+            .participants-panel { right: 0; transform: translateX(100%); width: 80%; max-width: 230px; }
+            .participants-panel.open { transform: translateX(0); }
+
+            .conversation { width: 100%; }
+            .conv-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+        }
+
         /* Conversation Panel */
         .conversation { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .conv-header {
@@ -147,7 +176,10 @@
 
 {{-- Navbar --}}
 <nav class="navbar">
-    <h1><img src="{{ asset('images/forum.png') }}" alt="Discussion Hub" style="height:34px;vertical-align:middle;margin-right:8px;">Discussion Hub</h1>
+    <div style="display:flex;align-items:center;gap:10px;">
+        <button class="mobile-toggle-btn" id="topicsToggleBtn" type="button" aria-label="Toggle topics list">☰</button>
+        <h1><img src="{{ asset('images/forum.png') }}" alt="Discussion Hub" style="height:34px;vertical-align:middle;margin-right:8px;"><span class="full-title">Discussion Hub</span></h1>
+    </div>
     <div class="navbar-right">
         <button class="notif-btn" id="notifBtn" onclick="loadNotifications()">
             🔔
@@ -165,7 +197,7 @@
 </nav>
 
 <div class="forum-layout">
-
+    <div class="panel-backdrop" id="panelBackdrop"></div>
     {{-- Sidebar --}}
     <aside class="sidebar">
         <div class="sidebar-header">
@@ -235,6 +267,9 @@
                     <button onclick="openDiscussionShareModal({{ $activeTopic->id }})"
                         style="padding:7px 14px;background:linear-gradient(135deg,#25d366,#128c7e);color:white;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">
                         🌐 Share Discussion
+                    </button>
+                    <button class="mobile-toggle-btn" id="participantsToggleBtn" type="button" aria-label="Toggle participants list" style="background:#ede9fe;color:#4c1d95;">
+                        👥
                     </button>
                 </div>
             </div>
@@ -463,6 +498,34 @@
     let sharingTopicId = null;
     let selectedPlatform = null;
     let typingTimer = null;
+
+    // Mobile off-canvas toggling for topics list / participants panel
+    (function () {
+        var sidebar = document.querySelector('.sidebar');
+        var participants = document.querySelector('.participants-panel');
+        var backdrop = document.getElementById('panelBackdrop');
+        var topicsBtn = document.getElementById('topicsToggleBtn');
+        var participantsBtn = document.getElementById('participantsToggleBtn');
+        if (!backdrop) return;
+
+        function closeAll() {
+            if (sidebar) sidebar.classList.remove('open');
+            if (participants) participants.classList.remove('open');
+            backdrop.classList.remove('show');
+        }
+        function openPanel(panel) {
+            closeAll();
+            if (panel) { panel.classList.add('open'); backdrop.classList.add('show'); }
+        }
+
+        if (topicsBtn) topicsBtn.addEventListener('click', function () {
+            sidebar && sidebar.classList.contains('open') ? closeAll() : openPanel(sidebar);
+        });
+        if (participantsBtn) participantsBtn.addEventListener('click', function () {
+            participants && participants.classList.contains('open') ? closeAll() : openPanel(participants);
+        });
+        backdrop.addEventListener('click', closeAll);
+    })();
 
     // ── Open share modal for entire discussion ─────────────────
     function openDiscussionShareModal(topicId) {
