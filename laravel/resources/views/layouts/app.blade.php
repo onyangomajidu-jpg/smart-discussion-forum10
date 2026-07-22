@@ -494,6 +494,11 @@
             <a href="{{ route('lecturer.groups.index') }}" class="sidebar-link {{ request()->routeIs('lecturer.groups.*') ? 'active' : '' }}">
                 <span class="ico"><i class="fa-solid fa-people-group"></i></span> Groups
             </a>
+            <a href="{{ route('messages.index') }}" class="sidebar-link {{ request()->routeIs('messages.*') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-comment-dots"></i></span> Messages
+                @php $unreadDMs = \App\Http\Controllers\MessageController::unreadCountFor(auth()->id()); @endphp
+                @if($unreadDMs > 0)<span class="sidebar-badge">{{ $unreadDMs }}</span>@endif
+            </a>
         </div>
         @elseif(auth()->user()->isMember())
         <div class="sidebar-section">
@@ -510,6 +515,11 @@
             <a href="{{ route('groups.index') }}" class="sidebar-link {{ request()->routeIs('groups.*') ? 'active' : '' }}">
                 <span class="ico"><i class="fa-solid fa-people-group"></i></span> Groups
             </a>
+            <a href="{{ route('messages.index') }}" class="sidebar-link {{ request()->routeIs('messages.*') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-comment-dots"></i></span> Messages
+                @php $unreadDMs = \App\Http\Controllers\MessageController::unreadCountFor(auth()->id()); @endphp
+                @if($unreadDMs > 0)<span class="sidebar-badge">{{ $unreadDMs }}</span>@endif
+            </a>
         </div>
         @elseif(auth()->user()->isAdmin())
         <div class="sidebar-section">
@@ -524,6 +534,11 @@
             </a>
             <a href="{{ route('admin.blacklists.index') }}" class="sidebar-link {{ request()->routeIs('admin.blacklists.*') ? 'active' : '' }}">
                 <span class="ico"><i class="fa-solid fa-ban"></i></span> Blacklist Log
+            </a>
+            <a href="{{ route('messages.index') }}" class="sidebar-link {{ request()->routeIs('messages.*') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-comment-dots"></i></span> Messages
+                @php $unreadDMs = \App\Http\Controllers\MessageController::unreadCountFor(auth()->id()); @endphp
+                @if($unreadDMs > 0)<span class="sidebar-badge">{{ $unreadDMs }}</span>@endif
             </a>
         </div>
         @endif

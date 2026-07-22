@@ -54,6 +54,10 @@ class User extends Authenticatable
     public function blacklists(): HasMany    { return $this->hasMany(Blacklist::class); }
     public function recommendations(): HasMany { return $this->hasMany(Recommendation::class); }
 
+    // ── Private messaging ─────────────────────────────
+    public function sentMessages(): HasMany     { return $this->hasMany(PrivateMessage::class, 'sender_id'); }
+    public function receivedMessages(): HasMany { return $this->hasMany(PrivateMessage::class, 'recipient_id'); }
+
     // ── Blacklist check ───────────────────────────────
     public function isBanned(): bool
     {

@@ -91,6 +91,13 @@ Route::middleware('auth')->group(function () {
     })->name('notifications.read');
 });
 
+// ── Private Messaging (1:1 inbox, separate from topic/group chat) ─────
+Route::middleware('auth')->group(function () {
+    Route::get('/messages', [App\Http\Controllers\MessageController::class, 'index'])->name('messages.index');
+    Route::get('/messages/{userId}', [App\Http\Controllers\MessageController::class, 'show'])->whereNumber('userId')->name('messages.show');
+    Route::post('/messages/{userId}', [App\Http\Controllers\MessageController::class, 'store'])->whereNumber('userId')->name('messages.store');
+});
+
 // ── Lecturer Routes ────────────────────────────────────────────────
 Route::middleware(['auth', App\Http\Middleware\LecturerMiddleware::class])->group(function () {
     Route::get('/lecturer/dashboard', function () {
