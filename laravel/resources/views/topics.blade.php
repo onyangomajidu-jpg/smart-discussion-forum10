@@ -184,10 +184,11 @@
             border: 1px solid #fcd34d;
         }
 
-        .chat-actions { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+        .chat-actions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; opacity: 0; transition: opacity .15s; pointer-events: none; }
+        .chat-row.selected .chat-actions { opacity: 1; pointer-events: auto; }
         .chat-row.mine .chat-actions { justify-content: flex-end; }
-        .btn-sm { padding: 3px 9px; font-size: 11px; border: 1px solid #e2e8f0; border-radius: 20px; cursor: pointer; background: white; font-weight: 600; transition: all .15s; }
-        .btn-sm:hover { background: #f1f5f9; }
+        .btn-sm { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid #e2e8f0; border-radius: 50%; cursor: pointer; background: white; transition: all .15s; padding: 0; }
+        .btn-sm:hover { background: #f1f5f9; transform: scale(1.1); }
         .btn-reply { color: #667eea; border-color: #c7d2fe; }
         .btn-edit   { color: #38a169; border-color: #a7f3d0; }
         .btn-delete { color: #e53e3e; border-color: #fecaca; }
@@ -561,10 +562,10 @@
                         </div>
                         @endif
                         <div class="chat-actions">
-                            <button class="btn-sm btn-reply" onclick="toggleReplyForm({{ $post->id }})">&#8617; Reply</button>
+                            <button class="btn-sm btn-reply" title="Reply" onclick="toggleReplyForm({{ $post->id }})">&#8617;</button>
                             @if(auth()->id() === $post->user_id || auth()->user()->isAdmin())
-                                <button class="btn-sm btn-edit" onclick="editPost({{ $post->id }}, `{{ addslashes($post->body) }}`)">&#9998; Edit</button>
-                                <button class="btn-sm btn-delete" onclick="deletePost({{ $post->id }})">&#128465; Delete</button>
+                                <button class="btn-sm btn-edit" title="Edit" onclick="editPost({{ $post->id }}, `{{ addslashes($post->body) }}`)">&#9998;</button>
+                                <button class="btn-sm btn-delete" title="Delete" onclick="deletePost({{ $post->id }})">&#128465;</button>
                             @endif
                         </div>
                         <form id="reply-form-{{ $post->id }}" style="display:none;margin-top:8px;"
@@ -977,6 +978,16 @@
     const msgs = document.getElementById('messages');
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
 
+    // ── Select message row on click to reveal actions ──
+    document.getElementById('messages') && document.getElementById('messages').addEventListener('click', function (e) {
+        const row = e.target.closest('.chat-row');
+        if (!row) { document.querySelectorAll('.chat-row.selected').forEach(r => r.classList.remove('selected')); return; }
+        if (e.target.closest('.btn-sm, .audio-play-btn, .btn-file-dl, audio, a')) return;
+        const wasSelected = row.classList.contains('selected');
+        document.querySelectorAll('.chat-row.selected').forEach(r => r.classList.remove('selected'));
+        if (!wasSelected) row.classList.add('selected');
+    });
+
     function fmtTime(s) {
         if (!isFinite(s) || isNaN(s)) return '0:00';
         return Math.floor(s/60)+':'+(Math.floor(s%60)).toString().padStart(2,'0');
@@ -1168,7 +1179,6 @@
 
         imgBtn.addEventListener('click', () => imgInput.click());
         docBtn.addEventListener('click', () => docInput.click());
-        removeBtn.addEventListener('click', clearPreview);
 
         imgInput.addEventListener('change', function () {
             if (!this.files[0]) return;
