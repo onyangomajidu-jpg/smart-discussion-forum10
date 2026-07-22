@@ -190,56 +190,93 @@
         .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
         @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
 
-        .input-area { padding: 16px 20px; background: white; border-top: 1px solid #e2e8f0; }
-        .input-row { display: flex; gap: 10px; align-items: flex-end; }
-        .msg-input { flex: 1; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; resize: none; outline: none; font-family: inherit; }
-        .msg-input:focus { border-color: #667eea; }
-        .btn-send { padding: 10px 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
-        /* ── Mic / recorder button ── */
-        .btn-mic {
-            width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer;
+        /* ── WhatsApp-style input bar ── */
+        .input-area { padding: 10px 14px; background: #f0f2f5; border-top: none; }
+        .input-bar {
+            display: flex; align-items: flex-end; gap: 8px;
+            background: white; border-radius: 26px;
+            padding: 6px 6px 6px 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+        }
+        .bar-icons-left { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+        .bar-icon {
+            width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            font-size: 19px; flex-shrink: 0; transition: all .25s;
-            background: linear-gradient(135deg,#ede9fe,#ddd6fe); color: #6d28d9;
-            box-shadow: 0 2px 10px rgba(109,40,217,.18);
+            background: none; transition: background .18s; flex-shrink: 0;
+            color: #54656f; padding: 0;
         }
-        .btn-mic:hover { background: linear-gradient(135deg,#ddd6fe,#c4b5fd); transform: scale(1.07); }
-        .btn-mic.recording {
-            background: linear-gradient(135deg,#ef4444,#dc2626);
-            color: #fff; animation: micPulse 1s ease-in-out infinite;
+        .bar-icon:hover { background: #f0f2f5; }
+        .bar-icon svg { width: 24px; height: 24px; display: block; }
+        .msg-input {
+            flex: 1; border: none; outline: none; resize: none;
+            font-family: inherit; font-size: 15px; line-height: 1.4;
+            background: transparent; color: #111b21;
+            padding: 6px 0; max-height: 120px; overflow-y: auto;
         }
+        .msg-input::placeholder { color: #8696a0; }
+        .bar-icon-right {
+            width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            background: #00a884; color: white; flex-shrink: 0;
+            transition: background .18s, transform .15s;
+            box-shadow: 0 2px 8px rgba(0,168,132,.35);
+        }
+        .bar-icon-right:hover { background: #017a62; transform: scale(1.06); }
+        .bar-icon-right.recording { background: #ef4444; animation: micPulse 1s ease-in-out infinite; }
+        .bar-icon-right svg { width: 22px; height: 22px; display: block; }
         @keyframes micPulse {
             0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.5); }
-            50%     { box-shadow: 0 0 0 12px rgba(239,68,68,0); }
+            50%     { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
         }
-        /* ── Audio preview bar (before send) ── */
         .audio-preview {
-            display: none; align-items: center; gap: 10px;
-            margin-top: 10px;
-            background: linear-gradient(135deg,#f5f3ff,#ede9fe);
-            border: 1.5px solid #c4b5fd;
-            border-radius: 16px;
-            padding: 10px 14px;
-            box-shadow: 0 2px 8px rgba(109,40,217,.08);
+            display: none; align-items: center; gap: 10px; margin-top: 8px;
+            background: white; border-radius: 26px; padding: 8px 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
         }
-        .rec-timer { font-size: 13px; font-weight: 800; color: #6d28d9; min-width: 40px; letter-spacing: .5px; font-variant-numeric: tabular-nums; }
+        .rec-timer { font-size: 13px; font-weight: 700; color: #ef4444; min-width: 38px; font-variant-numeric: tabular-nums; }
         .btn-discard {
             width: 30px; height: 30px; border-radius: 50%; border: none;
             background: #fee2e2; color: #dc2626; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            font-size: 13px; flex-shrink: 0; transition: all .15s;
-            box-shadow: 0 1px 4px rgba(220,38,38,.15);
+            font-size: 13px; flex-shrink: 0;
         }
-        .btn-discard:hover { background: #fecaca; transform: scale(1.08); }
+        .btn-discard:hover { background: #fecaca; }
         .btn-send-audio {
             width: 38px; height: 38px; border-radius: 50%; border: none;
-            background: linear-gradient(135deg,#667eea,#764ba2);
-            color: #fff; cursor: pointer; flex-shrink: 0;
+            background: #00a884; color: #fff; cursor: pointer; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            font-size: 16px; transition: all .2s;
-            box-shadow: 0 4px 12px rgba(102,126,234,.45);
+            font-size: 16px; box-shadow: 0 2px 8px rgba(0,168,132,.35);
         }
-        .btn-send-audio:hover { opacity: .9; transform: scale(1.1); }
+        .btn-send-audio:hover { background: #017a62; }
+        .attach-preview-bar {
+            display: none; align-items: center; gap: 10px; margin-bottom: 8px;
+            padding: 8px 12px; background: #f0f2f5; border-radius: 12px;
+            font-size: 13px; color: #475569;
+        }
+        .attach-preview-bar img { max-height: 48px; border-radius: 6px; object-fit: cover; }
+        .attach-preview-bar .attach-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .btn-attach-remove { background: none; border: none; color: #8696a0; cursor: pointer; font-size: 18px; flex-shrink: 0; line-height: 1; }
+        .btn-attach-remove:hover { color: #ef4444; }
+        /* Image / file bubbles */
+        .img-msg-bubble { margin-top: 4px; border-radius: 14px; overflow: hidden; max-width: 280px; box-shadow: 0 2px 10px rgba(0,0,0,.1); cursor: pointer; }
+        .img-msg-bubble img { width: 100%; display: block; }
+        .chat-row.mine .img-msg-bubble { border-radius: 14px 14px 4px 14px; }
+        .file-msg-bubble { display: flex; align-items: center; gap: 10px; margin-top: 4px; padding: 10px 14px; border-radius: 14px; background: #f8fafc; border: 1.5px solid #e2e8f0; max-width: 280px; }
+        .chat-row.mine .file-msg-bubble { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.3); border-radius: 14px 14px 4px 14px; }
+        .file-icon { font-size: 26px; flex-shrink: 0; }
+        .file-info { flex: 1; min-width: 0; }
+        .file-info .fname { font-size: 13px; font-weight: 600; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .chat-row.mine .file-info .fname { color: #fff; }
+        .file-info .fsize { font-size: 11px; color: #94a3b8; }
+        .btn-file-dl { width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer; flex-shrink: 0; background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        /* Camera modal */
+        .cam-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:600; align-items:center; justify-content:center; flex-direction:column; gap:20px; }
+        .cam-modal.open { display:flex; }
+        .cam-modal video { border-radius:16px; max-width:92vw; max-height:58vh; background:#000; }
+        .cam-actions { display:flex; gap:14px; }
+        .btn-cam-snap { width:64px; height:64px; border-radius:50%; border:4px solid white; background:white; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(0,0,0,.4); }
+        .btn-cam-snap::after { content:''; width:52px; height:52px; border-radius:50%; background:#00a884; display:block; }
+        .btn-cam-close { padding:10px 22px; background:rgba(255,255,255,.15); color:#fff; border:1.5px solid rgba(255,255,255,.4); border-radius:24px; font-size:14px; cursor:pointer; }
         /* ── Modern audio bubble ── */
         .audio-msg-bubble {
             display: flex; align-items: center; gap: 12px;
@@ -468,6 +505,21 @@
                             @endif
                         </div>
                         <div class="chat-bubble" id="post-body-{{ $post->id }}">{{ $post->body }}</div>
+                        @if($post->image_path)
+                            <div class="img-msg-bubble">
+                                <img src="{{ asset('storage/' . $post->image_path) }}" alt="Image" loading="lazy">
+                            </div>
+                        @endif
+                        @if($post->file_path)
+                            <div class="file-msg-bubble">
+                                <span class="file-icon">&#128196;</span>
+                                <div class="file-info">
+                                    <div class="fname">{{ $post->file_name ?? 'Document' }}</div>
+                                    <div class="fsize">Attachment</div>
+                                </div>
+                                <a href="{{ asset('storage/' . $post->file_path) }}" download="{{ $post->file_name }}" class="btn-file-dl" title="Download">&#8595;</a>
+                            </div>
+                        @endif
                         @if($post->audio_path)
                         @php $heights = [8,14,20,28,22,16,26,18,10,24,20,14,22,8,18,26,12,20,30,14]; @endphp
                         <div class="audio-msg-bubble">
@@ -518,12 +570,33 @@
                 <div class="input-area">
                     <form action="{{ route('lecturer.topics.participate', $activeTopic->id) }}" method="POST" id="postForm" enctype="multipart/form-data">
                         @csrf
-                        <div class="input-row">
-                            <button type="button" class="btn-mic" id="micBtn" title="Record audio message">&#127897;</button>
-                            <textarea name="body" class="msg-input" rows="2"
+                        <input type="file" id="imgInput" name="image" accept="image/*" style="display:none">
+                        <input type="file" id="docInput" name="file" style="display:none">
+                        <div class="attach-preview-bar" id="attachPreviewBar">
+                            <span id="attachPreviewThumb"></span>
+                            <span class="attach-name" id="attachPreviewName"></span>
+                            <button type="button" class="btn-attach-remove" id="attachRemoveBtn" title="Remove">&#10005;</button>
+                        </div>
+                        <div class="input-bar">
+                            <div class="bar-icons-left">
+                                <button type="button" class="bar-icon" id="docBtn" title="Send document">
+                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5V6H9v9.5a3 3 0 0 0 6 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
+                                </button>
+                                <button type="button" class="bar-icon" id="camBtn" title="Take photo">
+                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4zm0-8.4a5.2 5.2 0 1 1 0 10.4A5.2 5.2 0 0 1 12 6.8zM9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9z"/></svg>
+                                </button>
+                                <button type="button" class="bar-icon" id="imgBtn" title="Send image">
+                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                                </button>
+                            </div>
+                            <textarea name="body" id="postInput" class="msg-input" rows="1"
                                 placeholder="Write a message…"
-                                oninput="handleTyping()"></textarea>
-                            <button type="submit" class="btn-send">Send</button>
+                                oninput="onMsgInput();handleTyping();"
+                                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();document.getElementById('postForm').requestSubmit();}"></textarea>
+                            <button type="button" class="bar-icon-right" id="micBtn" title="Record audio">
+                                <svg id="micIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                                <svg id="sendIcon" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                            </button>
                         </div>
                         <div class="audio-preview" id="audioPreview">
                             <button type="button" class="btn-discard" id="discardAudio" title="Discard">&#10005;</button>
@@ -534,7 +607,6 @@
                                 @endforeach
                             </div>
                             <button type="button" class="btn-send-audio" id="sendAudioBtn" title="Send voice message">&#9658;</button>
-                            <audio id="previewAudio" style="display:none" controls></audio>
                         </div>
                     </form>
                 </div>
@@ -897,6 +969,99 @@
         }
     }
 
+    // ── Send/mic toggle ──
+    function onMsgInput() {
+        const val = document.getElementById('postInput') && document.getElementById('postInput').value.trim();
+        const mi = document.getElementById('micIcon');
+        const si = document.getElementById('sendIcon');
+        if (mi) mi.style.display  = val ? 'none'  : 'block';
+        if (si) si.style.display = val ? 'block' : 'none';
+    }
+
+    // standalone send handler (fires when micBtn is clicked while text is present)
+    document.getElementById('micBtn') && document.getElementById('micBtn').addEventListener('click', function () {
+        const val = document.getElementById('postInput') && document.getElementById('postInput').value.trim();
+        if (val) { document.getElementById('postForm').requestSubmit(); }
+    });
+
+    // ── Attachment toolbar ──
+    (function () {
+        const imgBtn       = document.getElementById('imgBtn');
+        const docBtn       = document.getElementById('docBtn');
+        const camBtn       = document.getElementById('camBtn');
+        const imgInput     = document.getElementById('imgInput');
+        const docInput     = document.getElementById('docInput');
+        const previewBar   = document.getElementById('attachPreviewBar');
+        const previewThumb = document.getElementById('attachPreviewThumb');
+        const previewName  = document.getElementById('attachPreviewName');
+        const removeBtn    = document.getElementById('attachRemoveBtn');
+        if (!imgBtn) return;
+
+        function showPreview(name, thumbHtml) {
+            previewThumb.innerHTML = thumbHtml;
+            previewName.textContent = name;
+            previewBar.style.display = 'flex';
+        }
+        function clearPreview() {
+            previewBar.style.display = 'none';
+            previewThumb.innerHTML = '';
+            previewName.textContent = '';
+            imgInput.value = '';
+            docInput.value = '';
+        }
+
+        imgBtn.addEventListener('click', () => imgInput.click());
+        docBtn.addEventListener('click', () => docInput.click());
+        removeBtn.addEventListener('click', clearPreview);
+
+        imgInput.addEventListener('change', function () {
+            if (!this.files[0]) return;
+            showPreview(this.files[0].name, '<img src="' + URL.createObjectURL(this.files[0]) + '">');
+        });
+        docInput.addEventListener('change', function () {
+            if (!this.files[0]) return;
+            showPreview(this.files[0].name, '&#128196; ');
+        });
+
+        const camModal  = document.getElementById('camModal');
+        const camVideo  = document.getElementById('camVideo');
+        const camCanvas = document.getElementById('camCanvas');
+        const snapBtn   = document.getElementById('camSnapBtn');
+        const closeBtn  = document.getElementById('camCloseBtn');
+        let camStream   = null;
+
+        camBtn.addEventListener('click', async function () {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                imgInput.setAttribute('capture', 'environment'); imgInput.click(); return;
+            }
+            try {
+                camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+                camVideo.srcObject = camStream;
+                camModal.classList.add('open');
+            } catch (e) { imgInput.setAttribute('capture', 'environment'); imgInput.click(); }
+        });
+
+        function stopCam() {
+            if (camStream) { camStream.getTracks().forEach(function(t) { t.stop(); }); camStream = null; }
+            camModal.classList.remove('open');
+        }
+        closeBtn.addEventListener('click', stopCam);
+
+        snapBtn.addEventListener('click', function () {
+            camCanvas.width  = camVideo.videoWidth;
+            camCanvas.height = camVideo.videoHeight;
+            camCanvas.getContext('2d').drawImage(camVideo, 0, 0);
+            camCanvas.toBlob(function (blob) {
+                var file = new File([blob], 'photo-' + Date.now() + '.jpg', { type: 'image/jpeg' });
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                imgInput.files = dt.files;
+                showPreview(file.name, '<img src="' + URL.createObjectURL(blob) + '">');
+                stopCam();
+            }, 'image/jpeg', 0.92);
+        });
+    })();
+
     // ── Audio Recorder ──
     (function () {
         const micBtn       = document.getElementById('micBtn');
@@ -973,5 +1138,15 @@
         });
     })();
 </script>
+
+{{-- Camera modal --}}
+<div class="cam-modal" id="camModal">
+    <video id="camVideo" autoplay playsinline></video>
+    <canvas id="camCanvas" style="display:none"></canvas>
+    <div class="cam-actions">
+        <button class="btn-cam-close" id="camCloseBtn">&#10005; Cancel</button>
+        <button class="btn-cam-snap" id="camSnapBtn" title="Capture"></button>
+    </div>
+</div>
 </body>
 </html>
