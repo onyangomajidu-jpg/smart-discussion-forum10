@@ -18,7 +18,6 @@ class DashboardController extends Controller
         $groups = $user->groups()->orderBy('name')->get();
         $uid    = $user->id;
 
-
         // KPI cards
         $topicsJoined = DB::table('topic_user')->where('user_id', $uid)->count();
         if ($topicsJoined === 0) {
@@ -79,16 +78,8 @@ class DashboardController extends Controller
                 'score' => $r->score,
             ]);
 
-        return view('dashboard', compact(
-            'user', 'groups',
-            'topicsJoined', 'postsMade', 'quizAttempts', 'avgScore',
-            'recentTopics', 'recentAttempts',
-            'engPct', 'compPct', 'avgPct',
-            'recommendations'
-        ));
-
-        $quizAnnouncements  = [];
-        $quizModalTriggers  = [];
+        // Quiz announcements — reminder banners for member
+        $quizAnnouncements = [];
         if ($user->role === 'member') {
             $allPending = Quiz::published()
                 ->whereHas('group.members', fn ($q) => $q->where('users.id', $user->id))
@@ -96,14 +87,17 @@ class DashboardController extends Controller
                 ->with('group')
                 ->orderBy('unlock_date')
                 ->get();
-
-            // Banner: upcoming quizzes where lecturer has sent a reminder
             $quizAnnouncements = $allPending
                 ->filter(fn ($q) => $q->isUpcoming() && !is_null($q->reminder_sent_at))
                 ->values();
         }
 
-        return view('dashboard', compact('user', 'groups', 'quizAnnouncements'));
-
+        return view('dashboard', compact(
+            'user', 'groups',
+            'topicsJoined', 'postsMade', 'quizAttempts', 'avgScore',
+            'recentTopics', 'recentAttempts',
+            'engPct', 'compPct', 'avgPct',
+            'recommendations', 'quizAnnouncements'
+        ));
     }
 }

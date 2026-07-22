@@ -296,7 +296,7 @@ public class TopicListPanel extends JPanel {
             JLabel lbl = (JLabel) super.getListCellRendererComponent(
                     list, value, index, isSelected, cellHasFocus);
             if (value instanceof Topic t) {
-                lbl.setText("<html><b>" + (t.isPinned ? "📌 " : "") + esc(t.toString()) + "</b>" +
+                lbl.setText("<html><b>" + (t.pinned ? "📌 " : "") + esc(t.toString()) + "</b>" +
                     "<br><font color='#6c757d' size='-2'>by " + esc(t.authorName) +
                     "</font></html>");
             }
