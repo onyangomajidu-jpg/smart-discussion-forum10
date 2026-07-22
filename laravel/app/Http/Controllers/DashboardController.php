@@ -33,9 +33,9 @@ class DashboardController extends Controller
             ->join('topics', 'posts.topic_id', '=', 'topics.id')
             ->where('posts.user_id', $uid)
             ->whereNull('topics.deleted_at')
-            ->select('topics.id', 'topics.title')
-            ->distinct()
-            ->orderByDesc('posts.created_at')
+            ->select('topics.id', 'topics.title', DB::raw('MAX(posts.created_at) as last_post_at'))
+            ->groupBy('topics.id', 'topics.title')
+            ->orderByDesc('last_post_at')
             ->limit(5)
             ->get();
 
