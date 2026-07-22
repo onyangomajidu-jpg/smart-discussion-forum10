@@ -359,8 +359,17 @@
             .topnav-logout-btn { padding:7px 9px; }
             .topnav-divider { display:none; }
 
-            /* Notification dropdown full-width on mobile */
-            .notif-dropdown { width:calc(100vw - 20px); right:-10px; }
+            /* Notification dropdown: fixed full-width panel on mobile */
+            .notif-dropdown {
+                position:fixed;
+                top:64px;
+                left:8px;
+                right:8px;
+                width:auto;
+                max-height:70vh;
+                overflow-y:auto;
+                border-radius:12px;
+            }
 
             /* Cards & tables */
             .card-body { padding:14px; }
