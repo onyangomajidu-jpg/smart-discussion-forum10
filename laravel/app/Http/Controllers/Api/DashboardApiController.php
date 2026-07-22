@@ -63,9 +63,9 @@ class DashboardApiController extends Controller
             ->join('topics', 'posts.topic_id', '=', 'topics.id')
             ->where('posts.user_id', $user->id)
             ->whereNull('topics.deleted_at')
-            ->select('topics.id', 'topics.title')
-            ->distinct()
-            ->orderBy('posts.created_at', 'desc')
+            ->select('topics.id', 'topics.title', DB::raw('MAX(posts.created_at) as last_post_at'))
+            ->groupBy('topics.id', 'topics.title')
+            ->orderBy('last_post_at', 'desc')
             ->limit(5)
             ->get();
 
