@@ -116,8 +116,7 @@
             .conv-header > div:last-child a,
             .conv-header > div:last-child button { font-size: 12px; padding: 6px 10px; }
 
-            .messages { padding: 12px; gap: 12px; }
-            .post-card { padding: 12px; }
+            .messages { padding: 12px; gap: 10px; }
             .input-area { padding: 10px 12px; }
             .msg-input { font-size: 13px; }
             .btn-send { padding: 8px 14px; font-size: 13px; }
@@ -140,24 +139,70 @@
         .conv-header-meta { font-size: 13px; color: #718096; }
         .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
 
-        /* Post card */
-        .post-card { background: white; border-radius: 10px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-        .post-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .post-author { font-weight: 600; font-size: 14px; color: #4a5568; }
-        .post-time { font-size: 12px; color: #a0aec0; }
-        .post-body { font-size: 14px; color: #2d3748; line-height: 1.6; }
-        .post-actions { margin-top: 10px; display: flex; gap: 8px; }
-        .btn-sm { padding: 4px 10px; font-size: 12px; border: 1px solid #e2e8f0; border-radius: 5px; cursor: pointer; background: white; }
-        .btn-sm:hover { background: #f7fafc; }
-        .btn-reply { color: #667eea; border-color: #667eea; }
-        .btn-edit { color: #38a169; border-color: #38a169; }
-        .btn-delete { color: #e53e3e; border-color: #e53e3e; }
+        /* ── Chat bubble styles ── */
+        .chat-row { display: flex; align-items: flex-end; gap: 10px; }
+        .chat-row.mine { flex-direction: row-reverse; }
 
-        /* Replies */
-        .replies { margin-top: 12px; padding-left: 20px; border-left: 3px solid #e2e8f0; display: flex; flex-direction: column; gap: 10px; }
-        .reply-card { background: #f7fafc; border-radius: 8px; padding: 10px 14px; }
-        .reply-author { font-weight: 600; font-size: 13px; color: #4a5568; }
-        .reply-body { font-size: 13px; color: #4a5568; margin-top: 4px; }
+        .chat-avatar {
+            width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 800; color: #fff;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 2px 6px rgba(0,0,0,.15);
+        }
+        .chat-row.mine .chat-avatar { background: linear-gradient(135deg, #10b981, #059669); }
+        .chat-row.topic-origin .chat-avatar { background: linear-gradient(135deg, #f59e0b, #d97706); }
+
+        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 72%; }
+        .chat-row.mine .chat-bubble-wrap { align-items: flex-end; }
+
+        .chat-meta { font-size: 11px; color: #94a3b8; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+        .chat-row.mine .chat-meta { flex-direction: row-reverse; }
+        .chat-meta .author { font-weight: 700; color: #475569; }
+        .chat-row.mine .chat-meta .author { color: #059669; }
+        .chat-row.topic-origin .chat-meta .author { color: #d97706; }
+
+        .chat-bubble {
+            background: #fff;
+            border-radius: 18px 18px 18px 4px;
+            padding: 11px 15px;
+            font-size: 14px; color: #1e293b; line-height: 1.55;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+            word-break: break-word;
+        }
+        .chat-row.mine .chat-bubble {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border-radius: 18px 18px 4px 18px;
+            box-shadow: 0 2px 10px rgba(102,126,234,.35);
+        }
+        .chat-row.topic-origin .chat-bubble {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            color: #78350f;
+            border-radius: 18px 18px 18px 4px;
+            border: 1px solid #fcd34d;
+        }
+
+        .chat-actions { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+        .chat-row.mine .chat-actions { justify-content: flex-end; }
+        .btn-sm { padding: 3px 9px; font-size: 11px; border: 1px solid #e2e8f0; border-radius: 20px; cursor: pointer; background: white; font-weight: 600; transition: all .15s; }
+        .btn-sm:hover { background: #f1f5f9; }
+        .btn-reply { color: #667eea; border-color: #c7d2fe; }
+        .btn-edit   { color: #38a169; border-color: #a7f3d0; }
+        .btn-delete { color: #e53e3e; border-color: #fecaca; }
+
+        /* Replies as threaded bubbles */
+        .replies { margin-top: 8px; padding-left: 44px; display: flex; flex-direction: column; gap: 8px; }
+        .reply-bubble {
+            background: #f8fafc;
+            border-radius: 12px 12px 12px 4px;
+            padding: 8px 12px;
+            font-size: 13px; color: #374151;
+            border-left: 3px solid #c7d2fe;
+            box-shadow: 0 1px 3px rgba(0,0,0,.05);
+        }
+        .reply-author { font-weight: 700; font-size: 12px; color: #6366f1; margin-bottom: 2px; }
+        .reply-time   { font-size: 10px; color: #94a3b8; margin-left: 6px; }
 
         /* Typing indicator */
         .typing-indicator { padding: 6px 20px; font-size: 13px; color: #718096; font-style: italic; min-height: 28px; }
@@ -316,53 +361,58 @@
                         <p style="font-size:13px;color:#718096;margin-top:6px;">You cannot view or post messages until restored by the topic creator.</p>
                     </div>
                 @else
-                <div class="post-card" style="border-left: 4px solid #667eea;">
-                    <div class="post-header">
-                        <span class="post-author">{{ $activeTopic->author->name }}</span>
-                        <span class="post-time">{{ $activeTopic->created_at->diffForHumans() }}</span>
+                {{-- Topic origin bubble --}}
+                <div class="chat-row topic-origin">
+                    <div class="chat-avatar">{{ strtoupper(substr($activeTopic->author->name,0,1)) }}</div>
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-meta">
+                            <span class="author">{{ $activeTopic->author->name }}</span>
+                            <span>{{ $activeTopic->created_at->diffForHumans() }}</span>
+                            <span style="background:#fde68a;color:#92400e;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:700">Topic</span>
+                        </div>
+                        <div class="chat-bubble">{{ $activeTopic->body }}</div>
                     </div>
-                    <div class="post-body">{{ $activeTopic->body }}</div>
                 </div>
 
                 {{-- Posts --}}
                 @foreach($posts as $post)
-                    <div class="post-card" id="post-{{ $post->id }}">
-                        <div class="post-header">
-                            <span class="post-author">{{ $post->author->name }}</span>
-                            <span class="post-time">{{ $post->created_at->diffForHumans() }}</span>
+                @php $isMe = $post->user_id === auth()->id(); @endphp
+                <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="post-{{ $post->id }}">
+                    @if(!$isMe)<div class="chat-avatar">{{ strtoupper(substr($post->author->name,0,1)) }}</div>@endif
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-meta">
+                            <span class="author">{{ $isMe ? 'You' : $post->author->name }}</span>
+                            <span>{{ $post->created_at->diffForHumans() }}</span>
                         </div>
-                        <div class="post-body" id="post-body-{{ $post->id }}">{{ $post->body }}</div>
-                        <div class="post-actions">
-                            <button class="btn-sm btn-reply" onclick="toggleReplyForm({{ $post->id }})">↩ Reply</button>
+                        <div class="chat-bubble" id="post-body-{{ $post->id }}">{{ $post->body }}</div>
+                        <div class="chat-actions">
+                            <button class="btn-sm btn-reply" onclick="toggleReplyForm({{ $post->id }})">&#8617; Reply</button>
                             @if(auth()->id() === $post->user_id || auth()->user()->isAdmin())
-                                <button class="btn-sm btn-edit" onclick="editPost({{ $post->id }}, `{{ addslashes($post->body) }}`)">✏ Edit</button>
-                                <button class="btn-sm btn-delete" onclick="deletePost({{ $post->id }})">🗑 Delete</button>
+                                <button class="btn-sm btn-edit" onclick="editPost({{ $post->id }}, `{{ addslashes($post->body) }}`)">&#9998; Edit</button>
+                                <button class="btn-sm btn-delete" onclick="deletePost({{ $post->id }})">&#128465; Delete</button>
                             @endif
                         </div>
-
-                        {{-- Reply form (hidden) --}}
-                        <form id="reply-form-{{ $post->id }}" style="display:none;margin-top:10px;"
+                        <form id="reply-form-{{ $post->id }}" style="display:none;margin-top:8px;"
                               action="{{ route('topics.answer', $post->id) }}" method="POST">
                             @csrf
                             <div style="display:flex;gap:8px;">
-                                <input type="text" name="body" placeholder="Write a reply..." class="msg-input" style="flex:1;padding:8px 12px;">
+                                <input type="text" name="body" placeholder="Write a reply..." class="msg-input" style="flex:1;padding:8px 12px;min-width:0">
                                 <button type="submit" class="btn-send" style="padding:8px 14px;">Send</button>
                             </div>
                         </form>
-
-                        {{-- Replies --}}
                         @if($post->replies->count())
-                            <div class="replies">
-                                @foreach($post->replies as $reply)
-                                    <div class="reply-card" id="reply-{{ $reply->id }}">
-                                        <span class="reply-author">{{ $reply->author->name }}</span>
-                                        <span style="font-size:11px;color:#a0aec0;margin-left:8px;">{{ $reply->created_at->diffForHumans() }}</span>
-                                        <div class="reply-body">{{ $reply->body }}</div>
-                                    </div>
-                                @endforeach
+                        <div class="replies">
+                            @foreach($post->replies as $reply)
+                            <div class="reply-bubble">
+                                <div class="reply-author">{{ $reply->author->name }}<span class="reply-time">{{ $reply->created_at->diffForHumans() }}</span></div>
+                                <div>{{ $reply->body }}</div>
                             </div>
+                            @endforeach
+                        </div>
                         @endif
                     </div>
+                    @if($isMe)<div class="chat-avatar" style="background:linear-gradient(135deg,#10b981,#059669)">{{ strtoupper(substr($post->author->name,0,1)) }}</div>@endif
+                </div>
                 @endforeach
                 @endif {{-- end $isRemoved check --}}
             </div>
@@ -593,33 +643,21 @@
     function buildConversationText() {
         const title = document.querySelector('.conv-header h2').textContent.trim();
         let lines = ['📚 Discussion: "' + title + '"', ''];
-
-        // Topic body (first post card with blue border)
-        const topicBody = document.querySelector('.post-card[style*="border-left"] .post-body');
-        const topicAuthor = document.querySelector('.post-card[style*="border-left"] .post-author');
-        const topicTime = document.querySelector('.post-card[style*="border-left"] .post-time');
-        if (topicAuthor && topicBody) {
-            lines.push('[' + (topicTime ? topicTime.textContent.trim() : '') + '] ' + topicAuthor.textContent.trim() + ': ' + topicBody.textContent.trim());
-            lines.push('');
-        }
-
-        // All reply posts
-        document.querySelectorAll('.post-card:not([style*="border-left"])').forEach(card => {
-            const author = card.querySelector('.post-author');
-            const body   = card.querySelector('.post-body');
-            const time   = card.querySelector('.post-time');
+        document.querySelectorAll('#messages .chat-row').forEach(row => {
+            const author = row.querySelector('.chat-meta .author');
+            const time   = row.querySelector('.chat-meta span:not(.author)');
+            const body   = row.querySelector('.chat-bubble');
             if (author && body) {
-                lines.push('[' + (time ? time.textContent.trim() : '') + '] ' + author.textContent.trim() + ': ' + body.textContent.trim());
-                card.querySelectorAll('.reply-card').forEach(r => {
+                const prefix = row.classList.contains('topic-origin') ? '[Topic] ' : '';
+                lines.push(prefix + '[' + (time ? time.textContent.trim() : '') + '] ' + author.textContent.trim() + ': ' + body.textContent.trim());
+                row.querySelectorAll('.reply-bubble').forEach(r => {
                     const ra = r.querySelector('.reply-author');
-                    const rb = r.querySelector('.reply-body');
-                    const rt = r.querySelector('span[style*="color:#a0aec0"]');
-                    if (ra && rb) lines.push('  ↩ [' + (rt ? rt.textContent.trim() : '') + '] ' + ra.textContent.trim() + ': ' + rb.textContent.trim());
+                    const rb = r.lastChild;
+                    if (ra) lines.push('  ↩ ' + ra.textContent.trim() + ': ' + (rb ? rb.textContent.trim() : ''));
                 });
                 lines.push('');
             }
         });
-
         lines.push(window.location.href);
         return lines.join('\n');
     }
