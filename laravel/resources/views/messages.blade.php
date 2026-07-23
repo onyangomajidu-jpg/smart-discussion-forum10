@@ -99,83 +99,64 @@
         .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #a0aec0; padding: 40px; text-align: center; }
         .empty-state span { font-size: 44px; margin-bottom: 12px; display: block; }
 
-        /* ── Chat bubble styles (same as topic discussions) ── */
-        .chat-row { display: flex; align-items: flex-end; gap: 10px; }
+        /* ── Chat bubble styles ── */
+        .chat-row { display: flex; align-items: flex-end; gap: 0; }
         .chat-row.mine { flex-direction: row-reverse; }
-        .chat-avatar {
-            width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 800; color: #fff;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            box-shadow: 0 2px 6px rgba(0,0,0,.15);
-        }
-        .chat-row.mine .chat-avatar { background: linear-gradient(135deg, #10b981, #059669); }
-        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 72%; }
+        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 75%; }
         .chat-row.mine .chat-bubble-wrap { align-items: flex-end; }
-        .chat-meta { font-size: 11px; color: #94a3b8; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
-        .chat-row.mine .chat-meta { flex-direction: row-reverse; }
-        .chat-meta .author { display: none; }
-        /* ── Embedded sender name inside bubble (WhatsApp group style) ── */
-        .bubble-author {
-            font-size: 12px; font-weight: 700; color: #667eea;
-            margin-bottom: 3px; display: block;
+        /* timestamp embedded inside bubble — WhatsApp style */
+        .bubble-time {
+            font-size: 10px; color: #94a3b8; white-space: nowrap;
+            float: right; margin-left: 8px; margin-top: 4px; line-height: 1;
         }
-        .chat-row.mine .bubble-author { display: none; }
+        .chat-row.mine .bubble-time { color: rgba(255,255,255,.65); }
         .chat-bubble {
-            background: #fff; border-radius: 18px 18px 18px 4px; padding: 11px 15px;
-            font-size: 14px; color: #1e293b; line-height: 1.55;
-            box-shadow: 0 1px 4px rgba(0,0,0,.08); word-break: break-word;
+            background: #fff; border-radius: 8px 8px 8px 2px; padding: 7px 10px 7px 10px;
+            font-size: 14px; color: #1e293b; line-height: 1.5;
+            box-shadow: 0 1px 2px rgba(0,0,0,.1); word-break: break-word;
+            overflow: hidden;
         }
         .chat-row.mine .chat-bubble {
-            background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
-            border-radius: 18px 18px 4px 18px; box-shadow: 0 2px 10px rgba(102,126,234,.35);
+            background: #d9fdd3; color: #111b21;
+            border-radius: 8px 8px 2px 8px; box-shadow: 0 1px 2px rgba(0,0,0,.1);
         }
 
-        /* ── Modern audio bubble ── */
+        /* ── Audio bubble ── */
         .audio-msg-bubble {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px 16px;
-            border-radius: 20px 20px 20px 6px;
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px 6px;
+            border-radius: 8px 8px 8px 2px;
             background: #fff;
-            box-shadow: 0 2px 12px rgba(0,0,0,.08);
-            min-width: 240px; max-width: 320px;
-            margin-top: 4px;
-            border: 1px solid #f1f5f9;
+            box-shadow: 0 1px 2px rgba(0,0,0,.1);
+            min-width: 220px; max-width: 300px;
+            position: relative;
         }
         .chat-row.mine .audio-msg-bubble {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 20px 20px 6px 20px;
-            box-shadow: 0 4px 16px rgba(102,126,234,.4);
-            border: none;
+            background: #d9fdd3;
+            border-radius: 8px 8px 2px 8px;
         }
         .audio-play-btn {
-            width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
+            width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            font-size: 15px; flex-shrink: 0; transition: all .2s;
-            background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
-            box-shadow: 0 3px 10px rgba(102,126,234,.45);
+            font-size: 14px; flex-shrink: 0; transition: all .2s;
+            background: #667eea; color: #fff;
+            box-shadow: 0 2px 6px rgba(102,126,234,.4);
         }
-        .chat-row.mine .audio-play-btn {
-            background: rgba(255,255,255,.22); color: #fff;
-            box-shadow: 0 2px 8px rgba(0,0,0,.15);
-            backdrop-filter: blur(4px);
-        }
-        .audio-play-btn:hover { transform: scale(1.12); }
-        .audio-waveform { flex: 1; display: flex; align-items: center; gap: 2.5px; height: 32px; }
-        .audio-waveform span { display: inline-block; width: 3px; border-radius: 4px; background: #e2e8f0; transition: background .25s; transform-origin: center; }
-        .chat-row.mine .audio-waveform span { background: rgba(255,255,255,.35); }
+        .audio-play-btn:hover { transform: scale(1.1); }
+        .audio-waveform { flex: 1; display: flex; align-items: center; gap: 2px; height: 28px; }
+        .audio-waveform span { display: inline-block; width: 3px; border-radius: 4px; background: #cbd5e1; transition: background .25s; transform-origin: center; }
+        .chat-row.mine .audio-waveform span { background: #86efac; }
         .audio-waveform.playing span { background: #667eea; animation: waveAnim .55s ease-in-out infinite alternate; }
-        .chat-row.mine .audio-waveform.playing span { background: rgba(255,255,255,.9); }
-        .audio-waveform span:nth-child(2n)   { animation-delay: .08s; }
-        .audio-waveform span:nth-child(3n)   { animation-delay: .18s; }
-        .audio-waveform span:nth-child(4n)   { animation-delay: .12s; }
-        .audio-waveform span:nth-child(5n)   { animation-delay: .22s; }
-        .audio-waveform span:nth-child(7n)   { animation-delay: .05s; }
+        .chat-row.mine .audio-waveform.playing span { background: #16a34a; }
+        .audio-waveform span:nth-child(2n) { animation-delay: .08s; }
+        .audio-waveform span:nth-child(3n) { animation-delay: .18s; }
+        .audio-waveform span:nth-child(4n) { animation-delay: .12s; }
+        .audio-waveform span:nth-child(5n) { animation-delay: .22s; }
         @keyframes waveAnim { from { transform: scaleY(.3); opacity: .7; } to { transform: scaleY(1.3); opacity: 1; } }
-        .audio-duration { font-size: 11px; font-weight: 700; color: #94a3b8; min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
-        .chat-row.mine .audio-duration { color: rgba(255,255,255,.75); }
-        .audio-label { font-size: 10px; font-weight: 600; color: #a0aec0; letter-spacing: .4px; text-transform: uppercase; }
-        .chat-row.mine .audio-label { color: rgba(255,255,255,.6); }
+        .audio-duration { font-size: 11px; font-weight: 600; color: #64748b; min-width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
+        .audio-bubble-footer { display: flex; justify-content: flex-end; align-items: center; margin-top: 2px; }
+        .audio-bubble-time { font-size: 10px; color: #94a3b8; }
+        .chat-row.mine .audio-bubble-time { color: #64748b; }
 
         /* ── WhatsApp-style input bar ── */
         .input-area { padding: 10px 14px; background: #f0f2f5; border-top: none; }
@@ -252,55 +233,38 @@
         .btn-attach-remove:hover { color: #ef4444; }
         /* File bubble */
         .file-msg-bubble {
-            display: flex; align-items: center; gap: 12px; margin-top: 6px;
-            padding: 12px 14px; border-radius: 16px;
-            background: #fff; border: 1.5px solid #e2e8f0;
-            max-width: 320px; box-shadow: 0 2px 8px rgba(0,0,0,.07);
-            transition: box-shadow .2s;
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px 6px; border-radius: 8px 8px 8px 2px;
+            background: #fff; border: 1px solid #e2e8f0;
+            max-width: 300px; box-shadow: 0 1px 2px rgba(0,0,0,.08);
         }
-        .file-msg-bubble:hover { box-shadow: 0 4px 16px rgba(0,0,0,.12); }
-        .chat-row.mine .file-msg-bubble {
-            background: #fff; border-color: #e2e8f0;
-            border-radius: 16px 16px 4px 16px;
-        }
-        .file-type-icon {
-            width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px; background: #ede9fe;
-        }
-        .chat-row.mine .file-type-icon { background: #ede9fe; }
+        .chat-row.mine .file-msg-bubble { background: #d9fdd3; border-color: #bbf7d0; border-radius: 8px 8px 2px 8px; }
+        .file-type-icon { width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; background: #ede9fe; }
         .file-info { flex: 1; min-width: 0; }
-        .file-info .fname {
-            font-size: 13px; font-weight: 700; color: #1e293b;
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-            margin-bottom: 3px;
-        }
-        .chat-row.mine .file-info .fname { color: #1e293b; }
-        .file-info .fmeta { font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
-        .chat-row.mine .file-info .fmeta { color: #718096; }
-        .fmeta-dot { width: 3px; height: 3px; border-radius: 50%; background: #cbd5e1; flex-shrink: 0; }
-        .chat-row.mine .fmeta-dot { background: #cbd5e1; }
-        .btn-file-dl {
-            width: 36px; height: 36px; border-radius: 50%; border: none; cursor: pointer;
-            flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(135deg,#667eea,#764ba2); color: #fff;
-            font-size: 16px; box-shadow: 0 2px 8px rgba(102,126,234,.4);
-            transition: all .2s; text-decoration: none;
-        }
-        .btn-file-dl:hover { transform: scale(1.12); box-shadow: 0 4px 14px rgba(102,126,234,.55); }
-        .chat-row.mine .btn-file-dl { background: linear-gradient(135deg,#667eea,#764ba2); box-shadow: 0 2px 8px rgba(102,126,234,.4); }
-        .chat-row.mine .btn-file-dl:hover { box-shadow: 0 4px 14px rgba(102,126,234,.55); }
-        /* Image bubble + save button */
-        .img-msg-bubble { margin-top: 6px; border-radius: 14px; overflow: hidden; max-width: 280px; box-shadow: 0 2px 10px rgba(0,0,0,.1); cursor: pointer; position: relative; }
+        .file-info .fname { font-size: 13px; font-weight: 700; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; }
+        .file-info .fmeta { font-size: 10px; color: #94a3b8; display: flex; align-items: center; gap: 4px; }
+        .fmeta-dot { width: 2px; height: 2px; border-radius: 50%; background: #cbd5e1; flex-shrink: 0; }
+        .btn-file-dl { width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #667eea; color: #fff; font-size: 14px; text-decoration: none; transition: all .2s; }
+        .btn-file-dl:hover { transform: scale(1.1); }
+        .file-bubble-footer { display: flex; justify-content: flex-end; margin-top: 3px; }
+        .file-bubble-time { font-size: 10px; color: #94a3b8; }
+        /* Image bubble */
+        .img-msg-bubble { border-radius: 8px 8px 8px 2px; overflow: hidden; max-width: 260px; box-shadow: 0 1px 2px rgba(0,0,0,.1); cursor: pointer; position: relative; display: inline-block; }
         .img-msg-bubble img { width: 100%; display: block; }
-        .chat-row.mine .img-msg-bubble { border-radius: 14px 14px 4px 14px; }
+        .chat-row.mine .img-msg-bubble { border-radius: 8px 8px 2px 8px; }
+        /* time overlay on images */
+        .img-time-badge {
+            position: absolute; bottom: 5px; right: 7px;
+            background: rgba(0,0,0,.45); color: #fff;
+            font-size: 10px; padding: 1px 5px; border-radius: 8px;
+            backdrop-filter: blur(2px); pointer-events: none;
+        }
         .btn-img-save {
-            position: absolute; bottom: 8px; right: 8px;
-            width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer;
-            background: rgba(0,0,0,.55); color: #fff; font-size: 15px;
+            position: absolute; bottom: 8px; left: 8px;
+            width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer;
+            background: rgba(0,0,0,.45); color: #fff; font-size: 13px;
             display: flex; align-items: center; justify-content: center;
             opacity: 0; transition: opacity .2s; text-decoration: none;
-            backdrop-filter: blur(4px);
         }
         .img-msg-bubble:hover .btn-img-save { opacity: 1; }
         /* Camera modal */
@@ -340,17 +304,16 @@
         .btn-edit-msg  { color: #38a169; border-color: #a7f3d0; }
         .btn-delete-msg{ color: #e53e3e; border-color: #fecaca; }
 
-        /* ── Reply preview (quoted message) ── */
+        /* ── Reply preview inside bubble ── */
         .reply-preview {
-            border-left: 3px solid #667eea; background: #f0f0ff;
-            border-radius: 6px; padding: 6px 10px; margin-bottom: 4px;
-            font-size: 12px; color: #4a5568; max-width: 100%;
+            border-radius: 4px; padding: 5px 8px; margin-bottom: 5px;
+            font-size: 12px; max-width: 100%; cursor: pointer;
+            background: rgba(0,0,0,.06); border-left: 3px solid currentColor;
         }
-        .reply-preview .rp-author { font-weight: 700; color: #667eea; margin-bottom: 2px; }
+        .reply-preview .rp-author { font-weight: 700; margin-bottom: 1px; }
         .reply-preview .rp-body { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #4a5568; }
-        .chat-row.mine .reply-preview { border-color: rgba(255,255,255,.7); background: rgba(0,0,0,.18); color: #e2e8f0; }
-        .chat-row.mine .reply-preview .rp-author { color: #e0e7ff; }
-        .chat-row.mine .reply-preview .rp-body { color: #cbd5e1; }
+        .chat-row.mine .reply-preview { background: rgba(0,0,0,.08); }
+        .chat-row.mine .reply-preview .rp-body { color: #374151; }
 
         /* ── Reply bar above input ── */
         .reply-bar {
@@ -362,19 +325,6 @@
         .reply-bar .rb-body { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .btn-cancel-reply { background: none; border: none; color: #a0aec0; cursor: pointer; font-size: 18px; flex-shrink: 0; line-height: 1; }
         .btn-cancel-reply:hover { color: #e53e3e; }
-    
-    /* ── Page-load overlay ── */
-    #page-loader {
-        display:none; position:fixed; inset:0; z-index:99998;
-        background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-        align-items:center; justify-content:center; flex-direction:column; gap:18px;
-    }
-    #page-loader.show { display:flex; }
-    .pl-logo { width:64px; height:64px; border-radius:16px; background:rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center; border:2px solid rgba(255,255,255,.3); }
-    .pl-logo img { width:44px; height:44px; object-fit:contain; filter:drop-shadow(0 2px 6px rgba(0,0,0,.3)); }
-    .pl-spinner { width:40px; height:40px; border:3px solid rgba(255,255,255,.25); border-top-color:#fff; border-radius:50%; animation:plSpin .7s linear infinite; }
-    @keyframes plSpin { to { transform:rotate(360deg); } }
-    .pl-text { color:rgba(255,255,255,.85); font-size:14px; font-weight:600; letter-spacing:.3px; }
     </style>
 </head>
 <body>
@@ -493,89 +443,95 @@
                 @endif
 
                 @forelse($messages as $msg)
-                    @php $isMe = $msg->sender_id === auth()->id(); @endphp
+                    @php
+                        $isMe = $msg->sender_id === auth()->id();
+                        $palette = ['#e91e8c','#00bcd4','#4caf50','#ff9800','#9c27b0','#f44336','#2196f3','#009688'];
+                        $otherColor = $palette[abs(crc32($other->name)) % count($palette)];
+                        $myColor    = $palette[abs(crc32(auth()->user()->name)) % count($palette)];
+                        $timeStr    = $msg->created_at->format('H:i');
+                    @endphp
                     <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="msg-{{ $msg->id }}">
-                        <div class="chat-avatar">{{ strtoupper(substr(($isMe ? auth()->user()->name : $other->name), 0, 1)) }}</div>
                         <div class="chat-bubble-wrap">
-                            <div class="chat-meta">
-                                <span>{{ $msg->created_at->diffForHumans() }}</span>
-                            </div>
                             @if($msg->trashed())
-                                <div class="chat-bubble" style="opacity:.5;font-style:italic;">🚫 This message was deleted</div>
+                                <div class="chat-bubble" style="opacity:.5;font-style:italic;color:#94a3b8;">🚫 This message was deleted <span class="bubble-time">{{ $timeStr }}</span></div>
                             @else
-                            @if($msg->replyTo)
-                                <div class="reply-preview" onclick="document.getElementById('msg-{{ $msg->replyTo->id }}') && document.getElementById('msg-{{ $msg->replyTo->id }}').scrollIntoView({behavior:'smooth',block:'center'})" style="cursor:pointer">
-                                    <div class="rp-author">{{ $msg->replyTo->sender_id === auth()->id() ? 'You' : $other->name }}</div>
-                                    <div class="rp-body">{{ $msg->replyTo->body ?: '📎 Attachment' }}</div>
-                                </div>
-                            @endif
-                            @if($msg->body)
+                                {{-- Text bubble (with optional reply quote) --}}
+                                @if($msg->body || $msg->replyTo)
                                 <div class="chat-bubble" id="msg-body-{{ $msg->id }}">
-                                    @if(!$isMe)<span class="bubble-author">{{ $other->name }}</span>@endif
-                                    {{ $msg->body }}
+                                    @if($msg->replyTo)
+                                        @php
+                                            $rpIsMe  = $msg->replyTo->sender_id === auth()->id();
+                                            $rpColor = $rpIsMe ? $myColor : $otherColor;
+                                            $rpName  = $rpIsMe ? 'You' : $other->name;
+                                        @endphp
+                                        <div class="reply-preview" style="border-color:{{ $rpColor }}" onclick="document.getElementById('msg-{{ $msg->replyTo->id }}')&&document.getElementById('msg-{{ $msg->replyTo->id }}').scrollIntoView({behavior:'smooth',block:'center'})">
+                                            <div class="rp-author" style="color:{{ $rpColor }}">{{ $rpName }}</div>
+                                            <div class="rp-body">{{ $msg->replyTo->body ?: '📎 Attachment' }}</div>
+                                        </div>
+                                    @endif
+                                    {{ $msg->body }}<span class="bubble-time">{{ $timeStr }}</span>
                                 </div>
-                            @endif
-                                                                                    @if($msg->image_path)
+                                @endif
+                                {{-- Image bubble --}}
+                                @if($msg->image_path)
                                 <div class="img-msg-bubble">
-                                    <img src="{{ asset('storage/' . $msg->image_path) }}" alt="Image" loading="lazy" onclick="this.closest('.img-msg-bubble').requestFullscreen&&this.closest('.img-msg-bubble').requestFullscreen()">
-                                    <a href="{{ asset('storage/' . $msg->image_path) }}" download class="btn-img-save" title="Save image">&#8595;</a>
+                                    <img src="{{ asset('storage/' . $msg->image_path) }}" alt="Image" loading="lazy">
+                                    <span class="img-time-badge">{{ $timeStr }}</span>
+                                    <a href="{{ asset('storage/' . $msg->image_path) }}" download class="btn-img-save" title="Save">&#8595;</a>
                                 </div>
-                            @endif
-                                                                                    @if($msg->file_path)
+                                @endif
+                                {{-- File bubble --}}
+                                @if($msg->file_path)
                                 @php
                                     $ext = strtolower(pathinfo($msg->file_name ?? '', PATHINFO_EXTENSION));
                                     $fileIcon = match(true) {
-                                        in_array($ext,['pdf']) => '📕',
-                                        in_array($ext,['doc','docx']) => '📘',
+                                        in_array($ext,['pdf'])           => '📕',
+                                        in_array($ext,['doc','docx'])    => '📘',
                                         in_array($ext,['xls','xlsx','csv']) => '📗',
-                                        in_array($ext,['ppt','pptx']) => '📙',
-                                        in_array($ext,['zip','rar','7z']) => '🗜️',
-                                        in_array($ext,['mp3','wav','ogg']) => '🎵',
-                                        in_array($ext,['mp4','mov','avi']) => '🎬',
-                                        default => '📄'
+                                        in_array($ext,['ppt','pptx'])    => '📙',
+                                        in_array($ext,['zip','rar','7z'])=> '🗜️',
+                                        in_array($ext,['mp3','wav','ogg'])=> '🎵',
+                                        in_array($ext,['mp4','mov','avi'])=> '🎬',
+                                        default                          => '📄'
                                     };
                                     $fileSize = $msg->file_size
-                                        ? ($msg->file_size >= 1048576
-                                            ? round($msg->file_size/1048576,1).'MB'
-                                            : round($msg->file_size/1024,0).'KB')
+                                        ? ($msg->file_size >= 1048576 ? round($msg->file_size/1048576,1).'MB' : round($msg->file_size/1024,0).'KB')
                                         : strtoupper($ext);
                                 @endphp
                                 <div class="file-msg-bubble">
                                     <div class="file-type-icon">{{ $fileIcon }}</div>
                                     <div class="file-info">
                                         <div class="fname" title="{{ $msg->file_name }}">{{ $msg->file_name ?? 'Document' }}</div>
-                                        <div class="fmeta">
-                                            <span>{{ strtoupper($ext) }}</span>
-                                            <span class="fmeta-dot"></span>
-                                            <span>{{ $fileSize }}</span>
-                                        </div>
+                                        <div class="fmeta"><span>{{ strtoupper($ext) }}</span><span class="fmeta-dot"></span><span>{{ $fileSize }}</span></div>
                                     </div>
                                     <a href="{{ asset('storage/' . $msg->file_path) }}" download="{{ $msg->file_name }}" class="btn-file-dl" title="Download">&#8595;</a>
                                 </div>
-                            @endif
-                            @if($msg->audio_path)
+                                <div class="file-bubble-footer"><span class="file-bubble-time">{{ $timeStr }}</span></div>
+                                @endif
+                                {{-- Audio bubble --}}
+                                @if($msg->audio_path)
                                 @php $heights = [8,14,20,28,22,16,26,18,10,24,20,14,22,8,18,26,12,20,30,14]; @endphp
                                 <div class="audio-msg-bubble">
                                     <button class="audio-play-btn" onclick="toggleAudio(this)" type="button">&#9654;</button>
-                                    <div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;">
-                                        <span class="audio-label">Voice message</span>
-                                        <div class="audio-waveform">
-                                            @foreach($heights as $h)<span style="height:{{ $h }}px"></span>@endforeach
+                                    <div style="flex:1;min-width:0;">
+                                        <div class="audio-waveform">@foreach($heights as $h)<span style="height:{{ $h }}px"></span>@endforeach</div>
+                                        <div class="audio-bubble-footer">
+                                            <span class="audio-duration">0:00</span>
+                                            <span style="flex:1"></span>
+                                            <span class="audio-bubble-time">{{ $timeStr }}</span>
                                         </div>
                                     </div>
-                                    <span class="audio-duration">0:00</span>
                                     <audio preload="auto" src="{{ asset('storage/' . $msg->audio_path) }}" style="display:none"></audio>
                                 </div>
-                            @endif
-                            <div class="chat-actions">
-                                <button class="btn-sm btn-reply-msg" title="Reply" onclick="setReply({{ $msg->id }}, '{{ $isMe ? 'You' : addslashes($other->name) }}', '{{ addslashes(Str::limit($msg->body ?: 'Attachment', 60)) }}')">&#8617;</button>
-                                @if($isMe)
-                                    @if($msg->body)
-                                        <button class="btn-sm btn-edit-msg" title="Edit" onclick="editMsg({{ $msg->id }}, '{{ addslashes($msg->body) }}')">&#9998;</button>
-                                    @endif
-                                    <button class="btn-sm btn-delete-msg" title="Delete" onclick="deleteMsg({{ $msg->id }})">&#128465;</button>
                                 @endif
-                            </div>
+                                {{-- Actions (reply/edit/delete) --}}
+                                <div class="chat-actions">
+                                    <button class="btn-sm btn-reply-msg" title="Reply" onclick="setReply({{ $msg->id }}, '{{ $isMe ? 'You' : addslashes($other->name) }}', '{{ addslashes(Str::limit($msg->body ?: 'Attachment', 60)) }}')">&#8617;</button>
+                                    @if($isMe)
+                                        @if($msg->body)<button class="btn-sm btn-edit-msg" title="Edit" onclick="editMsg({{ $msg->id }}, '{{ addslashes($msg->body) }}')">&#9998;</button>@endif
+                                        <button class="btn-sm btn-delete-msg" title="Delete" onclick="deleteMsg({{ $msg->id }})">&#128465;</button>
+                                    @endif
+                                </div>
                             @endif
                         </div>
                     </div>
@@ -986,5 +942,114 @@
 <script>
 setInterval(function() { fetch('/api/ping', {credentials:'same-origin'}).catch(function(){}); }, 240000);
 </script>
+
+@if($other)
+<script>
+(function(){
+    const palette = ['#e91e8c','#00bcd4','#4caf50','#ff9800','#9c27b0','#f44336','#2196f3','#009688'];
+    function nameColor(name) { return palette[Math.abs(name.split('').reduce((a,c)=>a+c.charCodeAt(0),0)) % palette.length]; }
+    const myId      = {{ auth()->id() }};
+    const otherId   = {{ $other->id }};
+    const otherName = @json($other->name);
+    const myName    = @json(auth()->user()->name);
+    const otherColor = nameColor(otherName);
+    const myColor    = nameColor(myName);
+    let lastFetch = new Date().toISOString();
+
+    function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function fmtTime(s) { if(!isFinite(s)||isNaN(s))return'0:00'; return Math.floor(s/60)+':'+(Math.floor(s%60)).toString().padStart(2,'0'); }
+
+    function buildBubble(msg) {
+        const isMe = msg.sender_id === myId;
+        const row  = document.createElement('div');
+        row.className = 'chat-row' + (isMe ? ' mine' : '');
+        row.id = 'msg-' + msg.id;
+        const timeStr = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false}) : '';
+
+        let inner = '';
+
+        if (msg.deleted) {
+            inner = `<div class="chat-bubble" style="opacity:.5;font-style:italic;color:#94a3b8">🚫 This message was deleted <span class="bubble-time">${timeStr}</span></div>`;
+        } else {
+            if (msg.body || msg.reply_to) {
+                let bubbleContent = '';
+                if (msg.reply_to) {
+                    const rpIsMe  = msg.reply_to.sender_id === myId;
+                    const rpColor = rpIsMe ? myColor : otherColor;
+                    const rpName  = rpIsMe ? 'You' : otherName;
+                    bubbleContent += `<div class="reply-preview" style="border-color:${rpColor}" onclick="document.getElementById('msg-${msg.reply_to.id}')&&document.getElementById('msg-${msg.reply_to.id}').scrollIntoView({behavior:'smooth',block:'center'})">`
+                        + `<div class="rp-author" style="color:${rpColor}">${escHtml(rpName)}</div>`
+                        + `<div class="rp-body">${escHtml(msg.reply_to.body||'\uD83D\uDCCE Attachment')}</div></div>`;
+                }
+                if (msg.body) bubbleContent += escHtml(msg.body);
+                bubbleContent += `<span class="bubble-time">${timeStr}</span>`;
+                inner += `<div class="chat-bubble" id="msg-body-${msg.id}">${bubbleContent}</div>`;
+            }
+            if (msg.image_path) {
+                inner += `<div class="img-msg-bubble"><img src="/storage/${msg.image_path}" loading="lazy"><span class="img-time-badge">${timeStr}</span><a href="/storage/${msg.image_path}" download class="btn-img-save">&#8595;</a></div>`;
+            }
+            if (msg.audio_path) {
+                const heights = [8,14,20,28,22,16,26,18,10,24,20,14,22,8,18,26,12,20,30,14];
+                const bars = heights.map(h=>`<span style="height:${h}px"></span>`).join('');
+                inner += `<div class="audio-msg-bubble">`
+                    + `<button class="audio-play-btn" onclick="toggleAudio(this)" type="button">&#9654;</button>`
+                    + `<div style="flex:1;min-width:0"><div class="audio-waveform">${bars}</div>`
+                    + `<div class="audio-bubble-footer"><span class="audio-duration">0:00</span><span style="flex:1"></span><span class="audio-bubble-time">${timeStr}</span></div></div>`
+                    + `<audio preload="auto" src="/storage/${msg.audio_path}" style="display:none"></audio></div>`;
+            }
+            inner += `<div class="chat-actions">`
+                + `<button class="btn-sm btn-reply-msg" title="Reply" onclick="setReply(${msg.id},'${isMe?'You':otherName.replace(/'/g,"\\'")}','${escHtml(msg.body||'Attachment').replace(/'/g,"\\'")}');">&#8617;</button>`
+                + (isMe && msg.body ? `<button class="btn-sm btn-edit-msg" title="Edit" onclick="editMsg(${msg.id},'${(msg.body||'').replace(/'/g,"\\'")}');">&#9998;</button>` : '')
+                + (isMe ? `<button class="btn-sm btn-delete-msg" title="Delete" onclick="deleteMsg(${msg.id})">&#128465;</button>` : '')
+                + `</div>`;
+        }
+
+        row.innerHTML = `<div class="chat-bubble-wrap">${inner}</div>`;
+
+        // Wire up audio player
+        row.querySelectorAll('.audio-msg-bubble').forEach(function(bubble) {
+            const audio = bubble.querySelector('audio');
+            const durEl = bubble.querySelector('.audio-duration');
+            audio.addEventListener('loadedmetadata', function() {
+                if (audio.duration === Infinity || isNaN(audio.duration)) {
+                    audio.currentTime = 1e101;
+                    audio.addEventListener('timeupdate', function onFix() {
+                        audio.removeEventListener('timeupdate', onFix);
+                        audio.currentTime = 0;
+                        if (isFinite(audio.duration)) durEl.textContent = fmtTime(audio.duration);
+                    }, {once:true});
+                } else if (isFinite(audio.duration)) durEl.textContent = fmtTime(audio.duration);
+            });
+            audio.addEventListener('timeupdate', function() { durEl.textContent = fmtTime(audio.currentTime); });
+            audio.addEventListener('ended', function() {
+                bubble.querySelector('.audio-play-btn').innerHTML = '&#9654;';
+                bubble.querySelector('.audio-waveform').classList.remove('playing');
+            });
+        });
+
+        return row;
+    }
+
+    function pollMessages() {
+        fetch('/messages/' + otherId + '/poll?since=' + encodeURIComponent(lastFetch), {credentials:'same-origin'})
+            .then(r => r.json())
+            .then(data => {
+                if (!data.messages || !data.messages.length) return;
+                lastFetch = data.fetched_at;
+                const container = document.getElementById('messages');
+                const atBottom  = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+                data.messages.forEach(msg => {
+                    if (document.getElementById('msg-' + msg.id)) return;
+                    container.appendChild(buildBubble(msg));
+                });
+                if (atBottom) container.scrollTop = container.scrollHeight;
+            })
+            .catch(() => {});
+    }
+
+    setInterval(pollMessages, 3000);
+})();
+</script>
+@endif
 </body>
 </html>

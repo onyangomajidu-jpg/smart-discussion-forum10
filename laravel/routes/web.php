@@ -99,6 +99,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/messages', [App\Http\Controllers\MessageController::class, 'index'])->name('messages.index');
     Route::get('/messages/{userId}', [App\Http\Controllers\MessageController::class, 'show'])->whereNumber('userId')->name('messages.show');
+    Route::get('/messages/{userId}/poll', [App\Http\Controllers\MessageController::class, 'poll'])->whereNumber('userId')->name('messages.poll');
     Route::post('/messages/{userId}', [App\Http\Controllers\MessageController::class, 'store'])->whereNumber('userId')->name('messages.store');
     Route::put('/messages/{id}/edit', [App\Http\Controllers\MessageController::class, 'update'])->name('messages.update');
     Route::delete('/messages/{id}', [App\Http\Controllers\MessageController::class, 'destroy'])->name('messages.destroy');

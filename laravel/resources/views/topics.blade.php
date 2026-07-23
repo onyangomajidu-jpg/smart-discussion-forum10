@@ -140,58 +140,55 @@
         .conv-header-meta { font-size: 13px; color: #718096; }
         .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
 
-        /* ── Chat bubble styles ── */
-        .chat-row { display: flex; align-items: flex-end; gap: 10px; }
+        /* ── Chat bubble styles (WhatsApp group) ── */
+        .chat-row { display: flex; align-items: flex-end; gap: 0; margin-bottom: 2px; }
         .chat-row.mine { flex-direction: row-reverse; }
 
-        .chat-avatar {
-            width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 800; color: #fff;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            box-shadow: 0 2px 6px rgba(0,0,0,.15);
-        }
-        .chat-row.mine .chat-avatar { background: linear-gradient(135deg, #10b981, #059669); }
-        .chat-row.topic-origin .chat-avatar { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 72%; padding-left: 8px; }
+        .chat-row.mine .chat-bubble-wrap { align-items: flex-end; padding-left: 0; padding-right: 8px; }
 
-        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 72%; }
-        .chat-row.mine .chat-bubble-wrap { align-items: flex-end; }
-
-        .chat-meta { font-size: 11px; color: #94a3b8; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
-        .chat-row.mine .chat-meta { flex-direction: row-reverse; }
-        .chat-meta .author { display: none; }
-        /* ── Embedded sender name inside bubble (WhatsApp group style) ── */
+        /* sender name inside bubble */
         .bubble-author {
-            font-size: 12px; font-weight: 700; color: #667eea;
-            margin-bottom: 3px; display: block;
+            font-size: 12.5px; font-weight: 700;
+            margin-bottom: 2px; display: block;
+            line-height: 1.3;
         }
         .chat-row.mine .bubble-author { display: none; }
-        .chat-row.topic-origin .bubble-author { color: #d97706; }
         a.bubble-author { text-decoration: none; cursor: pointer; }
         a.bubble-author:hover { text-decoration: underline; }
 
+        /* time stamp inside bubble */
+        .bubble-time {
+            font-size: 11px; color: #8696a0;
+            float: right; margin-left: 10px; margin-top: 4px;
+            line-height: 1; white-space: nowrap;
+        }
+        .chat-row.mine .bubble-time { color: #6a9f7a; }
+        .chat-row.topic-origin .bubble-time { color: #a16207; }
+
         .chat-bubble {
             background: #fff;
-            border-radius: 18px 18px 18px 4px;
-            padding: 11px 15px;
-            font-size: 14px; color: #1e293b; line-height: 1.55;
-            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+            border-radius: 8px 8px 8px 2px;
+            padding: 7px 10px 7px 10px;
+            font-size: 14px; color: #111b21; line-height: 1.55;
+            box-shadow: 0 1px 2px rgba(0,0,0,.13);
             word-break: break-word;
+            overflow: hidden;
         }
         .chat-row.mine .chat-bubble {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #fff;
-            border-radius: 18px 18px 4px 18px;
-            box-shadow: 0 2px 10px rgba(102,126,234,.35);
+            background: #d9fdd3;
+            color: #111b21;
+            border-radius: 8px 8px 2px 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,.13);
         }
         .chat-row.topic-origin .chat-bubble {
-            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            background: #fef9c3;
             color: #78350f;
-            border-radius: 18px 18px 18px 4px;
+            border-radius: 8px 8px 8px 2px;
             border: 1px solid #fcd34d;
         }
 
-        .chat-actions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; opacity: 0; transition: opacity .15s; pointer-events: none; }
+        .chat-actions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; opacity: 0; transition: opacity .15s; pointer-events: none; clear: both; }
         .chat-row.selected .chat-actions { opacity: 1; pointer-events: auto; }
         .chat-row.mine .chat-actions { justify-content: flex-end; }
         .btn-sm { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid #e2e8f0; border-radius: 50%; cursor: pointer; background: white; transition: all .15s; padding: 0; }
@@ -203,19 +200,18 @@
         /* ── WhatsApp-style quoted reply preview inside bubble ── */
         .reply-quote {
             border-left: 3px solid #667eea;
-            background: rgba(102,126,234,.08);
-            border-radius: 6px 6px 0 0;
-            padding: 6px 10px;
-            margin-bottom: 4px;
+            background: rgba(0,0,0,.06);
+            border-radius: 6px;
+            padding: 5px 9px;
+            margin-bottom: 5px;
             font-size: 12px;
-            max-width: 100%;
             cursor: pointer;
         }
         .reply-quote .rq-author { font-weight: 700; color: #667eea; margin-bottom: 2px; font-size: 11px; }
         .reply-quote .rq-body   { color: #4a5568; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .chat-row.mine .reply-quote { border-color: rgba(255,255,255,.7); background: rgba(0,0,0,.18); }
-        .chat-row.mine .reply-quote .rq-author { color: #e0e7ff; }
-        .chat-row.mine .reply-quote .rq-body   { color: #cbd5e1; }
+        .chat-row.mine .reply-quote { border-color: #6abf8a; background: rgba(0,0,0,.07); }
+        .chat-row.mine .reply-quote .rq-author { color: #2d7a4f; }
+        .chat-row.mine .reply-quote .rq-body   { color: #374151; }
 
         /* ── Reply bar above input ── */
         .reply-bar {
@@ -227,20 +223,6 @@
         .reply-bar .rb-body { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .btn-cancel-reply { background: none; border: none; color: #a0aec0; cursor: pointer; font-size: 18px; flex-shrink: 0; line-height: 1; }
         .btn-cancel-reply:hover { color: #e53e3e; }
-
-        /* ── Threaded replies below post ── */
-        .replies { margin-top: 8px; padding-left: 44px; display: flex; flex-direction: column; gap: 8px; }
-        .reply-bubble {
-            background: #f8fafc;
-            border-radius: 12px 12px 12px 4px;
-            padding: 8px 12px;
-            font-size: 13px; color: #374151;
-            border-left: 3px solid #c7d2fe;
-            box-shadow: 0 1px 3px rgba(0,0,0,.05);
-        }
-        .reply-author { font-weight: 700; font-size: 12px; color: #6366f1; margin-bottom: 2px; }
-        .reply-time   { font-size: 10px; color: #94a3b8; margin-left: 6px; }
-        @media(max-width:480px) { .replies { padding-left: 10px; } }
 
         /* Typing indicator */
         .typing-indicator { padding: 6px 20px; font-size: 13px; color: #718096; font-style: italic; min-height: 28px; }
@@ -294,17 +276,20 @@
         .btn-attach-remove:hover { color: #ef4444; }
         /* File bubble */
         .file-msg-bubble {
-            display: flex; align-items: center; gap: 12px; margin-top: 6px;
-            padding: 12px 14px; border-radius: 16px;
-            background: #fff; border: 1.5px solid #e2e8f0;
-            max-width: 320px; box-shadow: 0 2px 8px rgba(0,0,0,.07);
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 12px; border-radius: 8px 8px 8px 2px;
+            background: #fff; border: 1px solid #e2e8f0;
+            max-width: 320px; box-shadow: 0 1px 2px rgba(0,0,0,.1);
             transition: box-shadow .2s;
         }
-        .file-msg-bubble:hover { box-shadow: 0 4px 16px rgba(0,0,0,.12); }
+        .file-msg-bubble:hover { box-shadow: 0 3px 10px rgba(0,0,0,.12); }
         .chat-row.mine .file-msg-bubble {
-            background: #fff; border-color: #e2e8f0;
-            border-radius: 16px 16px 4px 16px;
+            background: #d9fdd3; border-color: #b2dfb8;
+            border-radius: 8px 8px 2px 8px;
         }
+        .file-bubble-footer { display: flex; justify-content: flex-end; margin-top: 3px; }
+        .file-bubble-time { font-size: 11px; color: #8696a0; }
+        .chat-row.mine .file-bubble-time { color: #6a9f7a; }
         .file-type-icon {
             width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
@@ -332,10 +317,16 @@
         .btn-file-dl:hover { transform: scale(1.12); box-shadow: 0 4px 14px rgba(102,126,234,.55); }
         .chat-row.mine .btn-file-dl { background: linear-gradient(135deg,#667eea,#764ba2); box-shadow: 0 2px 8px rgba(102,126,234,.4); }
         .chat-row.mine .btn-file-dl:hover { box-shadow: 0 4px 14px rgba(102,126,234,.55); }
-        /* Image bubble + save button */
-        .img-msg-bubble { margin-top: 6px; border-radius: 14px; overflow: hidden; max-width: 280px; box-shadow: 0 2px 10px rgba(0,0,0,.1); cursor: pointer; position: relative; }
+        /* Image bubble */
+        .img-msg-bubble { border-radius: 8px 8px 8px 2px; overflow: hidden; max-width: 280px; box-shadow: 0 1px 4px rgba(0,0,0,.15); cursor: pointer; position: relative; display: inline-block; }
         .img-msg-bubble img { width: 100%; display: block; }
-        .chat-row.mine .img-msg-bubble { border-radius: 14px 14px 4px 14px; }
+        .chat-row.mine .img-msg-bubble { border-radius: 8px 8px 2px 8px; }
+        .img-time-badge {
+            position: absolute; bottom: 6px; right: 7px;
+            background: rgba(0,0,0,.45); color: #fff;
+            font-size: 11px; padding: 2px 6px; border-radius: 10px;
+            backdrop-filter: blur(3px); pointer-events: none;
+        }
         .btn-img-save {
             position: absolute; bottom: 8px; right: 8px;
             width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer;
@@ -379,32 +370,28 @@
         .btn-send-audio:hover { background: #017a62; }
         /* ── Modern audio bubble ── */
         .audio-msg-bubble {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px 16px;
-            border-radius: 20px 20px 20px 6px;
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px 8px 8px 2px;
             background: #fff;
-            box-shadow: 0 2px 12px rgba(0,0,0,.08);
-            min-width: 240px; max-width: 320px;
-            margin-top: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,.1);
+            min-width: 220px; max-width: 300px;
             border: 1px solid #f1f5f9;
         }
         .chat-row.mine .audio-msg-bubble {
-            background: linear-gradient(135deg,#667eea,#764ba2);
-            border-radius: 20px 20px 6px 20px;
-            box-shadow: 0 4px 16px rgba(102,126,234,.4);
-            border: none;
+            background: #d9fdd3;
+            border-radius: 8px 8px 2px 8px;
+            border-color: #b2dfb8;
         }
         .audio-play-btn {
-            width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
+            width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             font-size: 15px; flex-shrink: 0; transition: all .2s;
-            background: linear-gradient(135deg,#667eea,#764ba2); color: #fff;
-            box-shadow: 0 3px 10px rgba(102,126,234,.45);
+            background: #00a884; color: #fff;
+            box-shadow: 0 2px 6px rgba(0,168,132,.35);
         }
         .chat-row.mine .audio-play-btn {
-            background: rgba(255,255,255,.22); color: #fff;
-            box-shadow: 0 2px 8px rgba(0,0,0,.15);
-            backdrop-filter: blur(4px);
+            background: #25d366;
         }
         .audio-play-btn:hover { transform: scale(1.12); }
         .audio-waveform {
@@ -412,12 +399,12 @@
         }
         .audio-waveform span {
             display: inline-block; width: 3px; border-radius: 4px;
-            background: #e2e8f0; transition: background .25s;
+            background: #c8d8d0; transition: background .25s;
             transform-origin: center;
         }
-        .chat-row.mine .audio-waveform span { background: rgba(255,255,255,.35); }
-        .audio-waveform.playing span { background: #667eea; animation: waveAnim .55s ease-in-out infinite alternate; }
-        .chat-row.mine .audio-waveform.playing span { background: rgba(255,255,255,.9); }
+        .chat-row.mine .audio-waveform span { background: #8abfa8; }
+        .audio-waveform.playing span { background: #00a884; animation: waveAnim .55s ease-in-out infinite alternate; }
+        .chat-row.mine .audio-waveform.playing span { background: #25d366; }
         .audio-waveform span:nth-child(2n)   { animation-delay: .08s; }
         .audio-waveform span:nth-child(3n)   { animation-delay: .18s; }
         .audio-waveform span:nth-child(4n)   { animation-delay: .12s; }
@@ -427,10 +414,12 @@
             from { transform: scaleY(.3); opacity: .7; }
             to   { transform: scaleY(1.3); opacity: 1; }
         }
-        .audio-duration { font-size: 11px; font-weight: 700; color: #94a3b8; min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
-        .chat-row.mine .audio-duration { color: rgba(255,255,255,.75); }
+        .audio-duration { font-size: 11px; font-weight: 700; color: #8696a0; min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+        .chat-row.mine .audio-duration { color: #6a9f7a; }
         .audio-label { font-size: 10px; font-weight: 600; color: #a0aec0; letter-spacing: .4px; text-transform: uppercase; }
-        .chat-row.mine .audio-label { color: rgba(255,255,255,.6); }
+        .chat-row.mine .audio-label { color: #5a8a6a; }
+        .audio-bubble-footer { display: flex; justify-content: flex-end; font-size: 11px; color: #8696a0; margin-top: 2px; }
+        .chat-row.mine .audio-bubble-footer { color: #6a9f7a; }
         .syndicate-row { margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #718096; }
 
         /* Empty state */
@@ -454,19 +443,6 @@
         .alert { padding: 10px 16px; border-radius: 7px; margin-bottom: 12px; font-size: 14px; }
         .alert-success { background: #c6f6d5; color: #276749; }
         .alert-error { background: #fed7d7; color: #9b2c2c; }
-    
-    /* ── Page-load overlay ── */
-    #page-loader {
-        display:none; position:fixed; inset:0; z-index:99998;
-        background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-        align-items:center; justify-content:center; flex-direction:column; gap:18px;
-    }
-    #page-loader.show { display:flex; }
-    .pl-logo { width:64px; height:64px; border-radius:16px; background:rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center; border:2px solid rgba(255,255,255,.3); }
-    .pl-logo img { width:44px; height:44px; object-fit:contain; filter:drop-shadow(0 2px 6px rgba(0,0,0,.3)); }
-    .pl-spinner { width:40px; height:40px; border:3px solid rgba(255,255,255,.25); border-top-color:#fff; border-radius:50%; animation:plSpin .7s linear infinite; }
-    @keyframes plSpin { to { transform:rotate(360deg); } }
-    .pl-text { color:rgba(255,255,255,.85); font-size:14px; font-weight:600; letter-spacing:.3px; }
     </style>
 </head>
 <body>
@@ -590,41 +566,40 @@
                 @else
                 {{-- Topic origin bubble --}}
                 <div class="chat-row topic-origin">
-                    <div class="chat-avatar">{{ strtoupper(substr($activeTopic->author->name,0,1)) }}</div>
                     <div class="chat-bubble-wrap">
-                        <div class="chat-meta">
-                            <span>{{ $activeTopic->created_at->diffForHumans() }}</span>
-                            <span style="background:#fde68a;color:#92400e;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:700">Topic</span>
-                        </div>
                         <div class="chat-bubble">
-                            <span class="bubble-author">{{ $activeTopic->author->name }}</span>
+                            <span class="bubble-author" style="color:#d97706">{{ $activeTopic->author->name }}</span>
                             {{ $activeTopic->body }}
+                            <span class="bubble-time">{{ $activeTopic->created_at->format('H:i') }}</span>
                         </div>
                     </div>
                 </div>
 
                 {{-- Posts --}}
                 @foreach($posts as $post)
-                @php $isMe = $post->user_id === auth()->id(); @endphp
+                @php
+                    $isMe = $post->user_id === auth()->id();
+                    $palette = ['#e91e8c','#00bcd4','#4caf50','#ff9800','#9c27b0','#f44336','#2196f3','#009688'];
+                    $nameColor = $palette[abs(crc32($post->author->name)) % 8];
+                    $postTime = $post->created_at->format('H:i');
+                @endphp
                 <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="post-{{ $post->id }}">
-                    @if(!$isMe)<div class="chat-avatar">{{ strtoupper(substr($post->author->name,0,1)) }}</div>@endif
                     <div class="chat-bubble-wrap">
-                        <div class="chat-meta">
-                            <span>{{ $post->created_at->diffForHumans() }}</span>
-                        </div>
                         @if($post->body)
                         <div class="chat-bubble" id="post-body-{{ $post->id }}">
-                            @if(!$isMe)<a href="{{ route('messages.show', $post->user_id) }}" class="bubble-author" title="Message {{ $post->author->name }}">{{ $post->author->name }}</a>@endif
-                            {{ $post->body }}
+                            @if(!$isMe)<a href="{{ route('messages.show', $post->user_id) }}" class="bubble-author" style="color:{{ $nameColor }}" title="Message {{ $post->author->name }}">{{ $post->author->name }}</a>@endif
+                            {{ $post->body }}<span class="bubble-time">{{ $postTime }}</span>
                         </div>
                         @endif
                         @if($post->image_path)
                             <div class="img-msg-bubble">
+                                @if(!$post->body && !$isMe)<span class="bubble-author" style="color:{{ $nameColor }};display:block;padding:5px 8px 0;font-size:12.5px;font-weight:700">{{ $post->author->name }}</span>@endif
                                 <img src="{{ asset('storage/' . $post->image_path) }}" alt="Image" loading="lazy">
+                                <span class="img-time-badge">{{ $postTime }}</span>
                                 <a href="{{ asset('storage/' . $post->image_path) }}" download class="btn-img-save" title="Save image">&#8595;</a>
                             </div>
                         @endif
-                                                                        @if($post->file_path)
+                        @if($post->file_path)
                             @php
                                 $ext = strtolower(pathinfo($post->file_name ?? '', PATHINFO_EXTENSION));
                                 $fileIcon = match(true) {
@@ -643,6 +618,7 @@
                                         : round($post->file_size/1024,0).'KB')
                                     : strtoupper($ext);
                             @endphp
+                            @if(!$post->body && !$isMe)<a href="{{ route('messages.show', $post->user_id) }}" class="bubble-author" style="color:{{ $nameColor }};display:block;font-size:12.5px;font-weight:700;text-decoration:none;margin-bottom:3px">{{ $post->author->name }}</a>@endif
                             <div class="file-msg-bubble">
                                 <div class="file-type-icon">{{ $fileIcon }}</div>
                                 <div class="file-info">
@@ -655,9 +631,11 @@
                                 </div>
                                 <a href="{{ asset('storage/' . $post->file_path) }}" download="{{ $post->file_name }}" class="btn-file-dl" title="Download">&#8595;</a>
                             </div>
+                            <div class="file-bubble-footer"><span class="file-bubble-time">{{ $postTime }}</span></div>
                         @endif
                         @if($post->audio_path)
                         @php $heights = [8,14,20,28,22,16,26,18,10,24,20,14,22,8,18,26,12,20,30,14]; @endphp
+                        @if(!$post->body && !$isMe)<span class="bubble-author" style="color:{{ $nameColor }};display:block;font-size:12.5px;font-weight:700;margin-bottom:3px">{{ $post->author->name }}</span>@endif
                         <div class="audio-msg-bubble">
                             <button class="audio-play-btn" onclick="toggleAudio(this)" type="button">&#9654;</button>
                             <div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;">
@@ -669,6 +647,7 @@
                             <span class="audio-duration">0:00</span>
                             <audio preload="auto" src="{{ asset('storage/' . $post->audio_path) }}" style="display:none"></audio>
                         </div>
+                        <div class="audio-bubble-footer">{{ $postTime }}</div>
                         @endif
                         <div class="chat-actions">
                             <button class="btn-sm btn-reply" title="Reply" onclick="setReply({{ $post->id }}, '{{ $isMe ? 'You' : addslashes($post->author->name) }}', '{{ addslashes(Str::limit($post->body ?: 'Attachment', 60)) }}')">&#8617;</button>
@@ -677,23 +656,27 @@
                                 <button class="btn-sm btn-delete" title="Delete" onclick="deletePost({{ $post->id }})">&#128465;</button>
                             @endif
                         </div>
-                        @if($post->replies->count())
-                        <div class="replies">
-                            @foreach($post->replies as $reply)
-                            <div class="reply-bubble">
-                                <div class="reply-author">{{ $reply->author->name }}<span class="reply-time">{{ $reply->created_at->diffForHumans() }}</span></div>
-                                <div class="reply-quote" onclick="document.getElementById('post-{{ $post->id }}').scrollIntoView({behavior:'smooth',block:'center'})">
-                                    <div class="rq-author">{{ $post->author->name }}</div>
-                                    <div class="rq-body">{{ Str::limit($post->body ?: 'Attachment', 80) }}</div>
-                                </div>
-                                <div>{{ $reply->body }}</div>
-                            </div>
-                            @endforeach
-                        </div>
-                        @endif
                     </div>
-                    @if($isMe)<div class="chat-avatar" style="background:linear-gradient(135deg,#10b981,#059669)">{{ strtoupper(substr($post->author->name,0,1)) }}</div>@endif
                 </div>
+                {{-- Replies as separate WhatsApp-style bubbles with quote --}}
+                @foreach($post->replies as $reply)
+                @php
+                    $rIsMe = $reply->user_id === auth()->id();
+                    $rColor = $palette[abs(crc32($reply->author->name)) % 8];
+                @endphp
+                <div class="chat-row {{ $rIsMe ? 'mine' : '' }}" id="reply-{{ $reply->id }}">
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-bubble">
+                            @if(!$rIsMe)<span class="bubble-author" style="color:{{ $rColor }}">{{ $reply->author->name }}</span>@endif
+                            <div class="reply-quote" onclick="document.getElementById('post-{{ $post->id }}')?.scrollIntoView({behavior:'smooth',block:'center'})">
+                                <div class="rq-author" style="color:{{ $nameColor }}">{{ $post->author->name }}</div>
+                                <div class="rq-body">{{ Str::limit($post->body ?: 'Attachment', 80) }}</div>
+                            </div>
+                            {{ $reply->body }}<span class="bubble-time">{{ $reply->created_at->format('H:i') }}</span>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
                 @endforeach
                 @endif {{-- end $isRemoved check --}}
             </div>
@@ -1071,23 +1054,64 @@
 
     @if(isset($activeTopic))
     document.addEventListener('DOMContentLoaded', () => {
-        if (typeof window.Echo === 'undefined') return;
-        const topicChannel = window.Echo.channel('topic.{{ $activeTopic->id }}');
-        topicChannel.listen('.new.post', (e) => {
-            if (e.type !== 'post') return;
-            const msgs = document.getElementById('messages');
-            const div = document.createElement('div');
-            div.className = 'post-card';
-            div.innerHTML = `<div class="post-header"><span class="post-author">User #${e.userId}</span><span class="post-time">just now</span></div><div class="post-body">${e.body}</div>`;
-            msgs.appendChild(div);
-            msgs.scrollTop = msgs.scrollHeight;
-        });
-        topicChannel.listenForWhisper('typing', (e) => {
-            const el = document.getElementById('typingIndicator');
-            el.innerHTML = `${e.name} is typing <span class="typing-dots"><span></span><span></span><span></span></span>`;
-            clearTimeout(typingTimer);
-            typingTimer = setTimeout(() => el.innerHTML = '', 2000);
-        });
+        const palette = ['#e91e8c','#00bcd4','#4caf50','#ff9800','#9c27b0','#f44336','#2196f3','#009688'];
+        function nameColor(name) { return palette[Math.abs(name.split('').reduce((a,c)=>a+c.charCodeAt(0),0)) % palette.length]; }
+        const myId   = {{ auth()->id() }};
+        const myName = @json(auth()->user()->name);
+        let lastFetch = new Date().toISOString();
+
+        function buildBubble(post) {
+            const isMe = post.user_id === myId;
+            const authorName = post.author_name || 'User';
+            const color = nameColor(authorName);
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+            const row = document.createElement('div');
+            row.className = 'chat-row' + (isMe ? ' mine' : '');
+            row.id = 'post-' + post.id;
+            let inner = '';
+            if (post.body) {
+                const authorTag = isMe ? '' : `<a href="/messages/${post.user_id}" class="bubble-author" style="color:${color}">${escHtml(authorName)}</a>`;
+                inner += `<div class="chat-bubble" id="post-body-${post.id}">${authorTag}${escHtml(post.body)}<span class="bubble-time">${timeStr}</span></div>`;
+            }
+            let actionsHtml = `<div class="chat-actions">
+                <button class="btn-sm btn-reply" title="Reply" onclick="setReply(${post.id},'${isMe?'You':authorName.replace(/'/g,"\\'")}','${escHtml(post.body||'Attachment').replace(/'/g,"\\'")}');">&#8617;</button>`;
+            if (isMe) actionsHtml += `<button class="btn-sm btn-edit" title="Edit" onclick="editPost(${post.id},\`${(post.body||'').replace(/`/g,'\\`')}\`)">&#9998;</button><button class="btn-sm btn-delete" title="Delete" onclick="deletePost(${post.id})">&#128465;</button>`;
+            actionsHtml += '</div>';
+            row.innerHTML = `<div class="chat-bubble-wrap">${inner}${actionsHtml}</div>`;
+            return row;
+        }
+
+        function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+        function pollPosts() {
+            fetch('/api/topics/{{ $activeTopic->id }}/posts?since=' + encodeURIComponent(lastFetch), {credentials:'same-origin'})
+                .then(r => r.json())
+                .then(posts => {
+                    if (!posts.length) return;
+                    lastFetch = posts[posts.length - 1].created_at;
+                    const container = document.getElementById('messages');
+                    const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+                    posts.forEach(post => {
+                        if (document.getElementById('post-' + post.id)) return;
+                        container.appendChild(buildBubble(post));
+                    });
+                    if (atBottom) container.scrollTop = container.scrollHeight;
+                })
+                .catch(() => {});
+        }
+
+        setInterval(pollPosts, 3000);
+
+        // Typing indicator via Echo whisper (kept if Echo is available)
+        if (typeof window.Echo !== 'undefined') {
+            window.Echo.channel('topic.{{ $activeTopic->id }}').listenForWhisper('typing', (e) => {
+                const el = document.getElementById('typingIndicator');
+                el.innerHTML = `${e.name} is typing <span class="typing-dots"><span></span><span></span><span></span></span>`;
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => el.innerHTML = '', 2000);
+            });
+        }
     });
     @endif
 

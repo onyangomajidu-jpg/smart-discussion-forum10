@@ -179,7 +179,32 @@
     .lec-kpi-grid { grid-template-columns:repeat(2,1fr); }
     .lec-grid     { grid-template-columns:1fr; }
 }
-@media(max-width:540px) {
+@media(max-width:640px) {
+    .lec-hero { flex-direction:column; align-items:flex-start; gap:12px; padding:22px 20px; }
+    .lec-hero::after { display:none; }
+    .lec-hero > div:last-child { text-align:left; }
+    .lec-kpi-grid { grid-template-columns:repeat(2,1fr); gap:12px; }
+    .export-bar { flex-direction:column; align-items:flex-start; }
+    .export-btns { width:100%; }
+    .export-btn  { flex:1; justify-content:center; }
+    /* Roster table → card rows */
+    .roster-table thead { display:none; }
+    .roster-table tbody tr {
+        display:flex; flex-direction:column; gap:4px;
+        padding:12px 14px; border-bottom:1px solid #e2e8f0;
+    }
+    .roster-table tbody td {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:3px 0; border:none; font-size:13px;
+    }
+    .roster-table tbody td::before {
+        content:attr(data-label);
+        font-size:10px; font-weight:700; color:#94a3b8;
+        text-transform:uppercase; letter-spacing:.4px; flex-shrink:0; margin-right:8px;
+    }
+    .roster-search-input { max-width:100%; }
+}
+@media(max-width:400px) {
     .lec-kpi-grid { grid-template-columns:1fr; }
 }
 </style>
@@ -270,7 +295,7 @@
                 <tbody>
                     @foreach($roster as $rec)
                     <tr>
-                        <td>
+                        <td data-label="Student">
                             <div style="display:flex;align-items:center;gap:10px">
                                 <div class="student-avatar">{{ strtoupper(substr($rec->user->name, 0, 1)) }}</div>
                                 <div>
@@ -279,24 +304,24 @@
                                 </div>
                             </div>
                         </td>
-                        <td style="font-size:12px;color:#374151;font-weight:500;max-width:160px">
+                        <td data-label="Quiz" style="font-size:12px;color:#374151;font-weight:500;max-width:160px">
                             <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ $rec->quiz->title }}</div>
                         </td>
-                        <td>
+                        <td data-label="Score">
                             <span style="font-weight:800;font-size:14px">{{ $rec->score }}</span>
                             <span style="color:#94a3b8;font-size:12px"> / {{ $rec->max_score }}</span>
                             <div class="progress" style="width:70px;margin-top:4px">
                                 <div class="progress-bar" style="width:{{ $rec->percentage }}%"></div>
                             </div>
                         </td>
-                        <td>
+                        <td data-label="Grade">
                             @php
                                 $g = $rec->grade;
                                 $cls = match($g) { 'A' => 'score-a', 'B' => 'score-b', 'C' => 'score-c', 'D' => 'score-d', default => 'score-f' };
                             @endphp
                             <span class="score-pill {{ $cls }}">{{ $g }}</span>
                         </td>
-                        <td>
+                        <td data-label="Status">
                             @if($rec->percentage >= 50)
                                 <span style="color:#065f46;font-weight:700;font-size:12px;display:flex;align-items:center;gap:4px">
                                     <i class="fa-solid fa-circle-check"></i> Pass
@@ -307,7 +332,7 @@
                                 </span>
                             @endif
                         </td>
-                        <td style="color:#64748b;font-size:12px">
+                        <td data-label="Submitted" style="color:#64748b;font-size:12px">
                             {{ $rec->completed_at?->format('d M Y H:i') ?? '—' }}
                         </td>
                     </tr>
