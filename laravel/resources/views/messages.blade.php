@@ -342,9 +342,10 @@
             font-size: 12px; color: #4a5568; max-width: 100%;
         }
         .reply-preview .rp-author { font-weight: 700; color: #667eea; margin-bottom: 2px; }
-        .reply-preview .rp-body { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .chat-row.mine .reply-preview { border-color: rgba(255,255,255,.6); background: rgba(255,255,255,.15); color: rgba(255,255,255,.85); }
-        .chat-row.mine .reply-preview .rp-author { color: #fff; }
+        .reply-preview .rp-body { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #4a5568; }
+        .chat-row.mine .reply-preview { border-color: rgba(255,255,255,.7); background: rgba(0,0,0,.18); color: #e2e8f0; }
+        .chat-row.mine .reply-preview .rp-author { color: #e0e7ff; }
+        .chat-row.mine .reply-preview .rp-body { color: #cbd5e1; }
 
         /* ── Reply bar above input ── */
         .reply-bar {

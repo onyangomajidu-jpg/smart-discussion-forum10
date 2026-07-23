@@ -34,6 +34,11 @@
     font-size: 90px;
     opacity: .08;
 }
+@media(max-width:768px) {
+    .results-hero { flex-direction:column; align-items:flex-start; gap:14px; padding:20px 18px; }
+    .results-hero::after { display:none; }
+    .results-main-grid { grid-template-columns:1fr !important; }
+}
 
 .grade-bar-row { margin-bottom: 14px; }
 .grade-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
@@ -107,7 +112,7 @@
     $grades    = $records->groupBy('grade')->map->count();
 @endphp
 
-<div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:24px">
+<div class="stats-grid" style="margin-bottom:24px">
     <div class="stat-card">
         <div class="stat-icon"><i class="fa-solid fa-users" style="color:#6366f1"></i></div>
         <div class="val">{{ $total }}</div>
@@ -135,7 +140,7 @@
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 290px;gap:22px;align-items:start">
+<div style="display:grid;grid-template-columns:1fr 290px;gap:22px;align-items:start" class="results-main-grid">
 
     {{-- Results Table --}}
     <div class="card">

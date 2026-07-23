@@ -123,6 +123,11 @@
 .quiz-create-grid { display: grid; grid-template-columns: 1fr 380px; gap: 22px; align-items: start; }
 @media (max-width: 900px) {
     .quiz-create-grid { grid-template-columns: 1fr; }
+    .create-hero { padding: 20px 18px; gap: 12px; }
+    .create-hero::after { display: none; }
+    .create-hero .hero-icon-box { width: 44px; height: 44px; font-size: 20px; }
+    .option-row { flex-wrap: nowrap; }
+    .marks-input { width: 70px !important; }
 }
 </style>
 @endpush
