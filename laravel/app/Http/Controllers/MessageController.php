@@ -90,6 +90,7 @@ class MessageController extends Controller
             $uploaded = $request->file('file');
             $data['file_path'] = $uploaded->store('files/messages', 'public');
             $data['file_name'] = $uploaded->getClientOriginalName();
+            $data['file_size'] = $uploaded->getSize();
         }
 
         $message = PrivateMessage::create($data);
