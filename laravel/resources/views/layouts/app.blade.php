@@ -661,11 +661,11 @@
         loader.classList.add('show');
     });
 
-    // Show loader on form submit (navigation forms)
+    // Show loader on form submit (navigation forms only)
     document.addEventListener('submit', function(e) {
         var form = e.target;
-        // Only show for forms that navigate (not fetch/XHR forms)
-        if (form.id === 'loginForm') return; // login handles its own flow
+        if (form.hasAttribute('data-no-loader')) return;
+        if (form.id === 'loginForm') return;
         loader.classList.add('show');
     });
 

@@ -255,7 +255,7 @@
         }
         .file-msg-bubble:hover { box-shadow: 0 4px 16px rgba(0,0,0,.12); }
         .chat-row.mine .file-msg-bubble {
-            background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.3);
+            background: #fff; border-color: #e2e8f0;
             border-radius: 16px 16px 4px 16px;
         }
         .file-type-icon {
@@ -263,18 +263,18 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 22px; background: #ede9fe;
         }
-        .chat-row.mine .file-type-icon { background: rgba(255,255,255,.2); }
+        .chat-row.mine .file-type-icon { background: #ede9fe; }
         .file-info { flex: 1; min-width: 0; }
         .file-info .fname {
             font-size: 13px; font-weight: 700; color: #1e293b;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
             margin-bottom: 3px;
         }
-        .chat-row.mine .file-info .fname { color: #fff; }
+        .chat-row.mine .file-info .fname { color: #1e293b; }
         .file-info .fmeta { font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
-        .chat-row.mine .file-info .fmeta { color: rgba(255,255,255,.65); }
+        .chat-row.mine .file-info .fmeta { color: #718096; }
         .fmeta-dot { width: 3px; height: 3px; border-radius: 50%; background: #cbd5e1; flex-shrink: 0; }
-        .chat-row.mine .fmeta-dot { background: rgba(255,255,255,.4); }
+        .chat-row.mine .fmeta-dot { background: #cbd5e1; }
         .btn-file-dl {
             width: 36px; height: 36px; border-radius: 50%; border: none; cursor: pointer;
             flex-shrink: 0; display: flex; align-items: center; justify-content: center;
@@ -283,8 +283,8 @@
             transition: all .2s; text-decoration: none;
         }
         .btn-file-dl:hover { transform: scale(1.12); box-shadow: 0 4px 14px rgba(102,126,234,.55); }
-        .chat-row.mine .btn-file-dl { background: rgba(255,255,255,.25); box-shadow: none; }
-        .chat-row.mine .btn-file-dl:hover { background: rgba(255,255,255,.4); }
+        .chat-row.mine .btn-file-dl { background: linear-gradient(135deg,#667eea,#764ba2); box-shadow: 0 2px 8px rgba(102,126,234,.4); }
+        .chat-row.mine .btn-file-dl:hover { box-shadow: 0 4px 14px rgba(102,126,234,.55); }
         /* Image bubble + save button */
         .img-msg-bubble { margin-top: 6px; border-radius: 14px; overflow: hidden; max-width: 280px; box-shadow: 0 2px 10px rgba(0,0,0,.1); cursor: pointer; position: relative; }
         .img-msg-bubble img { width: 100%; display: block; }
@@ -576,7 +576,7 @@
             </div>
 
             <div class="input-area">
-                <form action="{{ route('messages.store', $other->id) }}" method="POST" id="messageForm" enctype="multipart/form-data">
+                <form action="{{ route('messages.store', $other->id) }}" method="POST" id="messageForm" enctype="multipart/form-data" data-no-loader>
                     @csrf
                     <input type="file" id="imgInput" name="image" accept="image/*" style="display:none">
                     <input type="file" id="docInput" name="file" style="display:none">
