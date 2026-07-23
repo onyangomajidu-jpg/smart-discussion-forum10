@@ -495,6 +495,9 @@
                                 <span class="author">{{ $isMe ? 'You' : $other->name }}</span>
                                 <span>{{ $msg->created_at->diffForHumans() }}</span>
                             </div>
+                            @if($msg->trashed())
+                                <div class="chat-bubble" style="opacity:.5;font-style:italic;">🚫 This message was deleted</div>
+                            @else
                             @if($msg->replyTo)
                                 <div class="reply-preview">
                                     <div class="rp-author">{{ $msg->replyTo->sender_id === auth()->id() ? 'You' : $other->name }}</div>
@@ -565,6 +568,7 @@
                                     <button class="btn-sm btn-delete-msg" title="Delete" onclick="deleteMsg({{ $msg->id }})">&#128465;</button>
                                 @endif
                             </div>
+                            @endif
                         </div>
                     </div>
                 @empty
@@ -954,7 +958,19 @@
             method: 'DELETE',
             headers: { 'X-CSRF-TOKEN': csrfToken }
         }).then(r => r.json()).then(data => {
-            if (data.success) document.getElementById('msg-' + id).remove();
+            if (data.success) {
+                const wrap = document.querySelector('#msg-' + id + ' .chat-bubble-wrap');
+                if (!wrap) return;
+                // keep meta row, replace content with deleted placeholder
+                const meta = wrap.querySelector('.chat-meta');
+                wrap.innerHTML = '';
+                if (meta) wrap.appendChild(meta);
+                const placeholder = document.createElement('div');
+                placeholder.className = 'chat-bubble';
+                placeholder.style.cssText = 'opacity:.5;font-style:italic;';
+                placeholder.textContent = '\uD83D\uDEAB This message was deleted';
+                wrap.appendChild(placeholder);
+            }
         });
     }
 </script>

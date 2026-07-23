@@ -6,7 +6,6 @@ use App\Models\PrivateMessage;
 use App\Models\User;
 use App\Notifications\PrivateMessageNotification;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class MessageController extends Controller
 {
@@ -35,7 +34,7 @@ class MessageController extends Controller
 
         $other = User::findOrFail($userId);
 
-        $messages = PrivateMessage::with('replyTo')->between($me, $other->id)->orderBy('created_at')->get();
+        $messages = PrivateMessage::withTrashed()->with('replyTo')->between($me, $other->id)->orderBy('created_at')->get();
 
         // Mark anything they sent us as read now that we've opened the thread.
         PrivateMessage::where('sender_id', $other->id)
@@ -111,10 +110,7 @@ class MessageController extends Controller
     public function destroy(int $id)
     {
         $msg = PrivateMessage::where('id', $id)->where('sender_id', auth()->id())->firstOrFail();
-        foreach (['audio_path', 'image_path', 'file_path'] as $col) {
-            if ($msg->$col) Storage::disk('public')->delete($msg->$col);
-        }
-        $msg->delete();
+        $msg->delete(); // soft-delete: files are preserved on disk
         return response()->json(['success' => true]);
     }
 
