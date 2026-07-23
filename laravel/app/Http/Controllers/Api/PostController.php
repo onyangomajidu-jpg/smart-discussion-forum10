@@ -46,10 +46,18 @@ class PostController extends Controller
     }
 
     /** GET /api/topics/{topic}/posts */
-    public function index(Topic $topic)
+    public function index(Request $request, Topic $topic)
     {
+        $query = $topic->posts()->with('author')->orderBy('created_at');
+
+        if ($request->filled('since')) {
+            $query->where('created_at', '>', $request->query('since'));
+        }
+
         return response()->json(
-            $topic->posts()->with('author')->orderBy('created_at')->get()
+            $query->get()->map(fn($p) => array_merge($p->toArray(), [
+                'author_name' => $p->author?->name ?? 'User',
+            ]))
         );
     }
 

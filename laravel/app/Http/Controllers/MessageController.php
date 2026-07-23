@@ -100,6 +100,46 @@ class MessageController extends Controller
         return redirect()->route('messages.show', $other->id);
     }
 
+    // Poll for new messages since a given timestamp (used by live chat)
+    public function poll(Request $request, int $userId)
+    {
+        $me    = auth()->id();
+        $other = User::findOrFail($userId);
+        $since = $request->query('since', '1970-01-01T00:00:00');
+
+        $messages = PrivateMessage::withTrashed()
+            ->with('replyTo')
+            ->between($me, $other->id)
+            ->where('created_at', '>', $since)
+            ->orderBy('created_at')
+            ->get()
+            ->map(fn($msg) => [
+                'id'          => $msg->id,
+                'sender_id'   => $msg->sender_id,
+                'body'        => $msg->trashed() ? null : $msg->body,
+                'deleted'     => $msg->trashed(),
+                'image_path'  => $msg->image_path,
+                'audio_path'  => $msg->audio_path,
+                'file_path'   => $msg->file_path,
+                'file_name'   => $msg->file_name,
+                'file_size'   => $msg->file_size,
+                'reply_to'    => $msg->replyTo ? [
+                    'id'        => $msg->replyTo->id,
+                    'sender_id' => $msg->replyTo->sender_id,
+                    'body'      => $msg->replyTo->body,
+                ] : null,
+                'created_at'  => $msg->created_at->toIso8601String(),
+            ]);
+
+        // Mark incoming as read
+        PrivateMessage::where('sender_id', $other->id)
+            ->where('recipient_id', $me)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return response()->json(['messages' => $messages, 'fetched_at' => now()->toIso8601String()]);
+    }
+
     public function update(Request $request, int $id)
     {
         $msg = PrivateMessage::where('id', $id)->where('sender_id', auth()->id())->firstOrFail();

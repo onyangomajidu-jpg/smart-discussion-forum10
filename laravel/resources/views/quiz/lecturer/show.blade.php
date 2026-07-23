@@ -76,6 +76,24 @@
 .wrong .q-option-letter { background: #e2e8f0; color: #64748b; }
 
 .action-btn-group { display: flex; flex-direction: column; gap: 10px; }
+
+@media(max-width:768px) {
+    .quiz-hero { flex-direction:column; align-items:flex-start; gap:12px; padding:20px 18px; }
+    .quiz-hero::before { display:none; }
+    .quiz-hero .badge { align-self:flex-start; }
+    .quiz-show-grid { grid-template-columns:1fr !important; }
+    .quiz-info-grid { grid-template-columns:1fr !important; }
+    .q-options-grid { grid-template-columns:1fr !important; }
+    .stats-grid { grid-template-columns:repeat(2,1fr) !important; }
+    /* Submissions table → card rows */
+    .table-wrap table thead { display:none; }
+    .table-wrap table tbody tr { display:flex; flex-direction:column; gap:4px; padding:12px 14px; border-bottom:1px solid #e2e8f0; }
+    .table-wrap table tbody td { display:flex; align-items:center; justify-content:space-between; padding:3px 0; border:none; font-size:13px; }
+    .table-wrap table tbody td::before { content:attr(data-label); font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.4px; flex-shrink:0; margin-right:8px; }
+}
+@media(max-width:400px) {
+    .stats-grid { grid-template-columns:1fr !important; }
+}
 </style>
 @endpush
 
@@ -130,7 +148,7 @@
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start">
+<div style="display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start" class="quiz-show-grid">
 
     {{-- LEFT --}}
     <div>
@@ -145,7 +163,7 @@
                         <i class="fa-solid fa-quote-left" style="color:#6366f1;margin-right:6px"></i>{{ $quiz->description }}
                     </p>
                 @endif
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class="quiz-info-grid">
                     <div style="padding:14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0">
                         <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px"><i class="fa-solid fa-unlock" style="color:#10b981"></i> Unlock Date</div>
                         <div style="font-size:13px;font-weight:600">{{ $quiz->unlock_date?->format('D d M Y, h:i A') ?? 'Immediate on publish' }}</div>
@@ -237,7 +255,7 @@
                     <tbody>
                         @foreach($quiz->participationRecords->sortByDesc('score')->take(5) as $rec)
                         <tr>
-                            <td>
+                            <td data-label="Student">
                                 <div style="display:flex;align-items:center;gap:10px">
                                     <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">
                                         {{ strtoupper(substr($rec->user->name, 0, 1)) }}
@@ -245,15 +263,15 @@
                                     <span style="font-weight:600">{{ $rec->user->name }}</span>
                                 </div>
                             </td>
-                            <td style="font-weight:700">{{ $rec->score }} <span style="color:#94a3b8;font-weight:400">/ {{ $rec->max_score }}</span></td>
-                            <td>
+                            <td data-label="Score" style="font-weight:700">{{ $rec->score }} <span style="color:#94a3b8;font-weight:400">/ {{ $rec->max_score }}</span></td>
+                            <td data-label="Percentage">
                                 <div style="display:flex;align-items:center;gap:8px">
                                     <div class="progress" style="width:70px"><div class="progress-bar" style="width:{{ $rec->percentage }}%"></div></div>
                                     <span style="font-weight:600">{{ $rec->percentage }}%</span>
                                 </div>
                             </td>
-                            <td><span class="badge badge-{{ $rec->grade }}">{{ $rec->grade }}</span></td>
-                            <td style="color:#64748b;font-size:12px">{{ $rec->completed_at?->format('d M H:i') }}</td>
+                            <td data-label="Grade"><span class="badge badge-{{ $rec->grade }}">{{ $rec->grade }}</span></td>
+                            <td data-label="Submitted" style="color:#64748b;font-size:12px">{{ $rec->completed_at?->format('d M H:i') }}</td>
                         </tr>
                         @endforeach
                     </tbody>

@@ -38,6 +38,15 @@
     .results-hero { flex-direction:column; align-items:flex-start; gap:14px; padding:20px 18px; }
     .results-hero::after { display:none; }
     .results-main-grid { grid-template-columns:1fr !important; }
+    .stats-grid { grid-template-columns:repeat(2,1fr) !important; }
+    /* Rankings table → card rows */
+    .table-wrap table thead { display:none; }
+    .table-wrap table tbody tr { display:flex; flex-direction:column; gap:4px; padding:12px 14px; border-bottom:1px solid #e2e8f0; }
+    .table-wrap table tbody td { display:flex; align-items:center; justify-content:space-between; padding:3px 0; border:none; font-size:13px; }
+    .table-wrap table tbody td::before { content:attr(data-label); font-size:10px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.4px; flex-shrink:0; margin-right:8px; }
+}
+@media(max-width:400px) {
+    .stats-grid { grid-template-columns:1fr !important; }
 }
 
 .grade-bar-row { margin-bottom: 14px; }
@@ -165,14 +174,14 @@
                 <tbody>
                     @foreach($records as $i => $rec)
                     <tr>
-                        <td>
+                        <td data-label="Rank">
                             <div class="rank-badge {{ $i < 3 ? 'rank-'.($i+1) : 'rank-n' }}">
                                 @if($i === 0) <i class="fa-solid fa-crown"></i>
                                 @else {{ $i + 1 }}
                                 @endif
                             </div>
                         </td>
-                        <td>
+                        <td data-label="Student">
                             <div style="display:flex;align-items:center;gap:10px">
                                 <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">
                                     {{ strtoupper(substr($rec->user->name, 0, 1)) }}
@@ -183,16 +192,16 @@
                                 </div>
                             </div>
                         </td>
-                        <td>
+                        <td data-label="Score">
                             <span style="font-weight:800;font-size:15px;color:#0f172a">{{ $rec->score }}</span>
                             <span style="color:#94a3b8"> / {{ $rec->max_score }}</span>
                             <div class="progress" style="width:80px;margin-top:5px">
                                 <div class="progress-bar" style="width:{{ $rec->percentage }}%"></div>
                             </div>
                         </td>
-                        <td style="font-weight:700;font-size:14px">{{ $rec->percentage }}%</td>
-                        <td><span class="badge badge-{{ $rec->grade }}" style="font-size:13px;padding:5px 14px">{{ $rec->grade }}</span></td>
-                        <td>
+                        <td data-label="%" style="font-weight:700;font-size:14px">{{ $rec->percentage }}%</td>
+                        <td data-label="Grade"><span class="badge badge-{{ $rec->grade }}" style="font-size:13px;padding:5px 14px">{{ $rec->grade }}</span></td>
+                        <td data-label="Status">
                             @if($rec->percentage >= 50)
                                 <span style="color:#065f46;font-weight:700;font-size:12px;display:flex;align-items:center;gap:4px">
                                     <i class="fa-solid fa-circle-check"></i> Pass
@@ -203,7 +212,7 @@
                                 </span>
                             @endif
                         </td>
-                        <td style="color:#64748b;font-size:12px">{{ $rec->completed_at?->format('d M Y H:i') ?? '—' }}</td>
+                        <td data-label="Submitted" style="color:#64748b;font-size:12px">{{ $rec->completed_at?->format('d M Y H:i') ?? '—' }}</td>
                     </tr>
                     @endforeach
                 </tbody>
