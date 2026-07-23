@@ -141,11 +141,23 @@
         .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
 
         /* ── Chat bubble styles (WhatsApp group) ── */
-        .chat-row { display: flex; align-items: flex-end; gap: 0; margin-bottom: 2px; }
+        .chat-row { display: flex; align-items: flex-end; gap: 6px; margin-bottom: 2px; }
         .chat-row.mine { flex-direction: row-reverse; }
 
-        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 72%; padding-left: 8px; }
-        .chat-row.mine .chat-bubble-wrap { align-items: flex-end; padding-left: 0; padding-right: 8px; }
+        /* Avatar inline with bubble */
+        .chat-avatar {
+            width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 800; color: #fff;
+            background: linear-gradient(135deg,#667eea,#764ba2);
+            overflow: hidden; align-self: flex-end;
+        }
+        .chat-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .chat-row.mine .chat-avatar { background: linear-gradient(135deg,#25d366,#128c7e); }
+        .chat-row.topic-origin .chat-avatar { background: linear-gradient(135deg,#f59e0b,#d97706); }
+
+        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 68%; }
+        .chat-row.mine .chat-bubble-wrap { align-items: flex-end; }
 
         /* sender name inside bubble */
         .bubble-author {
@@ -566,6 +578,13 @@
                 @else
                 {{-- Topic origin bubble --}}
                 <div class="chat-row topic-origin">
+                    <div class="chat-avatar">
+                        @if($activeTopic->author->avatar)
+                            <img src="{{ asset('storage/'.$activeTopic->author->avatar) }}" alt="">
+                        @else
+                            {{ strtoupper(substr($activeTopic->author->name,0,1)) }}
+                        @endif
+                    </div>
                     <div class="chat-bubble-wrap">
                         <div class="chat-bubble">
                             <span class="bubble-author" style="color:#d97706">{{ $activeTopic->author->name }}</span>
@@ -584,6 +603,15 @@
                     $postTime = $post->created_at->format('H:i');
                 @endphp
                 <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="post-{{ $post->id }}">
+                    @if(!$isMe)
+                    <div class="chat-avatar">
+                        @if($post->author->avatar)
+                            <img src="{{ asset('storage/'.$post->author->avatar) }}" alt="">
+                        @else
+                            {{ strtoupper(substr($post->author->name,0,1)) }}
+                        @endif
+                    </div>
+                    @endif
                     <div class="chat-bubble-wrap">
                         @if($post->body)
                         <div class="chat-bubble" id="post-body-{{ $post->id }}">
@@ -650,21 +678,40 @@
                         <div class="audio-bubble-footer">{{ $postTime }}</div>
                         @endif
                         <div class="chat-actions">
-                            <button class="btn-sm btn-reply" title="Reply" onclick="setReply({{ $post->id }}, '{{ $isMe ? 'You' : addslashes($post->author->name) }}', '{{ addslashes(Str::limit($post->body ?: 'Attachment', 60)) }}')">&#8617;</button>
+                            <button class="btn-sm btn-reply" title="Reply"
+                                onclick="setReply({{ $post->id }}, '{{ $isMe ? 'You' : addslashes($post->author->name) }}', '{{ addslashes(Str::limit($post->body ?: 'Attachment', 60)) }}')">&#8617;</button>
                             @if(auth()->id() === $post->user_id || auth()->user()->isAdmin())
                                 <button class="btn-sm btn-edit" title="Edit" onclick="editPost({{ $post->id }}, `{{ addslashes($post->body) }}`)">&#9998;</button>
                                 <button class="btn-sm btn-delete" title="Delete" onclick="deletePost({{ $post->id }})">&#128465;</button>
                             @endif
                         </div>
                     </div>
+                    @if($isMe)
+                    <div class="chat-avatar">
+                        @if(auth()->user()->avatar)
+                            <img src="{{ asset('storage/'.auth()->user()->avatar) }}" alt="">
+                        @else
+                            {{ strtoupper(substr(auth()->user()->name,0,1)) }}
+                        @endif
+                    </div>
+                    @endif
                 </div>
-                {{-- Replies as separate WhatsApp-style bubbles with quote --}}
+                {{-- Replies as WhatsApp-style bubbles with embedded quote --}}
                 @foreach($post->replies as $reply)
                 @php
                     $rIsMe = $reply->user_id === auth()->id();
                     $rColor = $palette[abs(crc32($reply->author->name)) % 8];
                 @endphp
                 <div class="chat-row {{ $rIsMe ? 'mine' : '' }}" id="reply-{{ $reply->id }}">
+                    @if(!$rIsMe)
+                    <div class="chat-avatar">
+                        @if($reply->author->avatar)
+                            <img src="{{ asset('storage/'.$reply->author->avatar) }}" alt="">
+                        @else
+                            {{ strtoupper(substr($reply->author->name,0,1)) }}
+                        @endif
+                    </div>
+                    @endif
                     <div class="chat-bubble-wrap">
                         <div class="chat-bubble">
                             @if(!$rIsMe)<span class="bubble-author" style="color:{{ $rColor }}">{{ $reply->author->name }}</span>@endif
@@ -675,6 +722,15 @@
                             {{ $reply->body }}<span class="bubble-time">{{ $reply->created_at->format('H:i') }}</span>
                         </div>
                     </div>
+                    @if($rIsMe)
+                    <div class="chat-avatar">
+                        @if(auth()->user()->avatar)
+                            <img src="{{ asset('storage/'.auth()->user()->avatar) }}" alt="">
+                        @else
+                            {{ strtoupper(substr(auth()->user()->name,0,1)) }}
+                        @endif
+                    </div>
+                    @endif
                 </div>
                 @endforeach
                 @endforeach
@@ -687,9 +743,14 @@
             {{-- Input area --}}
             @if(!$activeTopic->is_locked && !$isRemoved)
                 <div class="input-area">
+                    {{-- Hidden reply form — POSTs to /posts/{id}/answer --}}
+                    <form id="replyForm" method="POST" action="" style="display:none">
+                        @csrf
+                        <input type="hidden" name="body" id="replyFormBody">
+                    </form>
+
                     <form action="{{ route('topics.participate', $activeTopic->id) }}" method="POST" id="postForm" enctype="multipart/form-data" data-no-loader>
                         @csrf
-                        <input type="hidden" name="reply_to_id" id="replyToId">
                         <input type="file" id="imgInput" name="image" accept="image/*" style="display:none">
                         <input type="file" id="docInput" name="file" style="display:none">
                         <div class="reply-bar" id="replyBar">
@@ -719,7 +780,7 @@
                             <textarea name="body" id="postInput" class="msg-input" rows="1"
                                 placeholder="Write a message…"
                                 oninput="onMsgInput();handleTyping();"
-                                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();document.getElementById('postForm').requestSubmit();}"></textarea>
+                                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitMessage();}"></textarea>
                             <button type="button" class="bar-icon-right" id="micBtn" title="Record audio">
                                 <svg id="micIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
                                 <svg id="sendIcon" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -986,16 +1047,32 @@
     }
 
 
+    let replyingToPostId = null;
+
     function setReply(postId, author, body) {
-        document.getElementById('replyToId').value = postId;
+        replyingToPostId = postId;
         document.getElementById('replyBarAuthor').textContent = author;
         document.getElementById('replyBarBody').textContent = body;
         document.getElementById('replyBar').style.display = 'flex';
         document.getElementById('postInput').focus();
+        // Update hidden reply form action
+        document.getElementById('replyForm').action = '/posts/' + postId + '/answer';
     }
     function cancelReply() {
-        document.getElementById('replyToId').value = '';
+        replyingToPostId = null;
         document.getElementById('replyBar').style.display = 'none';
+        document.getElementById('replyForm').action = '';
+    }
+
+    function submitMessage() {
+        const val = document.getElementById('postInput').value.trim();
+        if (!val) return;
+        if (replyingToPostId) {
+            document.getElementById('replyFormBody').value = val;
+            document.getElementById('replyForm').submit();
+        } else {
+            document.getElementById('postForm').requestSubmit();
+        }
     }
 
     function editPost(postId, body) {
@@ -1069,6 +1146,8 @@
             const row = document.createElement('div');
             row.className = 'chat-row' + (isMe ? ' mine' : '');
             row.id = 'post-' + post.id;
+            const initial = authorName.charAt(0).toUpperCase();
+            const avatarHtml = `<div class="chat-avatar">${initial}</div>`;
             let inner = '';
             if (post.body) {
                 const authorTag = isMe ? '' : `<a href="/messages/${post.user_id}" class="bubble-author" style="color:${color}">${escHtml(authorName)}</a>`;
@@ -1078,7 +1157,10 @@
                 <button class="btn-sm btn-reply" title="Reply" onclick="setReply(${post.id},'${isMe?'You':authorName.replace(/'/g,"\\'")}','${escHtml(post.body||'Attachment').replace(/'/g,"\\'")}');">&#8617;</button>`;
             if (isMe) actionsHtml += `<button class="btn-sm btn-edit" title="Edit" onclick="editPost(${post.id},\`${(post.body||'').replace(/`/g,'\\`')}\`)">&#9998;</button><button class="btn-sm btn-delete" title="Delete" onclick="deletePost(${post.id})">&#128465;</button>`;
             actionsHtml += '</div>';
-            row.innerHTML = `<div class="chat-bubble-wrap">${inner}${actionsHtml}</div>`;
+            row.innerHTML =
+                (!isMe ? avatarHtml : '') +
+                `<div class="chat-bubble-wrap">${inner}${actionsHtml}</div>` +
+                (isMe ? avatarHtml : '');
             return row;
         }
 
@@ -1219,10 +1301,10 @@
     }
     function onMsgInput() { updateSendBtn(); }
 
-    // standalone send handler (fires when micBtn is clicked while text or attachment is present)
+    // standalone send handler
     document.getElementById('micBtn') && document.getElementById('micBtn').addEventListener('click', function () {
         const val = document.getElementById('postInput') && document.getElementById('postInput').value.trim();
-        if (val) { document.getElementById('postForm').requestSubmit(); }
+        if (val) { submitMessage(); }
     });
 
     // ── Audio Recorder ──
