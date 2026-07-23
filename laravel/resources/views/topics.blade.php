@@ -581,8 +581,10 @@
                             @endif
                             <span>{{ $post->created_at->diffForHumans() }}</span>
                         </div>
+                        @if($post->body)
                         <div class="chat-bubble" id="post-body-{{ $post->id }}">{{ $post->body }}</div>
-                                                                        @if($post->image_path)
+                        @endif
+                        @if($post->image_path)
                             <div class="img-msg-bubble">
                                 <img src="{{ asset('storage/' . $post->image_path) }}" alt="Image" loading="lazy">
                                 <a href="{{ asset('storage/' . $post->image_path) }}" download class="btn-img-save" title="Save image">&#8595;</a>
