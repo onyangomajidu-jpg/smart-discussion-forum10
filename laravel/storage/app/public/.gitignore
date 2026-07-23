@@ -1,2 +1,10 @@
 *
 !.gitignore
+!audio/
+!audio/**
+!images/
+!images/**
+!files/
+!files/**
+!avatars/
+!avatars/**
