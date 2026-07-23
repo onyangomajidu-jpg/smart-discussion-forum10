@@ -186,6 +186,18 @@
         }
         .reply-author { font-weight: 700; font-size: 12px; color: #6366f1; margin-bottom: 2px; }
         .reply-time   { font-size: 10px; color: #94a3b8; margin-left: 6px; }
+        .reply-form-input {
+            flex: 1; padding: 8px 12px; min-width: 0;
+            border: 1px solid #e2e8f0; border-radius: 10px;
+            font-size: 13px; font-family: inherit;
+            background: #fff; color: #1e293b; outline: none;
+        }
+        .reply-form-input:focus { border-color: #667eea; }
+        .btn-reply-send {
+            padding: 8px 14px; border: none; border-radius: 10px; cursor: pointer;
+            background: linear-gradient(135deg,#667eea,#764ba2); color: #fff;
+            font-size: 13px; font-weight: 600; white-space: nowrap;
+        }
 
         .typing-indicator { padding: 6px 20px; font-size: 13px; color: #718096; font-style: italic; min-height: 28px; }
         .typing-dots span { display: inline-block; width: 6px; height: 6px; background: #718096; border-radius: 50%; margin: 0 2px; animation: bounce 1.2s infinite; }
@@ -270,7 +282,7 @@
         }
         .file-msg-bubble:hover { box-shadow: 0 4px 16px rgba(0,0,0,.12); }
         .chat-row.mine .file-msg-bubble {
-            background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.3);
+            background: #fff; border-color: #e2e8f0;
             border-radius: 16px 16px 4px 16px;
         }
         .file-type-icon {
@@ -278,18 +290,18 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 22px; background: #ede9fe;
         }
-        .chat-row.mine .file-type-icon { background: rgba(255,255,255,.2); }
+        .chat-row.mine .file-type-icon { background: #ede9fe; }
         .file-info { flex: 1; min-width: 0; }
         .file-info .fname {
             font-size: 13px; font-weight: 700; color: #1e293b;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
             margin-bottom: 3px;
         }
-        .chat-row.mine .file-info .fname { color: #fff; }
+        .chat-row.mine .file-info .fname { color: #1e293b; }
         .file-info .fmeta { font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
-        .chat-row.mine .file-info .fmeta { color: rgba(255,255,255,.65); }
+        .chat-row.mine .file-info .fmeta { color: #718096; }
         .fmeta-dot { width: 3px; height: 3px; border-radius: 50%; background: #cbd5e1; flex-shrink: 0; }
-        .chat-row.mine .fmeta-dot { background: rgba(255,255,255,.4); }
+        .chat-row.mine .fmeta-dot { background: #cbd5e1; }
         .btn-file-dl {
             width: 36px; height: 36px; border-radius: 50%; border: none; cursor: pointer;
             flex-shrink: 0; display: flex; align-items: center; justify-content: center;
@@ -298,8 +310,8 @@
             transition: all .2s; text-decoration: none;
         }
         .btn-file-dl:hover { transform: scale(1.12); box-shadow: 0 4px 14px rgba(102,126,234,.55); }
-        .chat-row.mine .btn-file-dl { background: rgba(255,255,255,.25); box-shadow: none; }
-        .chat-row.mine .btn-file-dl:hover { background: rgba(255,255,255,.4); }
+        .chat-row.mine .btn-file-dl { background: linear-gradient(135deg,#667eea,#764ba2); box-shadow: 0 2px 8px rgba(102,126,234,.4); }
+        .chat-row.mine .btn-file-dl:hover { box-shadow: 0 4px 14px rgba(102,126,234,.55); }
         /* Image bubble + save button */
         .img-msg-bubble { margin-top: 6px; border-radius: 14px; overflow: hidden; max-width: 280px; box-shadow: 0 2px 10px rgba(0,0,0,.1); cursor: pointer; position: relative; }
         .img-msg-bubble img { width: 100%; display: block; }
@@ -627,11 +639,11 @@
                                 <button class="btn-sm btn-delete" title="Delete" onclick="deletePost({{ $post->id }})">&#128465;</button>
                             @endif
                         </div>
-                        <form id="reply-form-{{ $post->id }}" style="display:none;margin-top:8px;" action="{{ route('lecturer.topics.answer', $post->id) }}" method="POST">
+                        <form id="reply-form-{{ $post->id }}" style="display:none;margin-top:8px;" action="{{ route('lecturer.topics.answer', $post->id) }}" method="POST" data-no-loader>
                             @csrf
                             <div style="display:flex;gap:8px;">
-                                <input type="text" name="body" placeholder="Write a reply..." class="msg-input" style="flex:1;padding:8px 12px;min-width:0">
-                                <button type="submit" class="btn-send" style="padding:8px 14px;">Send</button>
+                                <input type="text" name="body" placeholder="Write a reply..." class="reply-form-input">
+                                <button type="submit" class="btn-reply-send">Send</button>
                             </div>
                         </form>
                         @if($post->replies->count())
@@ -654,7 +666,7 @@
 
             @if(!$activeTopic->is_locked)
                 <div class="input-area">
-                    <form action="{{ route('lecturer.topics.participate', $activeTopic->id) }}" method="POST" id="postForm" enctype="multipart/form-data">
+                    <form action="{{ route('lecturer.topics.participate', $activeTopic->id) }}" method="POST" id="postForm" enctype="multipart/form-data" data-no-loader>
                         @csrf
                         <input type="file" id="imgInput" name="image" accept="image/*" style="display:none">
                         <input type="file" id="docInput" name="file" style="display:none">
