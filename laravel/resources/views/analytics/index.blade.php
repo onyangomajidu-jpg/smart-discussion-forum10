@@ -136,8 +136,19 @@
     .charts-row  { grid-template-columns:1fr; }
     .bottom-row  { grid-template-columns:1fr; }
 }
-@media(max-width:540px) {
+@media(max-width:640px) {
+    .analytics-hero { flex-direction:column; align-items:flex-start; gap:12px; padding:20px 18px; }
+    .analytics-hero::after { display:none; }
+    .hero-title { font-size:20px; }
+    .kpi-grid { grid-template-columns:1fr 1fr; }
+    .export-bar { flex-direction:column; align-items:flex-start; }
+    .export-btns { width:100%; }
+    .export-btn { flex:1; justify-content:center; }
+}
+@media(max-width:400px) {
     .kpi-grid { grid-template-columns:1fr; }
+    .export-btns { flex-direction:column; }
+    .export-btn { width:100%; }
 }
 </style>
 @endpush

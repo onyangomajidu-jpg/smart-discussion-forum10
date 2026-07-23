@@ -159,11 +159,16 @@
 
         .chat-meta { font-size: 11px; color: #94a3b8; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
         .chat-row.mine .chat-meta { flex-direction: row-reverse; }
-        .chat-meta .author { font-weight: 700; color: #475569; }
-        .chat-row.mine .chat-meta .author { color: #059669; }
-        .chat-row.topic-origin .chat-meta .author { color: #d97706; }
-        a.author { text-decoration: none; cursor: pointer; }
-        a.author:hover { text-decoration: underline; }
+        .chat-meta .author { display: none; }
+        /* ── Embedded sender name inside bubble (WhatsApp group style) ── */
+        .bubble-author {
+            font-size: 12px; font-weight: 700; color: #667eea;
+            margin-bottom: 3px; display: block;
+        }
+        .chat-row.mine .bubble-author { display: none; }
+        .chat-row.topic-origin .bubble-author { color: #d97706; }
+        a.bubble-author { text-decoration: none; cursor: pointer; }
+        a.bubble-author:hover { text-decoration: underline; }
 
         .chat-bubble {
             background: #fff;
@@ -195,7 +200,35 @@
         .btn-edit   { color: #38a169; border-color: #a7f3d0; }
         .btn-delete { color: #e53e3e; border-color: #fecaca; }
 
-        /* Replies as threaded bubbles */
+        /* ── WhatsApp-style quoted reply preview inside bubble ── */
+        .reply-quote {
+            border-left: 3px solid #667eea;
+            background: rgba(102,126,234,.08);
+            border-radius: 6px 6px 0 0;
+            padding: 6px 10px;
+            margin-bottom: 4px;
+            font-size: 12px;
+            max-width: 100%;
+            cursor: pointer;
+        }
+        .reply-quote .rq-author { font-weight: 700; color: #667eea; margin-bottom: 2px; font-size: 11px; }
+        .reply-quote .rq-body   { color: #4a5568; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .chat-row.mine .reply-quote { border-color: rgba(255,255,255,.7); background: rgba(0,0,0,.18); }
+        .chat-row.mine .reply-quote .rq-author { color: #e0e7ff; }
+        .chat-row.mine .reply-quote .rq-body   { color: #cbd5e1; }
+
+        /* ── Reply bar above input ── */
+        .reply-bar {
+            display: none; align-items: center; gap: 8px;
+            padding: 8px 14px; background: #e8e6ff; border-radius: 12px; margin-bottom: 6px;
+            font-size: 13px; color: #4a5568;
+        }
+        .reply-bar .rb-author { font-weight: 700; color: #667eea; }
+        .reply-bar .rb-body { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .btn-cancel-reply { background: none; border: none; color: #a0aec0; cursor: pointer; font-size: 18px; flex-shrink: 0; line-height: 1; }
+        .btn-cancel-reply:hover { color: #e53e3e; }
+
+        /* ── Threaded replies below post ── */
         .replies { margin-top: 8px; padding-left: 44px; display: flex; flex-direction: column; gap: 8px; }
         .reply-bubble {
             background: #f8fafc;
@@ -207,19 +240,7 @@
         }
         .reply-author { font-weight: 700; font-size: 12px; color: #6366f1; margin-bottom: 2px; }
         .reply-time   { font-size: 10px; color: #94a3b8; margin-left: 6px; }
-        /* Reply inline input — always light regardless of which side it sits on */
-        .reply-form-input {
-            flex: 1; padding: 8px 12px; min-width: 0;
-            border: 1px solid #e2e8f0; border-radius: 10px;
-            font-size: 13px; font-family: inherit;
-            background: #fff; color: #1e293b; outline: none;
-        }
-        .reply-form-input:focus { border-color: #667eea; }
-        .btn-reply-send {
-            padding: 8px 14px; border: none; border-radius: 10px; cursor: pointer;
-            background: linear-gradient(135deg,#667eea,#764ba2); color: #fff;
-            font-size: 13px; font-weight: 600; white-space: nowrap;
-        }
+        @media(max-width:480px) { .replies { padding-left: 10px; } }
 
         /* Typing indicator */
         .typing-indicator { padding: 6px 20px; font-size: 13px; color: #718096; font-style: italic; min-height: 28px; }
@@ -572,11 +593,13 @@
                     <div class="chat-avatar">{{ strtoupper(substr($activeTopic->author->name,0,1)) }}</div>
                     <div class="chat-bubble-wrap">
                         <div class="chat-meta">
-                            <span class="author">{{ $activeTopic->author->name }}</span>
                             <span>{{ $activeTopic->created_at->diffForHumans() }}</span>
                             <span style="background:#fde68a;color:#92400e;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:700">Topic</span>
                         </div>
-                        <div class="chat-bubble">{{ $activeTopic->body }}</div>
+                        <div class="chat-bubble">
+                            <span class="bubble-author">{{ $activeTopic->author->name }}</span>
+                            {{ $activeTopic->body }}
+                        </div>
                     </div>
                 </div>
 
@@ -587,15 +610,13 @@
                     @if(!$isMe)<div class="chat-avatar">{{ strtoupper(substr($post->author->name,0,1)) }}</div>@endif
                     <div class="chat-bubble-wrap">
                         <div class="chat-meta">
-                            @if($isMe)
-                                <span class="author">You</span>
-                            @else
-                                <a href="{{ route('messages.show', $post->user_id) }}" class="author" title="Message {{ $post->author->name }}">{{ $post->author->name }}</a>
-                            @endif
                             <span>{{ $post->created_at->diffForHumans() }}</span>
                         </div>
                         @if($post->body)
-                        <div class="chat-bubble" id="post-body-{{ $post->id }}">{{ $post->body }}</div>
+                        <div class="chat-bubble" id="post-body-{{ $post->id }}">
+                            @if(!$isMe)<a href="{{ route('messages.show', $post->user_id) }}" class="bubble-author" title="Message {{ $post->author->name }}">{{ $post->author->name }}</a>@endif
+                            {{ $post->body }}
+                        </div>
                         @endif
                         @if($post->image_path)
                             <div class="img-msg-bubble">
@@ -650,25 +671,21 @@
                         </div>
                         @endif
                         <div class="chat-actions">
-                            <button class="btn-sm btn-reply" title="Reply" onclick="toggleReplyForm({{ $post->id }})">&#8617;</button>
+                            <button class="btn-sm btn-reply" title="Reply" onclick="setReply({{ $post->id }}, '{{ $isMe ? 'You' : addslashes($post->author->name) }}', '{{ addslashes(Str::limit($post->body ?: 'Attachment', 60)) }}')">&#8617;</button>
                             @if(auth()->id() === $post->user_id || auth()->user()->isAdmin())
                                 <button class="btn-sm btn-edit" title="Edit" onclick="editPost({{ $post->id }}, `{{ addslashes($post->body) }}`)">&#9998;</button>
                                 <button class="btn-sm btn-delete" title="Delete" onclick="deletePost({{ $post->id }})">&#128465;</button>
                             @endif
                         </div>
-                        <form id="reply-form-{{ $post->id }}" style="display:none;margin-top:8px;" data-no-loader
-                              action="{{ route('topics.answer', $post->id) }}" method="POST">
-                            @csrf
-                            <div style="display:flex;gap:8px;">
-                                <input type="text" name="body" placeholder="Write a reply..." class="reply-form-input">
-                                <button type="submit" class="btn-reply-send">Send</button>
-                            </div>
-                        </form>
                         @if($post->replies->count())
                         <div class="replies">
                             @foreach($post->replies as $reply)
                             <div class="reply-bubble">
                                 <div class="reply-author">{{ $reply->author->name }}<span class="reply-time">{{ $reply->created_at->diffForHumans() }}</span></div>
+                                <div class="reply-quote" onclick="document.getElementById('post-{{ $post->id }}').scrollIntoView({behavior:'smooth',block:'center'})">
+                                    <div class="rq-author">{{ $post->author->name }}</div>
+                                    <div class="rq-body">{{ Str::limit($post->body ?: 'Attachment', 80) }}</div>
+                                </div>
                                 <div>{{ $reply->body }}</div>
                             </div>
                             @endforeach
@@ -689,8 +706,16 @@
                 <div class="input-area">
                     <form action="{{ route('topics.participate', $activeTopic->id) }}" method="POST" id="postForm" enctype="multipart/form-data" data-no-loader>
                         @csrf
+                        <input type="hidden" name="reply_to_id" id="replyToId">
                         <input type="file" id="imgInput" name="image" accept="image/*" style="display:none">
                         <input type="file" id="docInput" name="file" style="display:none">
+                        <div class="reply-bar" id="replyBar">
+                            <div style="flex:1;min-width:0;">
+                                <div class="rb-author" id="replyBarAuthor"></div>
+                                <div class="rb-body" id="replyBarBody"></div>
+                            </div>
+                            <button type="button" class="btn-cancel-reply" onclick="cancelReply()">&#10005;</button>
+                        </div>
                         <div class="attach-preview-bar" id="attachPreviewBar">
                             <span id="attachPreviewThumb"></span>
                             <span class="attach-name" id="attachPreviewName"></span>
@@ -978,9 +1003,16 @@
     }
 
 
-    function toggleReplyForm(postId) {
-        const form = document.getElementById('reply-form-' + postId);
-        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    function setReply(postId, author, body) {
+        document.getElementById('replyToId').value = postId;
+        document.getElementById('replyBarAuthor').textContent = author;
+        document.getElementById('replyBarBody').textContent = body;
+        document.getElementById('replyBar').style.display = 'flex';
+        document.getElementById('postInput').focus();
+    }
+    function cancelReply() {
+        document.getElementById('replyToId').value = '';
+        document.getElementById('replyBar').style.display = 'none';
     }
 
     function editPost(postId, body) {
@@ -1416,30 +1448,8 @@ body.qpop-locked .qpop-overlay{pointer-events:all;}
 @endif
 @endauth
 
-<div id="page-loader">
-    <div class="pl-logo"><img src="{{ asset('images/forum.png') }}" alt=""></div>
-    <div class="pl-spinner"></div>
-    <div class="pl-text">Loading…</div>
-</div>
 <script>
-(function(){
-    var loader = document.getElementById('page-loader');
-    document.addEventListener('click', function(e) {
-        var a = e.target.closest('a[href]');
-        if (!a) return;
-        var href = a.getAttribute('href');
-        if (!href || href === '#' || href.startsWith('javascript') ||
-            href.startsWith('http') || href.startsWith('//') ||
-            a.hasAttribute('download') || a.target === '_blank') return;
-        loader.classList.add('show');
-    });
-    document.addEventListener('submit', function(e) {
-        if (e.target.id === 'loginForm') return;
-        loader.classList.add('show');
-    });
-    window.addEventListener('pageshow', function() { loader.classList.remove('show'); });
-    setInterval(function() { fetch('/api/ping', {credentials:'same-origin'}).catch(function(){}); }, 240000);
-})();
+setInterval(function() { fetch('/api/ping', {credentials:'same-origin'}).catch(function(){}); }, 240000);
 </script>
 </body>
 </html>

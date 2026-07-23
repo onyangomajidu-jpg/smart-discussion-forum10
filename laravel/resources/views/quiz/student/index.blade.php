@@ -89,7 +89,7 @@
     border: 2px dashed #e2e8f0;
 }
 @media(max-width:640px) {
-    .hero-banner { padding: 20px 18px; }
+    .hero-banner { padding: 20px 18px; flex-direction: column; align-items: flex-start; gap: 8px; }
     .hero-banner::before, .hero-banner::after { display:none; }
     .hero-title { font-size: 20px; }
     .hero-icon { display: none; }
@@ -97,7 +97,7 @@
     .quiz-card-accent { width: 100%; height: 5px; }
     .quiz-card-body { padding: 14px 14px 8px; }
     .quiz-action { padding: 0 14px 14px; width: 100%; }
-    .quiz-action .btn, .quiz-action button { width: 100%; justify-content: center; }
+    .quiz-action .btn, .quiz-action a.btn, .quiz-action button { width: 100%; justify-content: center; display: flex; }
     .quiz-icon-wrap { width: 44px; height: 44px; font-size: 20px; }
     .filter-bar { gap: 6px; }
     .filter-btn { padding: 6px 12px; font-size: 11px; }

@@ -2,6 +2,33 @@
 
 @section('title', 'My Groups — SmartForum')
 
+@push('styles')
+<style>
+@media(max-width:640px) {
+    .groups-create-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .groups-create-grid .btn { width:100%; justify-content:center; }
+    .groups-table thead { display:none; }
+    .groups-table tbody tr {
+        display:flex; flex-direction:column; gap:6px;
+        padding:14px 16px; border-bottom:1px solid #f1f5f9;
+    }
+    .groups-table tbody tr:last-child { border-bottom:none; }
+    .groups-table tbody td {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:0; border:none; font-size:13px;
+    }
+    .groups-table tbody td[data-label]::before {
+        content:attr(data-label);
+        font-size:10px; font-weight:700; color:#94a3b8;
+        text-transform:uppercase; letter-spacing:.5px; flex-shrink:0; margin-right:8px;
+    }
+    .groups-table tbody td form { margin-left:auto; }
+}
+</style>
+@endpush
+
 @section('content')
 
 <div class="breadcrumb">
@@ -31,7 +58,7 @@
     <div class="card-body">
         <form action="{{ route('lecturer.groups.store') }}" method="POST">
             @csrf
-            <div style="display:grid;grid-template-columns:1fr 2fr auto;gap:14px;align-items:end">
+            <div style="display:grid;grid-template-columns:1fr 2fr auto;gap:14px;align-items:end" class="groups-create-grid">
                 <div class="form-group" style="margin-bottom:0">
                     <label class="form-label">Group Name <span style="color:#ef4444">*</span></label>
                     <input type="text" name="name" class="form-control {{ $errors->has('name') ? 'is-invalid' : '' }}"
@@ -65,7 +92,7 @@
             <span style="font-size:12px;color:#64748b;font-weight:600">{{ $groups->count() }} group(s)</span>
         </div>
         <div class="table-wrap">
-            <table>
+            <table class="groups-table">
                 <thead>
                     <tr>
                         <th>Group Name</th>
@@ -78,7 +105,7 @@
                 <tbody>
                     @foreach($groups as $group)
                     <tr>
-                        <td>
+                        <td data-label="Group">
                             <div style="display:flex;align-items:center;gap:10px">
                                 <div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">
                                     <i class="fa-solid fa-users"></i>
@@ -86,14 +113,14 @@
                                 <span style="font-weight:700;color:#0f172a">{{ $group->name }}</span>
                             </div>
                         </td>
-                        <td style="color:#64748b;font-size:13px">{{ $group->description ?? '—' }}</td>
-                        <td>
+                        <td data-label="Description" style="color:#64748b;font-size:13px">{{ $group->description ?? '—' }}</td>
+                        <td data-label="Members">
                             <span style="background:#ede9fe;color:#5b21b6;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700">
                                 <i class="fa-solid fa-user"></i> {{ $group->members_count }}
                             </span>
                         </td>
-                        <td style="color:#64748b;font-size:12px">{{ $group->created_at->format('d M Y') }}</td>
-                        <td>
+                        <td data-label="Created" style="color:#64748b;font-size:12px">{{ $group->created_at->format('d M Y') }}</td>
+                        <td data-label="Actions">
                             <form action="{{ route('lecturer.groups.destroy', $group) }}" method="POST"
                                   onsubmit="return confirm('Delete group \'{{ $group->name }}\'? This cannot be undone.')">
                                 @csrf

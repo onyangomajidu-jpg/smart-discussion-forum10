@@ -114,8 +114,13 @@
         .chat-row.mine .chat-bubble-wrap { align-items: flex-end; }
         .chat-meta { font-size: 11px; color: #94a3b8; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
         .chat-row.mine .chat-meta { flex-direction: row-reverse; }
-        .chat-meta .author { font-weight: 700; color: #475569; }
-        .chat-row.mine .chat-meta .author { color: #059669; }
+        .chat-meta .author { display: none; }
+        /* ── Embedded sender name inside bubble (WhatsApp group style) ── */
+        .bubble-author {
+            font-size: 12px; font-weight: 700; color: #667eea;
+            margin-bottom: 3px; display: block;
+        }
+        .chat-row.mine .bubble-author { display: none; }
         .chat-bubble {
             background: #fff; border-radius: 18px 18px 18px 4px; padding: 11px 15px;
             font-size: 14px; color: #1e293b; line-height: 1.55;
@@ -493,20 +498,22 @@
                         <div class="chat-avatar">{{ strtoupper(substr(($isMe ? auth()->user()->name : $other->name), 0, 1)) }}</div>
                         <div class="chat-bubble-wrap">
                             <div class="chat-meta">
-                                <span class="author">{{ $isMe ? 'You' : $other->name }}</span>
                                 <span>{{ $msg->created_at->diffForHumans() }}</span>
                             </div>
                             @if($msg->trashed())
                                 <div class="chat-bubble" style="opacity:.5;font-style:italic;">🚫 This message was deleted</div>
                             @else
                             @if($msg->replyTo)
-                                <div class="reply-preview">
+                                <div class="reply-preview" onclick="document.getElementById('msg-{{ $msg->replyTo->id }}') && document.getElementById('msg-{{ $msg->replyTo->id }}').scrollIntoView({behavior:'smooth',block:'center'})" style="cursor:pointer">
                                     <div class="rp-author">{{ $msg->replyTo->sender_id === auth()->id() ? 'You' : $other->name }}</div>
                                     <div class="rp-body">{{ $msg->replyTo->body ?: '📎 Attachment' }}</div>
                                 </div>
                             @endif
                             @if($msg->body)
-                                <div class="chat-bubble" id="msg-body-{{ $msg->id }}">{{ $msg->body }}</div>
+                                <div class="chat-bubble" id="msg-body-{{ $msg->id }}">
+                                    @if(!$isMe)<span class="bubble-author">{{ $other->name }}</span>@endif
+                                    {{ $msg->body }}
+                                </div>
                             @endif
                                                                                     @if($msg->image_path)
                                 <div class="img-msg-bubble">
@@ -976,30 +983,8 @@
     }
 </script>
 
-<div id="page-loader">
-    <div class="pl-logo"><img src="{{ asset('images/forum.png') }}" alt=""></div>
-    <div class="pl-spinner"></div>
-    <div class="pl-text">Loading…</div>
-</div>
 <script>
-(function(){
-    var loader = document.getElementById('page-loader');
-    document.addEventListener('click', function(e) {
-        var a = e.target.closest('a[href]');
-        if (!a) return;
-        var href = a.getAttribute('href');
-        if (!href || href === '#' || href.startsWith('javascript') ||
-            href.startsWith('http') || href.startsWith('//') ||
-            a.hasAttribute('download') || a.target === '_blank') return;
-        loader.classList.add('show');
-    });
-    document.addEventListener('submit', function(e) {
-        if (e.target.id === 'loginForm') return;
-        loader.classList.add('show');
-    });
-    window.addEventListener('pageshow', function() { loader.classList.remove('show'); });
-    setInterval(function() { fetch('/api/ping', {credentials:'same-origin'}).catch(function(){}); }, 240000);
-})();
+setInterval(function() { fetch('/api/ping', {credentials:'same-origin'}).catch(function(){}); }, 240000);
 </script>
 </body>
 </html>
