@@ -626,6 +626,61 @@
     })();
 </script>
 
+{{-- ── Page-load overlay (hides cold-start spinner on Render) ── --}}
+<style>
+#page-loader {
+    display:none; position:fixed; inset:0; z-index:99998;
+    background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+    align-items:center; justify-content:center; flex-direction:column; gap:18px;
+}
+#page-loader.show { display:flex; }
+.pl-logo { width:64px; height:64px; border-radius:16px; background:rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center; border:2px solid rgba(255,255,255,.3); }
+.pl-logo img { width:44px; height:44px; object-fit:contain; filter:drop-shadow(0 2px 6px rgba(0,0,0,.3)); }
+.pl-spinner { width:40px; height:40px; border:3px solid rgba(255,255,255,.25); border-top-color:#fff; border-radius:50%; animation:plSpin .7s linear infinite; }
+@keyframes plSpin { to { transform:rotate(360deg); } }
+.pl-text { color:rgba(255,255,255,.85); font-size:14px; font-weight:600; letter-spacing:.3px; }
+</style>
+<div id="page-loader">
+    <div class="pl-logo"><img src="{{ asset('images/forum.png') }}" alt=""></div>
+    <div class="pl-spinner"></div>
+    <div class="pl-text">Loading…</div>
+</div>
+<script>
+(function(){
+    var loader = document.getElementById('page-loader');
+
+    // Show loader on any navigation link click
+    document.addEventListener('click', function(e) {
+        var a = e.target.closest('a[href]');
+        if (!a) return;
+        var href = a.getAttribute('href');
+        // Skip anchors, javascript:, external links, download links, and same-page
+        if (!href || href === '#' || href.startsWith('javascript') ||
+            href.startsWith('http') || href.startsWith('//') ||
+            a.hasAttribute('download') || a.target === '_blank') return;
+        loader.classList.add('show');
+    });
+
+    // Show loader on form submit (navigation forms)
+    document.addEventListener('submit', function(e) {
+        var form = e.target;
+        // Only show for forms that navigate (not fetch/XHR forms)
+        if (form.id === 'loginForm') return; // login handles its own flow
+        loader.classList.add('show');
+    });
+
+    // Hide loader once page is fully loaded (back/forward cache)
+    window.addEventListener('pageshow', function(e) {
+        loader.classList.remove('show');
+    });
+
+    // Keep-alive ping every 4 minutes to prevent Render free-tier spin-down
+    setInterval(function() {
+        fetch('/api/ping', { credentials: 'same-origin' }).catch(function(){});
+    }, 240000);
+})();
+</script>
+
 @auth
 @if(auth()->user()->isMember())
 <style>
