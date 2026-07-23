@@ -11,6 +11,7 @@ use App\Models\Topic;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ContentManagementService implements IContentManagement
 {
@@ -94,6 +95,7 @@ class ContentManagementService implements IContentManagement
             'image_path' => $data['image_path'] ?? null,
             'file_path'  => $data['file_path'] ?? null,
             'file_name'  => $data['file_name'] ?? null,
+            'file_size'  => $data['file_size'] ?? null,
         ]);
 
         broadcast(new NewPost($topicId, Auth::id(), $data['body'] ?? '', 'post'))->toOthers();
@@ -165,6 +167,9 @@ class ContentManagementService implements IContentManagement
     {
         $post = Post::findOrFail($postId);
         $this->authorizeOwner($post->user_id);
+        foreach (['audio_path', 'image_path', 'file_path'] as $col) {
+            if ($post->$col) Storage::disk('public')->delete($post->$col);
+        }
         return (bool) $post->delete();
     }
 
@@ -172,6 +177,11 @@ class ContentManagementService implements IContentManagement
     {
         $topic = Topic::findOrFail($topicId);
         $this->authorizeOwner($topic->user_id);
+        foreach ($topic->posts as $post) {
+            foreach (['audio_path', 'image_path', 'file_path'] as $col) {
+                if ($post->$col) Storage::disk('public')->delete($post->$col);
+            }
+        }
         return (bool) $topic->delete();
     }
 
