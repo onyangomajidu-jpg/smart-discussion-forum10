@@ -243,6 +243,9 @@
             .focus-warn-title { font-size: 20px; }
             .modal-box { padding: 28px 20px; }
         }
+
+        /* ── Auto-submit Modal ────────────────────────────────────────── */
+        #autoSubmitModal {
             display: none;
             position: fixed; inset: 0;
             background: rgba(15,23,42,.85);
@@ -290,6 +293,18 @@
         <div class="modal-text">Your quiz is being automatically submitted as per the quiz settings.</div>
         <div class="modal-countdown" id="autoCountdown">3</div>
         <div class="modal-countdown-label">Submitting in…</div>
+    </div>
+</div>
+
+{{-- Top nav bar --}}
+<div style="background:#fff;border-bottom:1px solid #e2e8f0;padding:0 20px;height:48px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:201;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+    <div style="display:flex;align-items:center;gap:10px;">
+        <img src="{{ asset('images/forum.png') }}" alt="" style="height:28px;">
+        <span style="font-size:13px;font-weight:700;color:#0f172a;">Discussion Hub</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;font-size:12px;color:#64748b;">
+        <span><i class="fa-solid fa-user" style="color:#6366f1;"></i> {{ auth()->user()->name }}</span>
+        <a href="{{ route('quizzes.index') }}" style="color:#ef4444;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:4px;" onclick="return confirm('Leave quiz? Your progress will not be saved.')"><i class="fa-solid fa-arrow-left"></i> Exit</a>
     </div>
 </div>
 

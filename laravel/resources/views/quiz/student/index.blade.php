@@ -7,7 +7,7 @@
 .hero-banner {
     background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 60%, #a78bfa 100%);
     border-radius: 18px;
-    padding: 36px 40px;
+    padding: 28px 32px;
     margin-bottom: 32px;
     color: #fff;
     display: flex;
@@ -61,7 +61,7 @@
 .accent-closed   { background: linear-gradient(180deg, #ef4444, #dc2626); }
 .accent-done     { background: linear-gradient(180deg, #6366f1, #8b5cf6); }
 
-.quiz-card-body { flex: 1; padding: 22px 24px; display: flex; align-items: center; gap: 20px; }
+.quiz-card-body { flex: 1; padding: 18px 20px; display: flex; align-items: center; gap: 16px; }
 .quiz-icon-wrap {
     width: 56px; height: 56px; border-radius: 14px;
     display: flex; align-items: center; justify-content: center;
@@ -79,18 +79,29 @@
 .quiz-meta-item i { color: #6366f1; font-size: 11px; }
 .quiz-countdown { margin-top: 8px; font-size: 12px; font-weight: 700; color: #f59e0b; display: flex; align-items: center; gap: 5px; }
 
-.quiz-action { padding: 22px 24px; display: flex; align-items: center; flex-shrink: 0; }
+.quiz-action { padding: 16px 20px; display: flex; align-items: center; flex-shrink: 0; }
 
 .empty-state {
     text-align: center;
-    padding: 80px 40px;
+    padding: 60px 24px;
     background: #fff;
     border-radius: 18px;
     border: 2px dashed #e2e8f0;
 }
-.empty-state .empty-icon { font-size: 64px; margin-bottom: 20px; opacity: .4; }
-.empty-state h3 { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
-.empty-state p { font-size: 14px; color: #64748b; }
+@media(max-width:640px) {
+    .hero-banner { padding: 20px 18px; }
+    .hero-banner::before, .hero-banner::after { display:none; }
+    .hero-title { font-size: 20px; }
+    .hero-icon { display: none; }
+    .quiz-card-inner { flex-direction: column; }
+    .quiz-card-accent { width: 100%; height: 5px; }
+    .quiz-card-body { padding: 14px 14px 8px; }
+    .quiz-action { padding: 0 14px 14px; width: 100%; }
+    .quiz-action .btn, .quiz-action button { width: 100%; justify-content: center; }
+    .quiz-icon-wrap { width: 44px; height: 44px; font-size: 20px; }
+    .filter-bar { gap: 6px; }
+    .filter-btn { padding: 6px 12px; font-size: 11px; }
+}
 
 .filter-bar { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
 .filter-btn { padding: 7px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: 5px; }
