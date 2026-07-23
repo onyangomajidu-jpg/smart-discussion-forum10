@@ -245,6 +245,20 @@
         .attach-preview-bar .attach-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .btn-attach-remove { background: none; border: none; color: #8696a0; cursor: pointer; font-size: 18px; flex-shrink: 0; line-height: 1; }
         .btn-attach-remove:hover { color: #ef4444; }
+        /* Image / file bubbles */
+        .img-msg-bubble { margin-top: 4px; border-radius: 14px; overflow: hidden; max-width: 280px; box-shadow: 0 2px 10px rgba(0,0,0,.1); cursor: pointer; }
+        .img-msg-bubble img { width: 100%; display: block; }
+        .chat-row.mine .img-msg-bubble { border-radius: 14px 14px 4px 14px; }
+        .file-msg-bubble { display: flex; align-items: center; gap: 10px; margin-top: 4px; padding: 10px 14px; border-radius: 14px; background: #f8fafc; border: 1.5px solid #e2e8f0; max-width: 280px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+        .chat-row.mine .file-msg-bubble { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.3); border-radius: 14px 14px 4px 14px; }
+        .file-icon { font-size: 26px; flex-shrink: 0; }
+        .file-info { flex: 1; min-width: 0; }
+        .file-info .fname { font-size: 13px; font-weight: 600; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .chat-row.mine .file-info .fname { color: #fff; }
+        .file-info .fsize { font-size: 11px; color: #94a3b8; }
+        .chat-row.mine .file-info .fsize { color: rgba(255,255,255,.65); }
+        .btn-file-dl { width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer; flex-shrink: 0; background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 2px 8px rgba(102,126,234,.35); transition: all .2s; }
+        .btn-file-dl:hover { transform: scale(1.1); }
         /* Camera modal */
         .cam-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:600; align-items:center; justify-content:center; flex-direction:column; gap:20px; }
         .cam-modal.open { display:flex; }
@@ -593,7 +607,10 @@
     // ── Send/mic toggle ──
     function updateSendBtn() {
         const val = document.getElementById('messageInput') && document.getElementById('messageInput').value.trim();
-        const show = !!val;
+        const imgInput = document.getElementById('imgInput');
+        const docInput = document.getElementById('docInput');
+        const hasAttach = (imgInput && imgInput.files[0]) || (docInput && docInput.files[0]);
+        const show = !!(val || hasAttach);
         const mi = document.getElementById('micIcon');
         const si = document.getElementById('sendIcon');
         if (mi) mi.style.display = show ? 'none'  : 'block';
@@ -618,23 +635,49 @@
         const removeBtn    = document.getElementById('attachRemoveBtn');
         if (!imgBtn) return;
 
-        function sendAttachment(formEl) {
-            const fd = new FormData(formEl);
-            fd.delete('body');
-            fetch(formEl.action, { method: 'POST', body: fd })
-                .then(r => r.redirected ? window.location.href = r.url : window.location.reload());
+        function stageAttachment(file, isImage) {
+            if (isImage) {
+                const url = URL.createObjectURL(file);
+                previewThumb.innerHTML = '<img src="' + url + '" style="max-height:48px;border-radius:6px;">';
+            } else {
+                previewThumb.textContent = '📄';
+            }
+            previewName.textContent = file.name;
+            previewBar.style.display = 'flex';
+            updateSendBtn();
         }
+
+        function clearAttachment() {
+            imgInput.value = '';
+            docInput.value = '';
+            previewThumb.innerHTML = '';
+            previewName.textContent = '';
+            previewBar.style.display = 'none';
+            updateSendBtn();
+        }
+
+        removeBtn.addEventListener('click', clearAttachment);
 
         imgBtn.addEventListener('click', () => imgInput.click());
         docBtn.addEventListener('click', () => docInput.click());
 
         imgInput.addEventListener('change', function () {
             if (!this.files[0]) return;
-            sendAttachment(document.getElementById('messageForm'));
+            stageAttachment(this.files[0], true);
         });
         docInput.addEventListener('change', function () {
             if (!this.files[0]) return;
-            sendAttachment(document.getElementById('messageForm'));
+            stageAttachment(this.files[0], false);
+        });
+
+        // Override micBtn click to also send when attachment is staged
+        document.getElementById('micBtn').addEventListener('click', function () {
+            const hasAttach = imgInput.files[0] || docInput.files[0];
+            if (hasAttach) {
+                const fd = new FormData(document.getElementById('messageForm'));
+                fetch(document.getElementById('messageForm').action, { method: 'POST', body: fd })
+                    .then(r => r.redirected ? window.location.href = r.url : window.location.reload());
+            }
         });
 
         // Camera
@@ -647,7 +690,6 @@
 
         camBtn.addEventListener('click', async function () {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                // Fallback: open file picker with camera capture
                 imgInput.setAttribute('capture', 'environment');
                 imgInput.click();
                 return;
@@ -657,7 +699,6 @@
                 camVideo.srcObject = camStream;
                 camModal.classList.add('open');
             } catch (e) {
-                // Permission denied or no camera — fall back to file input
                 imgInput.setAttribute('capture', 'environment');
                 imgInput.click();
             }
@@ -679,7 +720,7 @@
                 dt.items.add(file);
                 imgInput.files = dt.files;
                 stopCam();
-                sendAttachment(document.getElementById('messageForm'));
+                stageAttachment(file, true);
             }, 'image/jpeg', 0.92);
         });
     })();

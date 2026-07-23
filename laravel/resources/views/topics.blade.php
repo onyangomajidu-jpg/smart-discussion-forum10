@@ -162,6 +162,8 @@
         .chat-meta .author { font-weight: 700; color: #475569; }
         .chat-row.mine .chat-meta .author { color: #059669; }
         .chat-row.topic-origin .chat-meta .author { color: #d97706; }
+        a.author { text-decoration: none; cursor: pointer; }
+        a.author:hover { text-decoration: underline; }
 
         .chat-bubble {
             background: #fff;
@@ -525,11 +527,12 @@
                     @if(!$isMe)<div class="chat-avatar">{{ strtoupper(substr($post->author->name,0,1)) }}</div>@endif
                     <div class="chat-bubble-wrap">
                         <div class="chat-meta">
-                            <span class="author">{{ $isMe ? 'You' : $post->author->name }}</span>
-                            <span>{{ $post->created_at->diffForHumans() }}</span>
-                            @if(!$isMe)
-                                <a href="{{ route('messages.show', $post->user_id) }}" class="btn-sm btn-reply" style="text-decoration:none;" title="Message {{ $post->author->name }} privately">&#9993; Message</a>
+                            @if($isMe)
+                                <span class="author">You</span>
+                            @else
+                                <a href="{{ route('messages.show', $post->user_id) }}" class="author" title="Message {{ $post->author->name }}">{{ $post->author->name }}</a>
                             @endif
+                            <span>{{ $post->created_at->diffForHumans() }}</span>
                         </div>
                         <div class="chat-bubble" id="post-body-{{ $post->id }}">{{ $post->body }}</div>
                         @if($post->image_path)
@@ -1064,7 +1067,10 @@
     // ── Send/mic toggle ──
     function updateSendBtn() {
         const val = document.getElementById('postInput') && document.getElementById('postInput').value.trim();
-        const show = !!val;
+        const imgInput = document.getElementById('imgInput');
+        const docInput = document.getElementById('docInput');
+        const hasAttach = (imgInput && imgInput.files[0]) || (docInput && docInput.files[0]);
+        const show = !!(val || hasAttach);
         const mi = document.getElementById('micIcon');
         const si = document.getElementById('sendIcon');
         if (mi) mi.style.display = show ? 'none'  : 'block';
@@ -1170,23 +1176,49 @@
         const removeBtn    = document.getElementById('attachRemoveBtn');
         if (!imgBtn) return;
 
-        function sendAttachment(formEl) {
-            const fd = new FormData(formEl);
-            fd.delete('body');
-            fetch(formEl.action, { method: 'POST', body: fd })
-                .then(r => r.redirected ? window.location.href = r.url : window.location.reload());
+        function stageAttachment(file, isImage) {
+            if (isImage) {
+                const url = URL.createObjectURL(file);
+                previewThumb.innerHTML = '<img src="' + url + '" style="max-height:48px;border-radius:6px;">';
+            } else {
+                previewThumb.textContent = '📄';
+            }
+            previewName.textContent = file.name;
+            previewBar.style.display = 'flex';
+            updateSendBtn();
         }
+
+        function clearAttachment() {
+            imgInput.value = '';
+            docInput.value = '';
+            previewThumb.innerHTML = '';
+            previewName.textContent = '';
+            previewBar.style.display = 'none';
+            updateSendBtn();
+        }
+
+        removeBtn.addEventListener('click', clearAttachment);
 
         imgBtn.addEventListener('click', () => imgInput.click());
         docBtn.addEventListener('click', () => docInput.click());
 
         imgInput.addEventListener('change', function () {
             if (!this.files[0]) return;
-            sendAttachment(document.getElementById('postForm'));
+            stageAttachment(this.files[0], true);
         });
         docInput.addEventListener('change', function () {
             if (!this.files[0]) return;
-            sendAttachment(document.getElementById('postForm'));
+            stageAttachment(this.files[0], false);
+        });
+
+        // Send staged attachment when send button clicked
+        document.getElementById('micBtn').addEventListener('click', function () {
+            const hasAttach = imgInput.files[0] || docInput.files[0];
+            if (hasAttach) {
+                const fd = new FormData(document.getElementById('postForm'));
+                fetch(document.getElementById('postForm').action, { method: 'POST', body: fd })
+                    .then(r => r.redirected ? window.location.href = r.url : window.location.reload());
+            }
         });
 
         const camModal  = document.getElementById('camModal');
@@ -1223,7 +1255,7 @@
                 dt.items.add(file);
                 imgInput.files = dt.files;
                 stopCam();
-                sendAttachment(document.getElementById('postForm'));
+                stageAttachment(file, true);
             }, 'image/jpeg', 0.92);
         });
     })();
