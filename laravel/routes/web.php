@@ -13,6 +13,10 @@ use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\ProfileController;
 
 // ── Guest Routes ───────────────────────────────────────────────────
+Route::get('/csrf-token', function () {
+    return response()->json(['token' => csrf_token()]);
+})->name('csrf.token');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login']);

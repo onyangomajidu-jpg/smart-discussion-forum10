@@ -157,6 +157,19 @@
             border-top: 1px solid #e1e4e8;
             margin: 20px 0;
         }
+    
+    /* ── Page-load overlay ── */
+    #page-loader {
+        display:none; position:fixed; inset:0; z-index:99998;
+        background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+        align-items:center; justify-content:center; flex-direction:column; gap:18px;
+    }
+    #page-loader.show { display:flex; }
+    .pl-logo { width:64px; height:64px; border-radius:16px; background:rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center; border:2px solid rgba(255,255,255,.3); }
+    .pl-logo img { width:44px; height:44px; object-fit:contain; filter:drop-shadow(0 2px 6px rgba(0,0,0,.3)); }
+    .pl-spinner { width:40px; height:40px; border:3px solid rgba(255,255,255,.25); border-top-color:#fff; border-radius:50%; animation:plSpin .7s linear infinite; }
+    @keyframes plSpin { to { transform:rotate(360deg); } }
+    .pl-text { color:rgba(255,255,255,.85); font-size:14px; font-weight:600; letter-spacing:.3px; }
     </style>
 </head>
 <body>
@@ -179,7 +192,7 @@
             </div>
         @endif
 
-        <form action="{{ route('login') }}" method="POST">
+        <form action="{{ route('login') }}" method="POST" id="loginForm">
             @csrf
 
             <div class="form-group">
@@ -239,6 +252,51 @@
             input.type = isHidden ? 'text' : 'password';
             btn.querySelector('svg').style.opacity = isHidden ? '0.5' : '1';
         }
+
+        // Refresh CSRF token before submit to prevent 419 on stale/expired sessions
+        document.getElementById('loginForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var form = this;
+            fetch('/sanctum/csrf-cookie', { credentials: 'same-origin' })
+                .catch(function () {})
+                .finally(function () {
+                    fetch('/csrf-token', { credentials: 'same-origin' })
+                        .then(function (r) { return r.ok ? r.json() : null; })
+                        .then(function (data) {
+                            if (data && data.token) {
+                                form.querySelector('input[name="_token"]').value = data.token;
+                            }
+                        })
+                        .catch(function () {})
+                        .finally(function () { form.submit(); });
+                });
+        });
     </script>
+
+<div id="page-loader">
+    <div class="pl-logo"><img src="{{ asset('images/forum.png') }}" alt=""></div>
+    <div class="pl-spinner"></div>
+    <div class="pl-text">Loading…</div>
+</div>
+<script>
+(function(){
+    var loader = document.getElementById('page-loader');
+    document.addEventListener('click', function(e) {
+        var a = e.target.closest('a[href]');
+        if (!a) return;
+        var href = a.getAttribute('href');
+        if (!href || href === '#' || href.startsWith('javascript') ||
+            href.startsWith('http') || href.startsWith('//') ||
+            a.hasAttribute('download') || a.target === '_blank') return;
+        loader.classList.add('show');
+    });
+    document.addEventListener('submit', function(e) {
+        if (e.target.id === 'loginForm') return;
+        loader.classList.add('show');
+    });
+    window.addEventListener('pageshow', function() { loader.classList.remove('show'); });
+    setInterval(function() { fetch('/api/ping', {credentials:'same-origin'}).catch(function(){}); }, 240000);
+})();
+</script>
 </body>
 </html>
