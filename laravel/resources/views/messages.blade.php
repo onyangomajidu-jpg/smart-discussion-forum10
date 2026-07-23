@@ -245,20 +245,59 @@
         .attach-preview-bar .attach-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .btn-attach-remove { background: none; border: none; color: #8696a0; cursor: pointer; font-size: 18px; flex-shrink: 0; line-height: 1; }
         .btn-attach-remove:hover { color: #ef4444; }
-        /* Image / file bubbles */
-        .img-msg-bubble { margin-top: 4px; border-radius: 14px; overflow: hidden; max-width: 280px; box-shadow: 0 2px 10px rgba(0,0,0,.1); cursor: pointer; }
+        /* File bubble */
+        .file-msg-bubble {
+            display: flex; align-items: center; gap: 12px; margin-top: 6px;
+            padding: 12px 14px; border-radius: 16px;
+            background: #fff; border: 1.5px solid #e2e8f0;
+            max-width: 320px; box-shadow: 0 2px 8px rgba(0,0,0,.07);
+            transition: box-shadow .2s;
+        }
+        .file-msg-bubble:hover { box-shadow: 0 4px 16px rgba(0,0,0,.12); }
+        .chat-row.mine .file-msg-bubble {
+            background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.3);
+            border-radius: 16px 16px 4px 16px;
+        }
+        .file-type-icon {
+            width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; background: #ede9fe;
+        }
+        .chat-row.mine .file-type-icon { background: rgba(255,255,255,.2); }
+        .file-info { flex: 1; min-width: 0; }
+        .file-info .fname {
+            font-size: 13px; font-weight: 700; color: #1e293b;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            margin-bottom: 3px;
+        }
+        .chat-row.mine .file-info .fname { color: #fff; }
+        .file-info .fmeta { font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
+        .chat-row.mine .file-info .fmeta { color: rgba(255,255,255,.65); }
+        .fmeta-dot { width: 3px; height: 3px; border-radius: 50%; background: #cbd5e1; flex-shrink: 0; }
+        .chat-row.mine .fmeta-dot { background: rgba(255,255,255,.4); }
+        .btn-file-dl {
+            width: 36px; height: 36px; border-radius: 50%; border: none; cursor: pointer;
+            flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg,#667eea,#764ba2); color: #fff;
+            font-size: 16px; box-shadow: 0 2px 8px rgba(102,126,234,.4);
+            transition: all .2s; text-decoration: none;
+        }
+        .btn-file-dl:hover { transform: scale(1.12); box-shadow: 0 4px 14px rgba(102,126,234,.55); }
+        .chat-row.mine .btn-file-dl { background: rgba(255,255,255,.25); box-shadow: none; }
+        .chat-row.mine .btn-file-dl:hover { background: rgba(255,255,255,.4); }
+        /* Image bubble + save button */
+        .img-msg-bubble { margin-top: 6px; border-radius: 14px; overflow: hidden; max-width: 280px; box-shadow: 0 2px 10px rgba(0,0,0,.1); cursor: pointer; position: relative; }
         .img-msg-bubble img { width: 100%; display: block; }
         .chat-row.mine .img-msg-bubble { border-radius: 14px 14px 4px 14px; }
-        .file-msg-bubble { display: flex; align-items: center; gap: 10px; margin-top: 4px; padding: 10px 14px; border-radius: 14px; background: #f8fafc; border: 1.5px solid #e2e8f0; max-width: 280px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-        .chat-row.mine .file-msg-bubble { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.3); border-radius: 14px 14px 4px 14px; }
-        .file-icon { font-size: 26px; flex-shrink: 0; }
-        .file-info { flex: 1; min-width: 0; }
-        .file-info .fname { font-size: 13px; font-weight: 600; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .chat-row.mine .file-info .fname { color: #fff; }
-        .file-info .fsize { font-size: 11px; color: #94a3b8; }
-        .chat-row.mine .file-info .fsize { color: rgba(255,255,255,.65); }
-        .btn-file-dl { width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer; flex-shrink: 0; background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 2px 8px rgba(102,126,234,.35); transition: all .2s; }
-        .btn-file-dl:hover { transform: scale(1.1); }
+        .btn-img-save {
+            position: absolute; bottom: 8px; right: 8px;
+            width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer;
+            background: rgba(0,0,0,.55); color: #fff; font-size: 15px;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity .2s; text-decoration: none;
+            backdrop-filter: blur(4px);
+        }
+        .img-msg-bubble:hover .btn-img-save { opacity: 1; }
         /* Camera modal */
         .cam-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:600; align-items:center; justify-content:center; flex-direction:column; gap:20px; }
         .cam-modal.open { display:flex; }
@@ -452,17 +491,40 @@
                             @if($msg->body)
                                 <div class="chat-bubble" id="msg-body-{{ $msg->id }}">{{ $msg->body }}</div>
                             @endif
-                            @if($msg->image_path)
-                                <div class="img-msg-bubble" onclick="this.querySelector('img').requestFullscreen&&this.querySelector('img').requestFullscreen()">
-                                    <img src="{{ asset('storage/' . $msg->image_path) }}" alt="Image" loading="lazy">
+                                                                                    @if($msg->image_path)
+                                <div class="img-msg-bubble">
+                                    <img src="{{ asset('storage/' . $msg->image_path) }}" alt="Image" loading="lazy" onclick="this.closest('.img-msg-bubble').requestFullscreen&&this.closest('.img-msg-bubble').requestFullscreen()">
+                                    <a href="{{ asset('storage/' . $msg->image_path) }}" download class="btn-img-save" title="Save image">&#8595;</a>
                                 </div>
                             @endif
-                            @if($msg->file_path)
+                                                                                    @if($msg->file_path)
+                                @php
+                                    $ext = strtolower(pathinfo($msg->file_name ?? '', PATHINFO_EXTENSION));
+                                    $fileIcon = match(true) {
+                                        in_array($ext,['pdf']) => '📕',
+                                        in_array($ext,['doc','docx']) => '📘',
+                                        in_array($ext,['xls','xlsx','csv']) => '📗',
+                                        in_array($ext,['ppt','pptx']) => '📙',
+                                        in_array($ext,['zip','rar','7z']) => '🗜️',
+                                        in_array($ext,['mp3','wav','ogg']) => '🎵',
+                                        in_array($ext,['mp4','mov','avi']) => '🎬',
+                                        default => '📄'
+                                    };
+                                    $fileSize = $msg->file_size
+                                        ? ($msg->file_size >= 1048576
+                                            ? round($msg->file_size/1048576,1).'MB'
+                                            : round($msg->file_size/1024,0).'KB')
+                                        : strtoupper($ext);
+                                @endphp
                                 <div class="file-msg-bubble">
-                                    <span class="file-icon">📄</span>
+                                    <div class="file-type-icon">{{ $fileIcon }}</div>
                                     <div class="file-info">
-                                        <div class="fname">{{ $msg->file_name ?? 'Document' }}</div>
-                                        <div class="fsize">Attachment</div>
+                                        <div class="fname" title="{{ $msg->file_name }}">{{ $msg->file_name ?? 'Document' }}</div>
+                                        <div class="fmeta">
+                                            <span>{{ strtoupper($ext) }}</span>
+                                            <span class="fmeta-dot"></span>
+                                            <span>{{ $fileSize }}</span>
+                                        </div>
                                     </div>
                                     <a href="{{ asset('storage/' . $msg->file_path) }}" download="{{ $msg->file_name }}" class="btn-file-dl" title="Download">&#8595;</a>
                                 </div>

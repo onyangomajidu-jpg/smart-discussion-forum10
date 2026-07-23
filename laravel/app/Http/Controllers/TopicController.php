@@ -138,6 +138,7 @@ class TopicController extends Controller
             $uploaded = $request->file('file');
             $data['file_path'] = $uploaded->store('files/posts', 'public');
             $data['file_name'] = $uploaded->getClientOriginalName();
+            $data['file_size'] = $uploaded->getSize();
         }
 
         try {

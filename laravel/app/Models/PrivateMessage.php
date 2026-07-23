@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PrivateMessage extends Model
 {
-    protected $fillable = ['sender_id', 'recipient_id', 'body', 'audio_path', 'image_path', 'file_path', 'file_name', 'read_at', 'reply_to_id'];
+    protected $fillable = ['sender_id', 'recipient_id', 'body', 'audio_path', 'image_path', 'file_path', 'file_name', 'file_size', 'read_at', 'reply_to_id'];
 
     public function replyTo(): BelongsTo { return $this->belongsTo(PrivateMessage::class, 'reply_to_id'); }
 
