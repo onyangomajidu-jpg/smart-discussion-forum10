@@ -44,6 +44,9 @@
     position: relative;
     transition: all .2s;
     overflow: hidden;
+    min-width: 0;
+    box-sizing: border-box;
+    width: 100%;
 }
 .question-block:hover { border-color: #c7d2fe; box-shadow: 0 4px 16px rgba(99,102,241,.08); }
 .question-block.focused { border-color: #6366f1; }
@@ -126,8 +129,15 @@
     .create-hero { padding: 20px 18px; gap: 12px; }
     .create-hero::after { display: none; }
     .create-hero .hero-icon-box { width: 44px; height: 44px; font-size: 20px; }
-    .option-row { flex-wrap: nowrap; }
     .marks-input { width: 70px !important; }
+}
+@media (max-width: 640px) {
+    .question-block { padding: 16px 12px; }
+    .option-row { flex-wrap: nowrap; overflow: hidden; }
+    .option-row input[type=text] { min-width: 0; width: 0; }
+    .time-inputs { flex-wrap: wrap !important; }
+    .time-inputs input, .time-inputs select { min-width: 0 !important; }
+    .form-row { grid-template-columns: 1fr; }
 }
 </style>
 @endpush
@@ -196,7 +206,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label"><i class="fa-solid fa-unlock" style="color:#10b981;margin-right:5px"></i>Unlock Date</label>
-                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap" class="time-inputs">
                             <input type="date" name="unlock_date_date" class="form-control" style="flex:1;min-width:130px" value="{{ old('unlock_date_date') }}">
                             <input type="number" name="unlock_date_hour" class="form-control" style="width:64px" min="1" max="12" placeholder="hh" value="{{ old('unlock_date_hour') }}">
                             <span>:</span>
@@ -210,7 +220,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label"><i class="fa-solid fa-flag-checkered" style="color:#ef4444;margin-right:5px"></i>Hard Deadline</label>
-                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap" class="time-inputs">
                             <input type="date" name="hard_deadline_date" class="form-control" style="flex:1;min-width:130px" value="{{ old('hard_deadline_date') }}">
                             <input type="number" name="hard_deadline_hour" class="form-control" style="width:64px" min="1" max="12" placeholder="hh" value="{{ old('hard_deadline_hour') }}">
                             <span>:</span>

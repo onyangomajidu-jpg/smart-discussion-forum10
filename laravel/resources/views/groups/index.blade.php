@@ -2,6 +2,30 @@
 
 @section('title', 'Groups — SmartForum')
 
+@push('styles')
+<style>
+@media(max-width:640px){
+    .groups-table thead { display:none; }
+    .groups-table tbody tr {
+        display:flex; flex-direction:column; gap:6px;
+        padding:14px 16px; border-bottom:1px solid #f1f5f9;
+    }
+    .groups-table tbody tr:last-child { border-bottom:none; }
+    .groups-table tbody td {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:0; border:none; font-size:13px;
+    }
+    .groups-table tbody td[data-label]::before {
+        content:attr(data-label);
+        font-size:10px; font-weight:700; color:#94a3b8;
+        text-transform:uppercase; letter-spacing:.5px; flex-shrink:0; margin-right:8px;
+    }
+    .groups-table tbody td:first-child { font-size:14px; }
+    .groups-table tbody td form { margin-left:auto; }
+}
+</style>
+@endpush
+
 @section('content')
 
 <div class="breadcrumb">
@@ -28,16 +52,16 @@
         </div>
     @else
         <div class="table-wrap">
-            <table>
+            <table class="groups-table">
                 <thead>
                     <tr><th>Group</th><th>Description</th><th>Members</th><th></th></tr>
                 </thead>
                 <tbody>
                     @foreach($joined as $group)
                     <tr>
-                        <td style="font-weight:700">{{ $group->name }}</td>
-                        <td style="color:#64748b;font-size:13px">{{ $group->description ?? '—' }}</td>
-                        <td><span style="background:#ede9fe;color:#5b21b6;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700">{{ $group->members_count }}</span></td>
+                        <td data-label="Group" style="font-weight:700">{{ $group->name }}</td>
+                        <td data-label="Description" style="color:#64748b;font-size:13px">{{ $group->description ?? '—' }}</td>
+                        <td data-label="Members"><span style="background:#ede9fe;color:#5b21b6;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700">{{ $group->members_count }}</span></td>
                         <td>
                             <form action="{{ route('groups.leave', $group) }}" method="POST"
                                   onsubmit="return confirm('Leave \'{{ $group->name }}\'?')">
@@ -68,16 +92,16 @@
         </div>
     @else
         <div class="table-wrap">
-            <table>
+            <table class="groups-table">
                 <thead>
                     <tr><th>Group</th><th>Description</th><th>Members</th><th></th></tr>
                 </thead>
                 <tbody>
                     @foreach($available as $group)
                     <tr>
-                        <td style="font-weight:700">{{ $group->name }}</td>
-                        <td style="color:#64748b;font-size:13px">{{ $group->description ?? '—' }}</td>
-                        <td><span style="background:#ede9fe;color:#5b21b6;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700">{{ $group->members_count }}</span></td>
+                        <td data-label="Group" style="font-weight:700">{{ $group->name }}</td>
+                        <td data-label="Description" style="color:#64748b;font-size:13px">{{ $group->description ?? '—' }}</td>
+                        <td data-label="Members"><span style="background:#ede9fe;color:#5b21b6;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700">{{ $group->members_count }}</span></td>
                         <td>
                             <form action="{{ route('groups.join', $group) }}" method="POST">
                                 @csrf
