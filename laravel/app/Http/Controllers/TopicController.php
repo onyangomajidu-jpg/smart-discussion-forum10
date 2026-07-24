@@ -37,7 +37,7 @@ $topics = $query->latest()->get()
         $posts = collect();
 
         if ($request->filled('topic')) {
-            $activeTopic = Topic::with(['author', 'posts.author', 'posts.replies.author', 'participants', 'blockedParticipants', 'removedParticipants'])
+            $activeTopic = Topic::with(['author', 'posts.author', 'posts.replies.author', 'posts.replies.parent.author', 'participants', 'blockedParticipants', 'removedParticipants'])
                 ->findOrFail($request->topic);
             $posts = collect();
             $isRemoved = $activeTopic->removedParticipants->contains(auth()->id());
@@ -83,7 +83,7 @@ $topics = $query->latest()->get()
 
     public function show(Topic $topic)
     {
-        $topic->load(['author', 'posts.author', 'posts.replies.author', 'participants', 'blockedParticipants', 'removedParticipants']);
+        $topic->load(['author', 'posts.author', 'posts.replies.author', 'posts.replies.parent.author', 'participants', 'blockedParticipants', 'removedParticipants']);
         $topic->increment('views');
         $isRemoved = $topic->removedParticipants->contains(auth()->id());
         $userGroupIds  = auth()->user()->groups()->pluck('groups.id');
@@ -229,7 +229,7 @@ $topics = $query->latest()->get()
             ->latest('restored_at')
             ->value('restored_at');
 
-        $query = $topic->posts()->with(['author', 'replies.author']);
+        $query = $topic->posts()->with(['author', 'replies.author', 'replies.parent.author']);
 
         if ($latestRestoration) {
             $query->where('created_at', '>=', $latestRestoration);

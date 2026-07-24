@@ -10,6 +10,7 @@
     border-radius: 16px; padding: 32px 36px; margin-bottom: 28px;
     color: #fff; display: flex; align-items: center; justify-content: space-between;
     position: relative; overflow: hidden; box-shadow: 0 8px 32px rgba(15,23,42,.4);
+    min-width:0; word-break:break-word;
 }
 .lec-hero::before {
     content:''; position:absolute; top:-60px; right:-60px;
@@ -34,7 +35,8 @@
 .lec-kpi-lbl  { font-size:11px; color:#64748b; font-weight:600; margin-top:4px; text-transform:uppercase; letter-spacing:.4px; }
 
 /* ── Two-column layout ────────────────────────────────────────────── */
-.lec-grid { display:grid; grid-template-columns:1fr 380px; gap:22px; align-items:start; }
+.lec-grid { display:grid; grid-template-columns:1fr minmax(0,380px); gap:22px; align-items:start; }
+.lec-grid > * { min-width:0; }
 
 /* ── Live Evaluation Roster ───────────────────────────────────────── */
 .roster-card {
@@ -178,6 +180,13 @@
 @media(max-width:1024px) {
     .lec-kpi-grid { grid-template-columns:repeat(2,1fr); }
     .lec-grid     { grid-template-columns:1fr; }
+}
+@media(max-width:768px) {
+    .lec-hero { padding:20px 16px; }
+    .lec-kpi-grid { gap:10px; }
+    .lec-kpi { padding:16px; }
+    .lec-kpi-val { font-size:22px; }
+    .compliance-meta { flex-wrap:wrap; gap:6px; }
 }
 @media(max-width:640px) {
     .lec-hero { flex-direction:column; align-items:flex-start; gap:12px; padding:22px 20px; }

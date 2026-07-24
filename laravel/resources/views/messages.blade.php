@@ -76,7 +76,7 @@
             .conversation { width: 100%; min-width: 0; }
             .conv-header { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
             .btn-back-group { font-size: 12px; padding: 6px 10px; }
-            .messages { padding: 12px; gap: 10px; }
+            .messages { padding: 12px; gap: 4px; }
             .input-area { padding: 10px 12px; }
             .msg-input { font-size: 13px; }
             .btn-send { padding: 8px 14px; font-size: 13px; }
@@ -94,7 +94,7 @@
         .conv-header-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
         .conv-header h2 { font-size: 17px; color: #2d3748; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .conv-header-meta { font-size: 12px; color: #718096; }
-        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 4px; }
 
         .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #a0aec0; padding: 40px; text-align: center; }
         .empty-state span { font-size: 44px; margin-bottom: 12px; display: block; }
