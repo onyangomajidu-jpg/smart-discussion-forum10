@@ -141,25 +141,25 @@
         .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 4px; }
 
         /* ── Chat bubble styles (WhatsApp group) ── */
-        .chat-row { display: flex; align-items: center; gap: 6px; margin-bottom: 1px; }
+        .chat-row { display: flex; align-items: flex-end; gap: 4px; margin-bottom: 2px; }
         .chat-row.mine { flex-direction: row-reverse; }
 
-        /* Avatar inline with bubble — compact modern style */
+        /* Avatar — small, pinned to bottom of bubble like WhatsApp */
         .chat-avatar {
-            width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+            width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            font-size: 10px; font-weight: 800; color: #fff;
+            font-size: 11px; font-weight: 800; color: #fff;
             background: linear-gradient(135deg,#667eea,#764ba2);
             overflow: hidden; align-self: flex-end;
-            box-shadow: 0 1px 4px rgba(0,0,0,.18);
-            border: 1.5px solid rgba(255,255,255,.7);
-            margin-bottom: 2px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.22);
+            border: 2px solid #fff;
+            margin-bottom: 0;
         }
-        .chat-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .chat-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
         .chat-row.mine .chat-avatar { background: linear-gradient(135deg,#25d366,#128c7e); }
         .chat-row.topic-origin .chat-avatar { background: linear-gradient(135deg,#f59e0b,#d97706); }
 
-        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 68%; }
+        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 68%; min-width: 0; }
         .chat-row.mine .chat-bubble-wrap { align-items: flex-end; }
 
         /* sender name inside bubble */
@@ -597,42 +597,59 @@
                     </div>
                 </div>
 
-                {{-- Posts --}}
-                @foreach($posts as $post)
+                {{-- Build a flat chronological stream: posts + replies merged and sorted by created_at --}}
                 @php
-                    $isMe = $post->user_id === auth()->id();
                     $palette = ['#e91e8c','#00bcd4','#4caf50','#ff9800','#9c27b0','#f44336','#2196f3','#009688'];
-                    $nameColor = $palette[abs(crc32($post->author->name)) % 8];
-                    $postTime = $post->created_at->format('H:i');
+                    $stream = collect();
+                    foreach ($posts as $post) {
+                        $stream->push(['type' => 'post', 'item' => $post, 'parent_post' => null]);
+                        foreach ($post->replies as $reply) {
+                            $stream->push(['type' => 'reply', 'item' => $reply, 'parent_post' => $post]);
+                        }
+                    }
+                    $stream = $stream->sortBy(fn($e) => $e['item']->created_at)->values();
                 @endphp
-                <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="post-{{ $post->id }}">
+
+                @foreach($stream as $entry)
+                @php
+                    $isReply   = $entry['type'] === 'reply';
+                    $item      = $entry['item'];
+                    $parentPost = $entry['parent_post'];
+                    $isMe      = $item->user_id === auth()->id();
+                    $nameColor = $palette[abs(crc32($item->author->name)) % 8];
+                    $itemTime  = $item->created_at->format('H:i');
+                @endphp
+
+                @if(!$isReply)
+                {{-- ── Regular post bubble ── --}}
+                <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="post-{{ $item->id }}">
                     @if(!$isMe)
                     <div class="chat-avatar">
-                        @if($post->author->avatar)
-                            <img src="{{ storage_url($post->author->avatar) }}" alt="">
+                        @if($item->author->avatar)
+                            <img src="{{ storage_url($item->author->avatar) }}" alt="">
                         @else
-                            {{ strtoupper(substr($post->author->name,0,1)) }}
+                            {{ strtoupper(substr($item->author->name,0,1)) }}
                         @endif
                     </div>
                     @endif
                     <div class="chat-bubble-wrap">
-                        @if($post->body)
-                        <div class="chat-bubble" id="post-body-{{ $post->id }}">
-                            @if(!$isMe)<a href="{{ route('messages.show', $post->user_id) }}" class="bubble-author" style="color:{{ $nameColor }}" title="Message {{ $post->author->name }}">{{ $post->author->name }}</a>@endif
-                            {{ $post->body }}<span class="bubble-time">{{ $postTime }}</span>
+                        @if($item->body)
+                        <div class="chat-bubble" id="post-body-{{ $item->id }}">
+                            @if(!$isMe)<a href="{{ route('messages.show', $item->user_id) }}" class="bubble-author" style="color:{{ $nameColor }}" title="Message {{ $item->author->name }}">{{ $item->author->name }}</a>@endif
+                            {{ $item->body }}<span class="bubble-time">{{ $itemTime }}</span>
                         </div>
                         @endif
-                        @if($post->image_path)
+                        @if($item->image_path)
                             <div class="img-msg-bubble">
-                                @if(!$post->body && !$isMe)<span class="bubble-author" style="color:{{ $nameColor }};display:block;padding:5px 8px 0;font-size:12.5px;font-weight:700">{{ $post->author->name }}</span>@endif
-                                <img src="{{ storage_url($post->image_path) }}" alt="Image" loading="lazy">
-                                <span class="img-time-badge">{{ $postTime }}</span>
-                                <a href="{{ storage_url($post->image_path) }}" download class="btn-img-save" title="Save image">&#8595;</a>
+                                @if(!$item->body && !$isMe)<span class="bubble-author" style="color:{{ $nameColor }};display:block;padding:5px 8px 0;font-size:12.5px;font-weight:700">{{ $item->author->name }}</span>@endif
+                                <img src="{{ storage_url($item->image_path) }}" alt="Image" loading="lazy">
+                                <span class="img-time-badge">{{ $itemTime }}</span>
+                                <a href="{{ storage_url($item->image_path) }}" download class="btn-img-save" title="Save image">&#8595;</a>
                             </div>
                         @endif
-                        @if($post->file_path)
+                        @if($item->file_path)
                             @php
-                                $ext = strtolower(pathinfo($post->file_name ?? '', PATHINFO_EXTENSION));
+                                $ext = strtolower(pathinfo($item->file_name ?? '', PATHINFO_EXTENSION));
                                 $fileIcon = match(true) {
                                     in_array($ext,['pdf']) => '📕',
                                     in_array($ext,['doc','docx']) => '📘',
@@ -643,30 +660,30 @@
                                     in_array($ext,['mp4','mov','avi']) => '🎬',
                                     default => '📄'
                                 };
-                                $fileSize = $post->file_size
-                                    ? ($post->file_size >= 1048576
-                                        ? round($post->file_size/1048576,1).'MB'
-                                        : round($post->file_size/1024,0).'KB')
+                                $fileSize = $item->file_size
+                                    ? ($item->file_size >= 1048576
+                                        ? round($item->file_size/1048576,1).'MB'
+                                        : round($item->file_size/1024,0).'KB')
                                     : strtoupper($ext);
                             @endphp
-                            @if(!$post->body && !$isMe)<a href="{{ route('messages.show', $post->user_id) }}" class="bubble-author" style="color:{{ $nameColor }};display:block;font-size:12.5px;font-weight:700;text-decoration:none;margin-bottom:3px">{{ $post->author->name }}</a>@endif
+                            @if(!$item->body && !$isMe)<a href="{{ route('messages.show', $item->user_id) }}" class="bubble-author" style="color:{{ $nameColor }};display:block;font-size:12.5px;font-weight:700;text-decoration:none;margin-bottom:3px">{{ $item->author->name }}</a>@endif
                             <div class="file-msg-bubble">
                                 <div class="file-type-icon">{{ $fileIcon }}</div>
                                 <div class="file-info">
-                                    <div class="fname" title="{{ $post->file_name }}">{{ $post->file_name ?? 'Document' }}</div>
+                                    <div class="fname" title="{{ $item->file_name }}">{{ $item->file_name ?? 'Document' }}</div>
                                     <div class="fmeta">
                                         <span>{{ strtoupper($ext) }}</span>
                                         <span class="fmeta-dot"></span>
                                         <span>{{ $fileSize }}</span>
                                     </div>
                                 </div>
-                                <a href="{{ storage_url($post->file_path) }}" download="{{ $post->file_name }}" class="btn-file-dl" title="Download">&#8595;</a>
+                                <a href="{{ storage_url($item->file_path) }}" download="{{ $item->file_name }}" class="btn-file-dl" title="Download">&#8595;</a>
                             </div>
-                            <div class="file-bubble-footer"><span class="file-bubble-time">{{ $postTime }}</span></div>
+                            <div class="file-bubble-footer"><span class="file-bubble-time">{{ $itemTime }}</span></div>
                         @endif
-                        @if($post->audio_path)
+                        @if($item->audio_path)
                         @php $heights = [8,14,20,28,22,16,26,18,10,24,20,14,22,8,18,26,12,20,30,14]; @endphp
-                        @if(!$post->body && !$isMe)<span class="bubble-author" style="color:{{ $nameColor }};display:block;font-size:12.5px;font-weight:700;margin-bottom:3px">{{ $post->author->name }}</span>@endif
+                        @if(!$item->body && !$isMe)<span class="bubble-author" style="color:{{ $nameColor }};display:block;font-size:12.5px;font-weight:700;margin-bottom:3px">{{ $item->author->name }}</span>@endif
                         <div class="audio-msg-bubble">
                             <button class="audio-play-btn" onclick="toggleAudio(this)" type="button">&#9654;</button>
                             <div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;">
@@ -676,16 +693,16 @@
                                 </div>
                             </div>
                             <span class="audio-duration">0:00</span>
-                            <audio preload="auto" src="{{ storage_url($post->audio_path) }}" style="display:none"></audio>
+                            <audio preload="auto" src="{{ storage_url($item->audio_path) }}" style="display:none"></audio>
                         </div>
-                        <div class="audio-bubble-footer">{{ $postTime }}</div>
+                        <div class="audio-bubble-footer">{{ $itemTime }}</div>
                         @endif
                         <div class="chat-actions">
                             <button class="btn-sm btn-reply" title="Reply"
-                                onclick="setReply({{ $post->id }}, '{{ $isMe ? 'You' : addslashes($post->author->name) }}', '{{ addslashes(Str::limit($post->body ?: 'Attachment', 60)) }}')">&#8617;</button>
-                            @if(auth()->id() === $post->user_id || auth()->user()->isAdmin())
-                                <button class="btn-sm btn-edit" title="Edit" onclick="editPost({{ $post->id }}, `{{ addslashes($post->body) }}`)">&#9998;</button>
-                                <button class="btn-sm btn-delete" title="Delete" onclick="deletePost({{ $post->id }})">&#128465;</button>
+                                onclick="setReply({{ $item->id }}, '{{ $isMe ? 'You' : addslashes($item->author->name) }}', '{{ addslashes(Str::limit($item->body ?: 'Attachment', 60)) }}')">&#8617;</button>
+                            @if(auth()->id() === $item->user_id || auth()->user()->isAdmin())
+                                <button class="btn-sm btn-edit" title="Edit" onclick="editPost({{ $item->id }}, `{{ addslashes($item->body) }}`)">&#9998;</button>
+                                <button class="btn-sm btn-delete" title="Delete" onclick="deletePost({{ $item->id }})">&#128465;</button>
                             @endif
                         </div>
                     </div>
@@ -699,38 +716,39 @@
                     </div>
                     @endif
                 </div>
-                {{-- Replies as WhatsApp-style bubbles with embedded quote --}}
-                @foreach($post->replies as $reply)
+
+                @else
+                {{-- ── Reply bubble (chronological position, with quote) ── --}}
                 @php
-                    $rIsMe = $reply->user_id === auth()->id();
-                    $rColor = $palette[abs(crc32($reply->author->name)) % 8];
-                    $quoteAuthor = $reply->parent ? $reply->parent->author->name : $post->author->name;
-                    $quoteBody   = $reply->parent ? Str::limit($reply->parent->body, 80) : Str::limit($post->body ?: 'Attachment', 80);
-                    $quoteColor  = $reply->parent ? $palette[abs(crc32($reply->parent->author->name)) % 8] : $nameColor;
-                    $quoteTarget = $reply->parent ? 'reply-'.$reply->parent->id : 'post-'.$post->id;
+                    $rIsMe      = $isMe;
+                    $rColor     = $nameColor;
+                    $quoteAuthor = $item->parent ? $item->parent->author->name : $parentPost->author->name;
+                    $quoteBody   = $item->parent ? Str::limit($item->parent->body, 80) : Str::limit($parentPost->body ?: 'Attachment', 80);
+                    $quoteColor  = $item->parent ? $palette[abs(crc32($item->parent->author->name)) % 8] : $palette[abs(crc32($parentPost->author->name)) % 8];
+                    $quoteTarget = $item->parent ? 'reply-'.$item->parent->id : 'post-'.$parentPost->id;
                 @endphp
-                <div class="chat-row {{ $rIsMe ? 'mine' : '' }}" id="reply-{{ $reply->id }}">
+                <div class="chat-row {{ $rIsMe ? 'mine' : '' }}" id="reply-{{ $item->id }}">
                     @if(!$rIsMe)
                     <div class="chat-avatar">
-                        @if($reply->author->avatar)
-                            <img src="{{ storage_url($reply->author->avatar) }}" alt="">
+                        @if($item->author->avatar)
+                            <img src="{{ storage_url($item->author->avatar) }}" alt="">
                         @else
-                            {{ strtoupper(substr($reply->author->name,0,1)) }}
+                            {{ strtoupper(substr($item->author->name,0,1)) }}
                         @endif
                     </div>
                     @endif
                     <div class="chat-bubble-wrap">
                         <div class="chat-bubble">
-                            @if(!$rIsMe)<span class="bubble-author" style="color:{{ $rColor }}">{{ $reply->author->name }}</span>@endif
+                            @if(!$rIsMe)<span class="bubble-author" style="color:{{ $rColor }}">{{ $item->author->name }}</span>@endif
                             <div class="reply-quote" onclick="document.getElementById('{{ $quoteTarget }}')?.scrollIntoView({behavior:'smooth',block:'center'})">
                                 <div class="rq-author" style="color:{{ $quoteColor }}">{{ $quoteAuthor }}</div>
                                 <div class="rq-body">{{ $quoteBody }}</div>
                             </div>
-                            {{ $reply->body }}<span class="bubble-time">{{ $reply->created_at->format('H:i') }}</span>
+                            {{ $item->body }}<span class="bubble-time">{{ $itemTime }}</span>
                         </div>
                         <div class="chat-actions">
                             <button class="btn-sm btn-reply" title="Reply"
-                                onclick="setReply({{ $post->id }}, '{{ $rIsMe ? 'You' : addslashes($reply->author->name) }}', '{{ addslashes(Str::limit($reply->body, 60)) }}', {{ $reply->id }})">&#8617;</button>
+                                onclick="setReply({{ $parentPost->id }}, '{{ $rIsMe ? 'You' : addslashes($item->author->name) }}', '{{ addslashes(Str::limit($item->body, 60)) }}', {{ $item->id }})">&#8617;</button>
                         </div>
                     </div>
                     @if($rIsMe)
@@ -743,7 +761,7 @@
                     </div>
                     @endif
                 </div>
-                @endforeach
+                @endif
                 @endforeach
                 @endif {{-- end $isRemoved check --}}
             </div>
