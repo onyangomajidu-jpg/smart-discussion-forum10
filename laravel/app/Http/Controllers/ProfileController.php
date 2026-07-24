@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
@@ -76,16 +77,11 @@ class ProfileController extends Controller
         $user->bio   = $request->input('bio');
 
         if ($request->hasFile('avatar') && $request->file('avatar')->isValid()) {
-            $file     = $request->file('avatar');
-            $filename = $file->hashName();
-            $destDir  = public_path('storage/avatars');
-            if (!is_dir($destDir)) mkdir($destDir, 0755, true);
+            $disk = config('filesystems.default');
             if ($user->avatar) {
-                $old = public_path('storage/' . $user->avatar);
-                if (file_exists($old)) unlink($old);
+                Storage::disk($disk)->delete($user->avatar);
             }
-            $file->move($destDir, $filename);
-            $user->avatar = 'avatars/' . $filename;
+            $user->avatar = $request->file('avatar')->store('avatars', $disk);
         }
 
         if ($request->filled('password')) {

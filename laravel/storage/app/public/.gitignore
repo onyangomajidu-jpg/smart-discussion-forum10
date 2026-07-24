@@ -1,10 +1,2 @@
-*
+# Track everything in this directory and all subdirectories
 !.gitignore
-!audio/
-!audio/**
-!images/
-!images/**
-!files/
-!files/**
-!avatars/
-!avatars/**

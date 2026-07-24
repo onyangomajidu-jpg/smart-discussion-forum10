@@ -475,9 +475,9 @@
                                 {{-- Image bubble --}}
                                 @if($msg->image_path)
                                 <div class="img-msg-bubble">
-                                    <img src="{{ asset('storage/' . $msg->image_path) }}" alt="Image" loading="lazy">
+                                    <img src="{{ storage_url($msg->image_path) }}" alt="Image" loading="lazy">
                                     <span class="img-time-badge">{{ $timeStr }}</span>
-                                    <a href="{{ asset('storage/' . $msg->image_path) }}" download class="btn-img-save" title="Save">&#8595;</a>
+                                    <a href="{{ storage_url($msg->image_path) }}" download class="btn-img-save" title="Save">&#8595;</a>
                                 </div>
                                 @endif
                                 {{-- File bubble --}}
@@ -504,7 +504,7 @@
                                         <div class="fname" title="{{ $msg->file_name }}">{{ $msg->file_name ?? 'Document' }}</div>
                                         <div class="fmeta"><span>{{ strtoupper($ext) }}</span><span class="fmeta-dot"></span><span>{{ $fileSize }}</span></div>
                                     </div>
-                                    <a href="{{ asset('storage/' . $msg->file_path) }}" download="{{ $msg->file_name }}" class="btn-file-dl" title="Download">&#8595;</a>
+                                    <a href="{{ storage_url($msg->file_path) }}" download="{{ $msg->file_name }}" class="btn-file-dl" title="Download">&#8595;</a>
                                 </div>
                                 <div class="file-bubble-footer"><span class="file-bubble-time">{{ $timeStr }}</span></div>
                                 @endif
@@ -521,7 +521,7 @@
                                             <span class="audio-bubble-time">{{ $timeStr }}</span>
                                         </div>
                                     </div>
-                                    <audio preload="auto" src="{{ asset('storage/' . $msg->audio_path) }}" style="display:none"></audio>
+                                    <audio preload="auto" src="{{ storage_url($msg->audio_path) }}" style="display:none"></audio>
                                 </div>
                                 @endif
                                 {{-- Actions (reply/edit/delete) --}}

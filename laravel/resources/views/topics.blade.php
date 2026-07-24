@@ -144,13 +144,16 @@
         .chat-row { display: flex; align-items: flex-end; gap: 6px; margin-bottom: 2px; }
         .chat-row.mine { flex-direction: row-reverse; }
 
-        /* Avatar inline with bubble */
+        /* Avatar inline with bubble — compact modern style */
         .chat-avatar {
-            width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+            width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 800; color: #fff;
+            font-size: 10px; font-weight: 800; color: #fff;
             background: linear-gradient(135deg,#667eea,#764ba2);
             overflow: hidden; align-self: flex-end;
+            box-shadow: 0 1px 4px rgba(0,0,0,.18);
+            border: 1.5px solid rgba(255,255,255,.7);
+            margin-bottom: 2px;
         }
         .chat-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
         .chat-row.mine .chat-avatar { background: linear-gradient(135deg,#25d366,#128c7e); }
@@ -580,7 +583,7 @@
                 <div class="chat-row topic-origin">
                     <div class="chat-avatar">
                         @if($activeTopic->author->avatar)
-                            <img src="{{ asset('storage/'.$activeTopic->author->avatar) }}" alt="">
+                            <img src="{{ storage_url($activeTopic->author->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr($activeTopic->author->name,0,1)) }}
                         @endif
@@ -606,7 +609,7 @@
                     @if(!$isMe)
                     <div class="chat-avatar">
                         @if($post->author->avatar)
-                            <img src="{{ asset('storage/'.$post->author->avatar) }}" alt="">
+                            <img src="{{ storage_url($post->author->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr($post->author->name,0,1)) }}
                         @endif
@@ -622,9 +625,9 @@
                         @if($post->image_path)
                             <div class="img-msg-bubble">
                                 @if(!$post->body && !$isMe)<span class="bubble-author" style="color:{{ $nameColor }};display:block;padding:5px 8px 0;font-size:12.5px;font-weight:700">{{ $post->author->name }}</span>@endif
-                                <img src="{{ asset('storage/' . $post->image_path) }}" alt="Image" loading="lazy">
+                                <img src="{{ storage_url($post->image_path) }}" alt="Image" loading="lazy">
                                 <span class="img-time-badge">{{ $postTime }}</span>
-                                <a href="{{ asset('storage/' . $post->image_path) }}" download class="btn-img-save" title="Save image">&#8595;</a>
+                                <a href="{{ storage_url($post->image_path) }}" download class="btn-img-save" title="Save image">&#8595;</a>
                             </div>
                         @endif
                         @if($post->file_path)
@@ -657,7 +660,7 @@
                                         <span>{{ $fileSize }}</span>
                                     </div>
                                 </div>
-                                <a href="{{ asset('storage/' . $post->file_path) }}" download="{{ $post->file_name }}" class="btn-file-dl" title="Download">&#8595;</a>
+                                <a href="{{ storage_url($post->file_path) }}" download="{{ $post->file_name }}" class="btn-file-dl" title="Download">&#8595;</a>
                             </div>
                             <div class="file-bubble-footer"><span class="file-bubble-time">{{ $postTime }}</span></div>
                         @endif
@@ -673,7 +676,7 @@
                                 </div>
                             </div>
                             <span class="audio-duration">0:00</span>
-                            <audio preload="auto" src="{{ asset('storage/' . $post->audio_path) }}" style="display:none"></audio>
+                            <audio preload="auto" src="{{ storage_url($post->audio_path) }}" style="display:none"></audio>
                         </div>
                         <div class="audio-bubble-footer">{{ $postTime }}</div>
                         @endif
@@ -689,7 +692,7 @@
                     @if($isMe)
                     <div class="chat-avatar">
                         @if(auth()->user()->avatar)
-                            <img src="{{ asset('storage/'.auth()->user()->avatar) }}" alt="">
+                            <img src="{{ storage_url(auth()->user()->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr(auth()->user()->name,0,1)) }}
                         @endif
@@ -706,7 +709,7 @@
                     @if(!$rIsMe)
                     <div class="chat-avatar">
                         @if($reply->author->avatar)
-                            <img src="{{ asset('storage/'.$reply->author->avatar) }}" alt="">
+                            <img src="{{ storage_url($reply->author->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr($reply->author->name,0,1)) }}
                         @endif
@@ -725,7 +728,7 @@
                     @if($rIsMe)
                     <div class="chat-avatar">
                         @if(auth()->user()->avatar)
-                            <img src="{{ asset('storage/'.auth()->user()->avatar) }}" alt="">
+                            <img src="{{ storage_url(auth()->user()->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr(auth()->user()->name,0,1)) }}
                         @endif
