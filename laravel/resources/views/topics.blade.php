@@ -117,7 +117,7 @@
             .conv-header > div:last-child a,
             .conv-header > div:last-child button { font-size: 12px; padding: 6px 10px; }
 
-            .messages { padding: 12px; gap: 10px; }
+            .messages { padding: 12px; gap: 4px; }
             .input-area { padding: 10px 12px; }
             .msg-input { font-size: 13px; }
             .btn-send { padding: 8px 14px; font-size: 13px; }
@@ -138,10 +138,10 @@
         }
         .conv-header h2 { font-size: 18px; color: #2d3748; }
         .conv-header-meta { font-size: 13px; color: #718096; }
-        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 4px; }
 
         /* ── Chat bubble styles (WhatsApp group) ── */
-        .chat-row { display: flex; align-items: flex-end; gap: 6px; margin-bottom: 2px; }
+        .chat-row { display: flex; align-items: center; gap: 6px; margin-bottom: 1px; }
         .chat-row.mine { flex-direction: row-reverse; }
 
         /* Avatar inline with bubble — compact modern style */
@@ -704,6 +704,10 @@
                 @php
                     $rIsMe = $reply->user_id === auth()->id();
                     $rColor = $palette[abs(crc32($reply->author->name)) % 8];
+                    $quoteAuthor = $reply->parent ? $reply->parent->author->name : $post->author->name;
+                    $quoteBody   = $reply->parent ? Str::limit($reply->parent->body, 80) : Str::limit($post->body ?: 'Attachment', 80);
+                    $quoteColor  = $reply->parent ? $palette[abs(crc32($reply->parent->author->name)) % 8] : $nameColor;
+                    $quoteTarget = $reply->parent ? 'reply-'.$reply->parent->id : 'post-'.$post->id;
                 @endphp
                 <div class="chat-row {{ $rIsMe ? 'mine' : '' }}" id="reply-{{ $reply->id }}">
                     @if(!$rIsMe)
@@ -718,11 +722,15 @@
                     <div class="chat-bubble-wrap">
                         <div class="chat-bubble">
                             @if(!$rIsMe)<span class="bubble-author" style="color:{{ $rColor }}">{{ $reply->author->name }}</span>@endif
-                            <div class="reply-quote" onclick="document.getElementById('post-{{ $post->id }}')?.scrollIntoView({behavior:'smooth',block:'center'})">
-                                <div class="rq-author" style="color:{{ $nameColor }}">{{ $post->author->name }}</div>
-                                <div class="rq-body">{{ Str::limit($post->body ?: 'Attachment', 80) }}</div>
+                            <div class="reply-quote" onclick="document.getElementById('{{ $quoteTarget }}')?.scrollIntoView({behavior:'smooth',block:'center'})">
+                                <div class="rq-author" style="color:{{ $quoteColor }}">{{ $quoteAuthor }}</div>
+                                <div class="rq-body">{{ $quoteBody }}</div>
                             </div>
                             {{ $reply->body }}<span class="bubble-time">{{ $reply->created_at->format('H:i') }}</span>
+                        </div>
+                        <div class="chat-actions">
+                            <button class="btn-sm btn-reply" title="Reply"
+                                onclick="setReply({{ $post->id }}, '{{ $rIsMe ? 'You' : addslashes($reply->author->name) }}', '{{ addslashes(Str::limit($reply->body, 60)) }}', {{ $reply->id }})">&#8617;</button>
                         </div>
                     </div>
                     @if($rIsMe)
@@ -750,6 +758,7 @@
                     <form id="replyForm" method="POST" action="" style="display:none">
                         @csrf
                         <input type="hidden" name="body" id="replyFormBody">
+                        <input type="hidden" name="parent_reply_id" id="replyFormParentId">
                     </form>
 
                     <form action="{{ route('topics.participate', $activeTopic->id) }}" method="POST" id="postForm" enctype="multipart/form-data" data-no-loader>
@@ -1052,19 +1061,20 @@
 
     let replyingToPostId = null;
 
-    function setReply(postId, author, body) {
+    function setReply(postId, author, body, parentReplyId) {
         replyingToPostId = postId;
         document.getElementById('replyBarAuthor').textContent = author;
         document.getElementById('replyBarBody').textContent = body;
         document.getElementById('replyBar').style.display = 'flex';
         document.getElementById('postInput').focus();
-        // Update hidden reply form action
         document.getElementById('replyForm').action = '/posts/' + postId + '/answer';
+        document.getElementById('replyFormParentId').value = parentReplyId || '';
     }
     function cancelReply() {
         replyingToPostId = null;
         document.getElementById('replyBar').style.display = 'none';
         document.getElementById('replyForm').action = '';
+        document.getElementById('replyFormParentId').value = '';
     }
 
     function submitMessage() {

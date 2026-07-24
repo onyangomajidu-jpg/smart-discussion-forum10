@@ -28,11 +28,12 @@ class LecturerTopicController extends Controller
                 'author',
                 'posts.author',
                 'posts.replies.author',
+                'posts.replies.parent.author',
                 'participants',
                 'blockedParticipants',
             ])->findOrFail($request->topic);
 
-            $posts = $activeTopic->posts()->with(['author', 'replies.author'])->get();
+            $posts = $activeTopic->posts()->with(['author', 'replies.author', 'replies.parent.author'])->get();
             $activeTopic->increment('views');
         }
 
@@ -65,7 +66,7 @@ class LecturerTopicController extends Controller
 
     public function show(Topic $topic)
     {
-        $topic->load(['author', 'posts.author', 'posts.replies.author', 'participants', 'blockedParticipants']);
+        $topic->load(['author', 'posts.author', 'posts.replies.author', 'posts.replies.parent.author', 'participants', 'blockedParticipants']);
         $topic->increment('views');
 
         return view('lecturer.topics', [
@@ -114,7 +115,10 @@ class LecturerTopicController extends Controller
 
     public function answer(Request $request, int $postId)
     {
-        $data = $request->validate(['body' => 'required|string']);
+        $data = $request->validate([
+            'body'            => 'required|string',
+            'parent_reply_id' => 'nullable|exists:replies,id',
+        ]);
 
         try {
             $this->cms->answerQuestion($postId, $data);
