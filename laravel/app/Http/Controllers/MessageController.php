@@ -80,15 +80,17 @@ class MessageController extends Controller
             'reply_to_id'  => $request->input('reply_to_id'),
         ];
 
+        $disk = config('filesystems.default');
+
         if ($request->hasFile('audio')) {
-            $data['audio_path'] = $request->file('audio')->store('audio/messages', 'public');
+            $data['audio_path'] = $request->file('audio')->store('audio/messages', $disk);
         }
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('images/messages', 'public');
+            $data['image_path'] = $request->file('image')->store('images/messages', $disk);
         }
         if ($request->hasFile('file')) {
             $uploaded = $request->file('file');
-            $data['file_path'] = $uploaded->store('files/messages', 'public');
+            $data['file_path'] = $uploaded->store('files/messages', $disk);
             $data['file_name'] = $uploaded->getClientOriginalName();
             $data['file_size'] = $uploaded->getSize();
         }

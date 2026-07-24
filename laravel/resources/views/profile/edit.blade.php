@@ -72,7 +72,7 @@
                 <div class="profile-avatar-wrap">
                     <div class="profile-avatar" onclick="document.getElementById('avatarInput').click()" title="Click to change photo">
                         @if($user->avatar)
-                            <img id="avatarPreview" src="{{ asset('storage/' . $user->avatar) }}" alt="Avatar">
+                            <img id="avatarPreview" src="{{ storage_url($user->avatar) }}" alt="Avatar">
                         @else
                             <img id="avatarPreview" src="" alt="" style="display:none">
                             <span id="avatarInitial">{{ strtoupper(substr($user->name, 0, 1)) }}</span>

@@ -90,15 +90,16 @@ class LecturerTopicController extends Controller
 
         $data = ['body' => $request->input('body', '')];
 
+        $disk = config('filesystems.default');
         if ($request->hasFile('audio')) {
-            $data['audio_path'] = $request->file('audio')->store('audio/posts', 'public');
+            $data['audio_path'] = $request->file('audio')->store('audio/posts', $disk);
         }
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('images/posts', 'public');
+            $data['image_path'] = $request->file('image')->store('images/posts', $disk);
         }
         if ($request->hasFile('file')) {
             $uploaded = $request->file('file');
-            $data['file_path'] = $uploaded->store('files/posts', 'public');
+            $data['file_path'] = $uploaded->store('files/posts', $disk);
             $data['file_name'] = $uploaded->getClientOriginalName();
             $data['file_size'] = $uploaded->getSize();
         }
