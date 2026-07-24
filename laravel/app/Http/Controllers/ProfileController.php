@@ -55,7 +55,7 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
-        $user = auth()->user();
+        $user = \App\Models\User::findOrFail(auth()->id());
 
         $request->validate([
             'name'             => ['required', 'string', 'max:255'],
@@ -66,8 +66,11 @@ class ProfileController extends Controller
             'password'         => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 
-        if ($request->filled('current_password')) {
-            if (!Hash::check($request->current_password, $user->password)) {
+        if ($request->filled('password')) {
+            if (!$request->filled('current_password')) {
+                return back()->withErrors(['current_password' => 'Enter your current password to set a new one.'])->withInput();
+            }
+            if (!Hash::check($request->current_password, $user->getOriginal('password') ?? $user->password)) {
                 return back()->withErrors(['current_password' => 'Current password is incorrect.'])->withInput();
             }
         }
@@ -85,10 +88,13 @@ class ProfileController extends Controller
         }
 
         if ($request->filled('password')) {
-            $user->password = Hash::make($request->input('password'));
+            // Use DB update to bypass the model's 'hashed' cast (avoids double-hashing)
+            \Illuminate\Support\Facades\DB::table('users')
+                ->where('id', $user->id)
+                ->update(['password' => Hash::make($request->input('password'))]);
         }
 
-        $user->save();
+        $user->saveQuietly();
 
         return back()->with('success', 'Profile updated successfully.');
     }

@@ -439,7 +439,7 @@
             <a href="{{ route('profile.edit') }}" style="display:flex;align-items:center;gap:0;text-decoration:none" title="Edit Profile">
                 <div class="topnav-avatar">
                     @if(auth()->user()->avatar)
-                        <img src="{{ asset('storage/' . auth()->user()->avatar) }}" style="width:100%;height:100%;object-fit:cover;border-radius:7px" alt="">
+                        <img src="{{ storage_url(auth()->user()->avatar) }}" style="width:100%;height:100%;object-fit:cover;border-radius:7px" alt="">
                     @else
                         {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                     @endif
@@ -550,7 +550,7 @@
             <a href="{{ route('profile.edit') }}" style="display:flex;align-items:center;gap:10px;padding:12px 16px;text-decoration:none;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background=''">
                 <div class="sidebar-footer-avatar">
                     @if(auth()->user()->avatar)
-                        <img src="{{ asset('storage/' . auth()->user()->avatar) }}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" alt="">
+                        <img src="{{ storage_url(auth()->user()->avatar) }}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" alt="">
                     @else
                         {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                     @endif
