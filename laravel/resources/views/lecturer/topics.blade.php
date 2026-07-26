@@ -526,6 +526,7 @@
                     <button class="btn-action btn-share" onclick="openShareModal({{ $activeTopic->id }})">
                         🌐 Share
                     </button>
+                    <button onclick="clearTopicChat({{ $activeTopic->id }})" title="Clear chat on this device only" style="padding:6px 12px;background:#f1f5f9;color:#64748b;border:1.5px solid #e2e8f0;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">&#128465; Clear Chat</button>
                     <button class="mobile-toggle-btn" id="participantsToggleBtn" type="button" aria-label="Toggle participants list" style="background:#ede9fe;color:#4c1d95;">
                         👥
                     </button>
@@ -565,7 +566,7 @@
                     $nameColor = $palette[abs(crc32($post->author->name)) % 8];
                     $postTime = $post->created_at->format('H:i');
                 @endphp
-                <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="post-{{ $post->id }}">
+                <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="post-{{ $post->id }}" data-ts="{{ $post->created_at->toISOString() }}">
                     @if(!$isMe)
                     <div class="chat-avatar">
                         @if($post->author->avatar)
@@ -661,7 +662,7 @@
                     $quoteColor  = $reply->parent ? $palette[abs(crc32($reply->parent->author->name)) % 8] : $nameColor;
                     $quoteTarget = $reply->parent ? 'reply-'.$reply->parent->id : 'post-'.$post->id;
                 @endphp
-                <div class="chat-row {{ $rIsMe ? 'mine' : '' }}" id="reply-{{ $reply->id }}">
+                <div class="chat-row {{ $rIsMe ? 'mine' : '' }}" id="reply-{{ $reply->id }}" data-ts="{{ $reply->created_at->toISOString() }}">
                     @if(!$rIsMe)
                     <div class="chat-avatar">
                         @if($reply->author->avatar)
@@ -1101,7 +1102,11 @@
                     const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
                     posts.forEach(post => {
                         if (document.getElementById('post-' + post.id)) return;
-                        container.appendChild(buildBubble(post));
+                        var _row = buildBubble(post);
+                        var _ck = 'topic_cleared_{{ auth()->id() }}_' + {{ $activeTopic->id }};
+                        var _ct = localStorage.getItem(_ck);
+                        if (_ct && post.created_at && post.created_at <= _ct) _row.style.display = 'none';
+                        container.appendChild(_row);
                     });
                     if (atBottom) container.scrollTop = container.scrollHeight;
                 })
@@ -1120,6 +1125,28 @@
         }
     });
     @endif
+
+    // ── Clear Chat (device-only, localStorage) ──
+    function clearTopicChat(topicId) {
+        if (!confirm('Clear this chat on this device only?\nOther users will not be affected.')) return;
+        const key = 'topic_cleared_{{ auth()->id() }}_' + topicId;
+        const ts  = new Date().toISOString();
+        localStorage.setItem(key, ts);
+        document.querySelectorAll('#messages .chat-row[data-ts]').forEach(function(row) {
+            if (row.dataset.ts <= ts) row.style.display = 'none';
+        });
+    }
+    // Apply existing clear on page load
+    (function() {
+        @if(isset($activeTopic))
+        const key = 'topic_cleared_{{ auth()->id() }}_{{ $activeTopic->id }}';
+        const ts  = localStorage.getItem(key);
+        if (!ts) return;
+        document.querySelectorAll('#messages .chat-row[data-ts]').forEach(function(row) {
+            if (row.dataset.ts <= ts) row.style.display = 'none';
+        });
+        @endif
+    })();
 
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
         overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });

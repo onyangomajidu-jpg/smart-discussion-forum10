@@ -126,6 +126,7 @@
             .modal { width: 95vw; padding: 20px 16px; }
         }
         @media (max-width: 480px) {
+            .chat-bubble-wrap { max-width: 82%; }
             .navbar h1 img { height: 26px; }
             .replies { padding-left: 10px; }
         }
@@ -138,7 +139,7 @@
         }
         .conv-header h2 { font-size: 18px; color: #2d3748; }
         .conv-header-meta { font-size: 13px; color: #718096; }
-        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 2px; }
 
         /* ── Chat bubble styles (WhatsApp group) ── */
         .chat-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 0; }
@@ -146,9 +147,9 @@
 
         /* Avatar — small, pinned to bottom of bubble like WhatsApp */
         .chat-avatar {
-            width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+            width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 800; color: #fff;
+            font-size: 11px; font-weight: 800; color: #fff;
             background: linear-gradient(135deg,#667eea,#764ba2);
             overflow: hidden; align-self: flex-start;
             box-shadow: 0 1px 4px rgba(0,0,0,.18);
@@ -159,7 +160,7 @@
         .chat-row.mine .chat-avatar { background: linear-gradient(135deg,#25d366,#128c7e); }
         .chat-row.topic-origin .chat-avatar { background: linear-gradient(135deg,#f59e0b,#d97706); }
 
-        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 68%; min-width: 0; }
+        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 68%; min-width: 0; overflow: hidden; }
         .chat-row.mine .chat-bubble-wrap { align-items: flex-end; }
 
         /* sender name inside bubble */
@@ -188,7 +189,10 @@
             font-size: 14px; color: #111b21; line-height: 1.55;
             box-shadow: 0 1px 2px rgba(0,0,0,.13);
             word-break: break-word;
+            overflow-wrap: break-word;
             overflow: hidden;
+            min-width: 0;
+            width: 100%;
         }
         .chat-row.mine .chat-bubble {
             background: #d9fdd3;
@@ -223,7 +227,7 @@
             cursor: pointer;
         }
         .reply-quote .rq-author { font-weight: 700; color: #667eea; margin-bottom: 2px; font-size: 11px; }
-        .reply-quote .rq-body   { color: #4a5568; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .reply-quote .rq-body   { color: #4a5568; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; box-sizing: border-box; }
         .chat-row.mine .reply-quote { border-color: #6abf8a; background: rgba(0,0,0,.07); }
         .chat-row.mine .reply-quote .rq-author { color: #2d7a4f; }
         .chat-row.mine .reply-quote .rq-body   { color: #374151; }
@@ -556,6 +560,8 @@
                         style="padding:7px 14px;background:linear-gradient(135deg,#25d366,#128c7e);color:white;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">
                         🌐 Share Discussion
                     </button>
+                    <button onclick="clearTopicChat({{ $activeTopic->id }})" title="Clear chat on this device only" style="padding:7px 14px;background:#f1f5f9;color:#64748b;border:1.5px solid #e2e8f0;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">&#128465; Clear Chat</button>
+                    
                     <button class="mobile-toggle-btn" id="participantsToggleBtn" type="button" aria-label="Toggle participants list" style="background:#ede9fe;color:#4c1d95;">
                         👥
                     </button>
@@ -622,7 +628,7 @@
 
                 @if(!$isReply)
                 {{-- ── Regular post bubble ── --}}
-                <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="post-{{ $item->id }}">
+                <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="post-{{ $item->id }}" data-ts="{{ $item->created_at->toISOString() }}">
                     @if(!$isMe)
                     <div class="chat-avatar">
                         @if($item->author->avatar)
@@ -727,7 +733,7 @@
                     $quoteColor  = $item->parent ? $palette[abs(crc32($item->parent->author->name)) % 8] : $palette[abs(crc32($parentPost->author->name)) % 8];
                     $quoteTarget = $item->parent ? 'reply-'.$item->parent->id : 'post-'.$parentPost->id;
                 @endphp
-                <div class="chat-row {{ $rIsMe ? 'mine' : '' }}" id="reply-{{ $item->id }}">
+                <div class="chat-row {{ $rIsMe ? 'mine' : '' }}" id="reply-{{ $item->id }}" data-ts="{{ $item->created_at->toISOString() }}">
                     @if(!$rIsMe)
                     <div class="chat-avatar">
                         @if($item->author->avatar)
@@ -1003,7 +1009,6 @@
         document.getElementById('shareModal').classList.add('open');
     }
 
-
     function resetShareModal() {
         selectedPlatform = null;
         document.getElementById('shareStatus').textContent = '';
@@ -1076,7 +1081,6 @@
         statusEl.style.color = '#276749';
         statusEl.textContent = '✅ ' + selectedPlatform.charAt(0).toUpperCase() + selectedPlatform.slice(1) + ' opened in a new tab.';
     }
-
 
     let replyingToPostId = null;
 
@@ -1169,7 +1173,7 @@
         const myName = @json(auth()->user()->name);
         let lastFetch = new Date().toISOString();
 
-        const storageBase = '{{ rtrim(config("app.url"), "/") }}/storage/';
+        const storageBase = '{{ rtrim(Storage::url(""), "/") }}/';
 
         function storageUrl(path) {
             if (!path) return '';
@@ -1267,7 +1271,11 @@
                     const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
                     posts.forEach(post => {
                         if (document.getElementById('post-' + post.id)) return;
-                        container.appendChild(buildBubble(post));
+                        var _row = buildBubble(post);
+                        var _ck = 'topic_cleared_' + myId + '_' + {{ $activeTopic->id }};
+                        var _ct = localStorage.getItem(_ck);
+                        if (_ct && post.created_at && post.created_at <= _ct) _row.style.display = 'none';
+                        container.appendChild(_row);
                     });
                     if (atBottom) container.scrollTop = container.scrollHeight;
                 })
@@ -1645,6 +1653,29 @@ body.qpop-locked .qpop-overlay{pointer-events:all;}
 @endif
 @endauth
 
+<script>
+    // ── Clear Chat (device-only, localStorage) ──
+    function clearTopicChat(topicId) {
+        if (!confirm('Clear this chat on this device only?\nOther users will not be affected.')) return;
+        const key = 'topic_cleared_{{ auth()->id() }}_' + topicId;
+        const ts  = new Date().toISOString();
+        localStorage.setItem(key, ts);
+        document.querySelectorAll('#messages .chat-row[data-ts]').forEach(function(row) {
+            if (row.dataset.ts <= ts) row.style.display = 'none';
+        });
+    }
+    // Apply existing clear on page load
+    (function() {
+        @if(isset($activeTopic))
+        const key = 'topic_cleared_{{ auth()->id() }}_{{ $activeTopic->id }}';
+        const ts  = localStorage.getItem(key);
+        if (!ts) return;
+        document.querySelectorAll('#messages .chat-row[data-ts]').forEach(function(row) {
+            if (row.dataset.ts <= ts) row.style.display = 'none';
+        });
+        @endif
+    })();
+</script>
 <script>
 setInterval(function() { fetch('/api/ping', {credentials:'same-origin'}).catch(function(){}); }, 240000);
 </script>

@@ -429,9 +429,12 @@
                         <div class="conv-header-meta">{{ ucfirst($other->role) }} &middot; Private Message</div>
                     </div>
                 </div>
-                <a href="{{ route('topics.index') }}" class="btn-back-group" title="Back to Group Chat">
-                    &#8592; Group Chat
-                </a>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button onclick="clearDmChat({{ $other->id }})" title="Clear chat on this device only" style="padding:7px 14px;background:#f1f5f9;color:#64748b;border:1.5px solid #e2e8f0;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">&#128465; Clear Chat</button>
+                    <a href="{{ route('topics.index') }}" class="btn-back-group" title="Back to Group Chat">
+                        &#8592; Group Chat
+                    </a>
+                </div>
             </div>
 
             <div class="messages" id="messages">
@@ -450,7 +453,7 @@
                         $myColor    = $palette[abs(crc32(auth()->user()->name)) % count($palette)];
                         $timeStr    = $msg->created_at->format('H:i');
                     @endphp
-                    <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="msg-{{ $msg->id }}">
+                    <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="msg-{{ $msg->id }}" data-ts="{{ $msg->created_at->toISOString() }}">
                         <div class="chat-bubble-wrap">
                             @if($msg->trashed())
                                 <div class="chat-bubble" style="opacity:.5;font-style:italic;color:#94a3b8;">🚫 This message was deleted <span class="bubble-time">{{ $timeStr }}</span></div>
@@ -925,7 +928,6 @@
             if (data.success) {
                 const wrap = document.querySelector('#msg-' + id + ' .chat-bubble-wrap');
                 if (!wrap) return;
-                // keep meta row, replace content with deleted placeholder
                 const meta = wrap.querySelector('.chat-meta');
                 wrap.innerHTML = '';
                 if (meta) wrap.appendChild(meta);
@@ -937,6 +939,29 @@
             }
         });
     }
+
+    // ── Clear Chat (device-only, localStorage) ──
+    function clearDmChat(otherId) {
+        if (!confirm('Clear this conversation on this device only?\nOther users will not be affected.')) return;
+        const key = 'dm_cleared_{{ auth()->id() }}_' + otherId;
+        const ts  = new Date().toISOString();
+        localStorage.setItem(key, ts);
+        document.querySelectorAll('#messages .chat-row[data-ts]').forEach(function(row) {
+            if (row.dataset.ts <= ts) row.style.display = 'none';
+        });
+    }
+
+    // Apply any existing clear on page load
+    (function applyClearDm() {
+        @if($other)
+        const key = 'dm_cleared_{{ auth()->id() }}_{{ $other->id }}';
+        const ts  = localStorage.getItem(key);
+        if (!ts) return;
+        document.querySelectorAll('#messages .chat-row[data-ts]').forEach(function(row) {
+            if (row.dataset.ts <= ts) row.style.display = 'none';
+        });
+        @endif
+    })();
 </script>
 
 <script>
@@ -1040,7 +1065,12 @@ setInterval(function() { fetch('/api/ping', {credentials:'same-origin'}).catch(f
                 const atBottom  = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
                 data.messages.forEach(msg => {
                     if (document.getElementById('msg-' + msg.id)) return;
-                    container.appendChild(buildBubble(msg));
+                    const row = buildBubble(msg);
+                    // respect device-local clear
+                    const clearKey = 'dm_cleared_' + myId + '_' + otherId;
+                    const clearTs  = localStorage.getItem(clearKey);
+                    if (clearTs && msg.created_at && msg.created_at <= clearTs) row.style.display = 'none';
+                    container.appendChild(row);
                 });
                 if (atBottom) container.scrollTop = container.scrollHeight;
             })

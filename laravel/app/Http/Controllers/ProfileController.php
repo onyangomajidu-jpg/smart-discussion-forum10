@@ -95,6 +95,9 @@ class ProfileController extends Controller
 
         \Illuminate\Support\Facades\DB::table('users')->where('id', $user->id)->update($updates);
 
+        // Refresh the auth guard so the session reflects the new values
+        auth()->setUser(\App\Models\User::find($user->id));
+
         return back()->with('success', 'Profile updated successfully.');
     }
 }
