@@ -78,15 +78,6 @@ public class LoginWindow extends JFrame {
             new EmptyBorder(40, 40, 36, 40)
         ));
 
-<<<<<<< Updated upstream
-        JLabel logo = new JLabel("🎓 Discussion Hub", SwingConstants.CENTER);
-        logo.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        logo.setForeground(PRIMARY);
-        logo.setAlignmentX(CENTER_ALIGNMENT);
-
-        JLabel sub = new JLabel("Welcome back! Please login to your account.", SwingConstants.CENTER);
-        sub.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-=======
         // ── Logo ──────────────────────────────────────────────────────────
         JLabel logoImg = new JLabel("💬", SwingConstants.CENTER);
         logoImg.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 48));
@@ -109,7 +100,6 @@ public class LoginWindow extends JFrame {
 
         JLabel sub = new JLabel("Welcome back! Please login to your account", SwingConstants.CENTER);
         sub.setFont(new Font("Segoe UI", Font.PLAIN, 14));
->>>>>>> Stashed changes
         sub.setForeground(TEXT_MUTE);
         sub.setAlignmentX(CENTER_ALIGNMENT);
 

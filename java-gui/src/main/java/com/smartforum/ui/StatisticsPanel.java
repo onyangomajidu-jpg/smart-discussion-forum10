@@ -534,15 +534,8 @@ public class StatisticsPanel extends JPanel {
         int subjectCount = (dist != null && dist.isObject()) ? dist.size() : 0;
         lblQsSubjects.setText(String.valueOf(subjectCount));
 
-<<<<<<< Updated upstream
-        // Charts
-        renderBarChart(s.path("postsPerDay"));
-        renderPieChart(dist, totalAttempts, availableQuizzes);
-=======
-        // Charts — mirrors analytics/index.blade.php
         renderBarChart(s.path("weekly_performance").isMissingNode() ? s.path("postsPerDay") : s.path("weekly_performance"));
         renderPieChart(s.path("subject_allocation").isMissingNode() ? s.path("scoreDistribution") : s.path("subject_allocation"), totalAttempts, availableQuizzes);
->>>>>>> Stashed changes
     }
 
     private void renderBarChart(JsonNode data) {

@@ -210,11 +210,6 @@ public class MainWindow extends JFrame {
         bar.setBackground(PRIMARY);
         bar.setBorder(new EmptyBorder(8, 16, 8, 16));
 
-<<<<<<< Updated upstream
-        JLabel title = new JLabel("🎓 Discussion Hub");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        title.setForeground(Color.WHITE);
-=======
         // Brand: logo image + name (mirrors topnav-brand in app.blade.php)
         JPanel brand = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         brand.setOpaque(false);
@@ -247,11 +242,8 @@ public class MainWindow extends JFrame {
         brand.add(logoLbl);
         brand.add(namePanel);
 
-        // Role icon mirrors Laravel sidebar role labels exactly:
-        // fa-chalkboard-user = Lecturer, fa-user-graduate = Student, fa-shield-halved = Admin
         String roleIcon  = user.isAdmin() ? "\uD83D\uDEE1" : user.isLecturer() ? "\uD83D\uDCCB" : "\uD83C\uDF93";
         String roleLabel = user.isAdmin() ? "Admin"        : user.isLecturer() ? "Lecturer"    : "Student";
->>>>>>> Stashed changes
 
         connectionBadge.setFont(new Font("Segoe UI", Font.BOLD, 12));
         connectionBadge.setForeground(Color.WHITE);
