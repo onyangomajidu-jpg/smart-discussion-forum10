@@ -6,7 +6,7 @@ databases:
 
 services:
   - type: web
-    name: smart-discussion-forum
+    name: discussionhub
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile

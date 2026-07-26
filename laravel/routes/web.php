@@ -13,6 +13,10 @@ use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\ProfileController;
 
 // ── Guest Routes ───────────────────────────────────────────────────
+Route::get('/csrf-token', function () {
+    return response()->json(['token' => csrf_token()]);
+})->name('csrf.token');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login']);
@@ -89,6 +93,16 @@ Route::middleware('auth')->group(function () {
         auth()->user()->unreadNotifications()->update(['read_at' => now()]);
         return response()->json(['message' => 'Marked as read.']);
     })->name('notifications.read');
+});
+
+// ── Private Messaging (1:1 inbox, separate from topic/group chat) ─────
+Route::middleware('auth')->group(function () {
+    Route::get('/messages', [App\Http\Controllers\MessageController::class, 'index'])->name('messages.index');
+    Route::get('/messages/{userId}', [App\Http\Controllers\MessageController::class, 'show'])->whereNumber('userId')->name('messages.show');
+    Route::get('/messages/{userId}/poll', [App\Http\Controllers\MessageController::class, 'poll'])->whereNumber('userId')->name('messages.poll');
+    Route::post('/messages/{userId}', [App\Http\Controllers\MessageController::class, 'store'])->whereNumber('userId')->name('messages.store');
+    Route::put('/messages/{id}/edit', [App\Http\Controllers\MessageController::class, 'update'])->name('messages.update');
+    Route::delete('/messages/{id}', [App\Http\Controllers\MessageController::class, 'destroy'])->name('messages.destroy');
 });
 
 // ── Lecturer Routes ────────────────────────────────────────────────

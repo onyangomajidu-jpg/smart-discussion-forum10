@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
@@ -65,34 +66,37 @@ class ProfileController extends Controller
             'password'         => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 
-        if ($request->filled('current_password')) {
+        if ($request->filled('password')) {
+            if (!$request->filled('current_password')) {
+                return back()->withErrors(['current_password' => 'Enter your current password to set a new one.'])->withInput();
+            }
             if (!Hash::check($request->current_password, $user->password)) {
                 return back()->withErrors(['current_password' => 'Current password is incorrect.'])->withInput();
             }
         }
 
-        $user->name  = $request->input('name');
-        $user->email = $request->input('email');
-        $user->bio   = $request->input('bio');
+        $updates = [
+            'name'  => $request->input('name'),
+            'email' => $request->input('email'),
+            'bio'   => $request->input('bio'),
+        ];
 
         if ($request->hasFile('avatar') && $request->file('avatar')->isValid()) {
-            $file     = $request->file('avatar');
-            $filename = $file->hashName();
-            $destDir  = public_path('storage/avatars');
-            if (!is_dir($destDir)) mkdir($destDir, 0755, true);
+            $disk = config('filesystems.default');
             if ($user->avatar) {
-                $old = public_path('storage/' . $user->avatar);
-                if (file_exists($old)) unlink($old);
+                Storage::disk($disk)->delete($user->avatar);
             }
-            $file->move($destDir, $filename);
-            $user->avatar = 'avatars/' . $filename;
+            $updates['avatar'] = $request->file('avatar')->store('avatars', $disk);
         }
 
         if ($request->filled('password')) {
-            $user->password = Hash::make($request->input('password'));
+            $updates['password'] = Hash::make($request->input('password'));
         }
 
-        $user->save();
+        \Illuminate\Support\Facades\DB::table('users')->where('id', $user->id)->update($updates);
+
+        // Refresh the auth guard so the session reflects the new values
+        auth()->setUser(\App\Models\User::find($user->id));
 
         return back()->with('success', 'Profile updated successfully.');
     }

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('images/forum-favicon.png') }}">
     <title>Quiz Result — {{ $quiz->title }}</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
@@ -11,7 +12,8 @@
         .navbar{background:linear-gradient(135deg,#667eea,#764ba2);padding:16px 28px;color:#fff;
             display:flex;justify-content:space-between;align-items:center;
             box-shadow:0 2px 12px rgba(0,0,0,.2)}
-        .navbar h1{font-size:19px;font-weight:700}
+        .navbar h1{font-size:19px;font-weight:700;display:flex;align-items:center;gap:10px}
+        .navbar h1 img{height:36px;width:auto}
         .navbar a{color:#fff;text-decoration:none;font-size:13px;opacity:.85;
             padding:7px 14px;border:1px solid rgba(255,255,255,.35);border-radius:6px;transition:.2s}
         .navbar a:hover{background:rgba(255,255,255,.15)}
@@ -91,7 +93,7 @@
 <body>
 
 <nav class="navbar">
-    <h1>🎓 Discussion Hub</h1>
+    <h1><img src="{{ asset('images/forum.png') }}" alt="Forum Logo"> Discussion Hub</h1>
     <a href="{{ route('quizzes.index') }}">← All Quizzes</a>
 </nav>
 

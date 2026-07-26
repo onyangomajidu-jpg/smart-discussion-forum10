@@ -179,7 +179,7 @@
             </div>
         @endif
 
-        <form action="{{ route('login') }}" method="POST">
+        <form action="{{ route('login') }}" method="POST" id="loginForm">
             @csrf
 
             <div class="form-group">
@@ -239,6 +239,29 @@
             input.type = isHidden ? 'text' : 'password';
             btn.querySelector('svg').style.opacity = isHidden ? '0.5' : '1';
         }
+
+        // Refresh CSRF token before submit to prevent 419 on stale/expired sessions
+        document.getElementById('loginForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var form = this;
+            fetch('/sanctum/csrf-cookie', { credentials: 'same-origin' })
+                .catch(function () {})
+                .finally(function () {
+                    fetch('/csrf-token', { credentials: 'same-origin' })
+                        .then(function (r) { return r.ok ? r.json() : null; })
+                        .then(function (data) {
+                            if (data && data.token) {
+                                form.querySelector('input[name="_token"]').value = data.token;
+                            }
+                        })
+                        .catch(function () {})
+                        .finally(function () { form.submit(); });
+                });
+        });
     </script>
+
+<script>
+setInterval(function() { fetch('/api/ping', {credentials:'same-origin'}).catch(function(){}); }, 240000);
+</script>
 </body>
 </html>

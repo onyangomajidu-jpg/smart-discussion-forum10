@@ -28,11 +28,12 @@ class LecturerTopicController extends Controller
                 'author',
                 'posts.author',
                 'posts.replies.author',
+                'posts.replies.parent.author',
                 'participants',
                 'blockedParticipants',
             ])->findOrFail($request->topic);
 
-            $posts = $activeTopic->posts()->with(['author', 'replies.author'])->get();
+            $posts = $activeTopic->posts()->with(['author', 'replies.author', 'replies.parent.author'])->get();
             $activeTopic->increment('views');
         }
 
@@ -65,7 +66,7 @@ class LecturerTopicController extends Controller
 
     public function show(Topic $topic)
     {
-        $topic->load(['author', 'posts.author', 'posts.replies.author', 'participants', 'blockedParticipants']);
+        $topic->load(['author', 'posts.author', 'posts.replies.author', 'posts.replies.parent.author', 'participants', 'blockedParticipants']);
         $topic->increment('views');
 
         return view('lecturer.topics', [
@@ -77,7 +78,32 @@ class LecturerTopicController extends Controller
 
     public function participate(Request $request, int $topicId)
     {
-        $data = $request->validate(['body' => 'required|string']);
+        $request->validate([
+            'body'  => 'nullable|string',
+            'audio' => 'nullable|file|mimes:webm,ogg,mp4,wav,mp3|max:10240',
+            'image' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
+            'file'  => 'nullable|file|max:20480',
+        ]);
+
+        if (!$request->filled('body') && !$request->hasFile('audio') && !$request->hasFile('image') && !$request->hasFile('file')) {
+            return back()->withErrors(['body' => 'Please enter a message or attach a file.']);
+        }
+
+        $data = ['body' => $request->input('body', '')];
+
+        $disk = config('filesystems.default');
+        if ($request->hasFile('audio')) {
+            $data['audio_path'] = $request->file('audio')->store('audio/posts', $disk);
+        }
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('images/posts', $disk);
+        }
+        if ($request->hasFile('file')) {
+            $uploaded = $request->file('file');
+            $data['file_path'] = $uploaded->store('files/posts', $disk);
+            $data['file_name'] = $uploaded->getClientOriginalName();
+            $data['file_size'] = $uploaded->getSize();
+        }
 
         try {
             $this->cms->participateDiscussion($topicId, $data);
@@ -89,7 +115,10 @@ class LecturerTopicController extends Controller
 
     public function answer(Request $request, int $postId)
     {
-        $data = $request->validate(['body' => 'required|string']);
+        $data = $request->validate([
+            'body'            => 'required|string',
+            'parent_reply_id' => 'nullable|exists:replies,id',
+        ]);
 
         try {
             $this->cms->answerQuestion($postId, $data);

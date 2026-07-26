@@ -85,9 +85,8 @@ class LoginController extends Controller
     public function logout(Request $request)
     {
         $this->authService->logout($request);
-        
-        $this->sessionManager->flash('success', 'You have been logged out successfully.');
-        
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
         return redirect()->route('login');
     }
 

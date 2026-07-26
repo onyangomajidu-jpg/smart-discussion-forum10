@@ -66,9 +66,9 @@ class RegisterController extends Controller
                 $user->groups()->attach($request->group_id, ['role' => 'member']);
             }
 
-            // Send welcome email (non-blocking)
+            // Send welcome email (non-blocking — queued so SMTP never delays registration)
             try {
-                Mail::to($user->email)->send(new WelcomeMail($user));
+                Mail::to($user->email)->queue(new WelcomeMail($user));
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::warning('Welcome email failed: ' . $e->getMessage());
             }

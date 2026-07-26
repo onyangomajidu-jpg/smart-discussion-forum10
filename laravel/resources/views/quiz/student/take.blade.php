@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('images/forum-favicon.png') }}">
     <title>{{ $quiz->title }} — Quiz in Progress</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -223,6 +224,26 @@
         }
         .btn-return:hover { opacity: .9; transform: translateY(-1px); }
 
+        /* ── Responsive ────────────────────────────────────────────── */
+        @media (max-width: 768px) {
+            .quiz-header { padding: 0 14px; height: auto; min-height: 60px; flex-wrap: wrap; gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+            .quiz-title-text { font-size: 13px; }
+            .quiz-meta-text { font-size: 10px; gap: 6px; flex-wrap: wrap; }
+            .timer-box { min-width: 90px; padding: 7px 12px; }
+            .timer-time { font-size: 20px; letter-spacing: 2px; }
+            .progress-strip { padding: 10px 14px; gap: 10px; flex-direction: column; }
+            .container { padding: 0 12px; margin: 16px auto; }
+            .question-card { padding: 18px 16px; }
+            .q-text { font-size: 15px; }
+            .option-label { padding: 11px 12px; font-size: 13px; gap: 10px; }
+            .opt-letter { width: 26px; height: 26px; font-size: 11px; }
+            .submit-bar { flex-direction: column; gap: 14px; padding: 16px; text-align: center; }
+            .btn-submit { width: 100%; justify-content: center; }
+            .focus-warn-box { padding: 28px 20px; }
+            .focus-warn-title { font-size: 20px; }
+            .modal-box { padding: 28px 20px; }
+        }
+
         /* ── Auto-submit Modal ────────────────────────────────────────── */
         #autoSubmitModal {
             display: none;
@@ -272,6 +293,18 @@
         <div class="modal-text">Your quiz is being automatically submitted as per the quiz settings.</div>
         <div class="modal-countdown" id="autoCountdown">3</div>
         <div class="modal-countdown-label">Submitting in…</div>
+    </div>
+</div>
+
+{{-- Top nav bar --}}
+<div style="background:#fff;border-bottom:1px solid #e2e8f0;padding:0 20px;height:48px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:201;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+    <div style="display:flex;align-items:center;gap:10px;">
+        <img src="{{ asset('images/forum.png') }}" alt="" style="height:28px;">
+        <span style="font-size:13px;font-weight:700;color:#0f172a;">Discussion Hub</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;font-size:12px;color:#64748b;">
+        <span><i class="fa-solid fa-user" style="color:#6366f1;"></i> {{ auth()->user()->name }}</span>
+        <a href="{{ route('quizzes.index') }}" style="color:#ef4444;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:4px;" onclick="return confirm('Leave quiz? Your progress will not be saved.')"><i class="fa-solid fa-arrow-left"></i> Exit</a>
     </div>
 </div>
 
