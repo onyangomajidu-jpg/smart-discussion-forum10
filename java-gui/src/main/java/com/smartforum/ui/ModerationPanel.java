@@ -111,7 +111,7 @@ public class ModerationPanel extends JPanel {
         section.add(Box.createVerticalStrut(12));
 
         // Issue Warning form card
-        JPanel formCard = card("➕ Issue Warning", AMBER);
+        JPanel formCard = card("⚠️ Issue Warning", AMBER);
         JPanel form = new JPanel(new GridBagLayout());
         form.setBackground(SURFACE);
         form.setBorder(new EmptyBorder(14, 14, 14, 14));
@@ -209,7 +209,7 @@ public class ModerationPanel extends JPanel {
         section.add(Box.createVerticalStrut(12));
 
         // Blacklist User form card
-        JPanel formCard = card("➕ Blacklist User", DANGER);
+        JPanel formCard = card("🚫 Blacklist User", DANGER);
         JPanel form = new JPanel(new GridBagLayout());
         form.setBackground(SURFACE);
         form.setBorder(new EmptyBorder(14, 14, 14, 14));

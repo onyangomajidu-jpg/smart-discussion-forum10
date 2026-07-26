@@ -93,6 +93,7 @@ public class GroupsPanel extends JPanel {
         };
         JTable joinedTable = new JTable(joinedModel);
         styleTable(joinedTable);
+        applyMemberBadgeRenderer(joinedTable, 2);
 
         JPanel joinedCard = buildTableCard("👥 My Groups", PRIMARY, joinedCountLbl, joinedTable);
         joinedCard.setAlignmentX(LEFT_ALIGNMENT);
@@ -112,6 +113,7 @@ public class GroupsPanel extends JPanel {
         };
         JTable availableTable = new JTable(availableModel);
         styleTable(availableTable);
+        applyMemberBadgeRenderer(availableTable, 2);
 
         // Join button on row selection
         availableTable.getSelectionModel().addListSelectionListener(e -> {
@@ -210,10 +212,10 @@ public class GroupsPanel extends JPanel {
                         boolean mine = g.path("is_member").asBoolean(false);
 
                         if (mine) {
-                            joinedModel.addRow(new Object[]{name, desc, members, "← Leave"});
+                            joinedModel.addRow(new Object[]{name, desc, members, "🚪 Leave"});
                             joinedCount++;
                         } else {
-                            availableModel.addRow(new Object[]{name, desc, members, "Join →"});
+                            availableModel.addRow(new Object[]{name, desc, members, "+ Join"});
                             availCount++;
                         }
                     }
@@ -254,6 +256,19 @@ public class GroupsPanel extends JPanel {
                 }
             }
         }.execute();
+    }
+
+    private void applyMemberBadgeRenderer(JTable table, int col) {
+        table.getColumnModel().getColumn(col).setCellRenderer(
+            (tbl, value, isSelected, hasFocus, row, column) -> {
+                JLabel lbl = new JLabel(value == null ? "" : value.toString(), SwingConstants.CENTER);
+                lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                lbl.setForeground(PURPLE);
+                lbl.setOpaque(true);
+                lbl.setBackground(isSelected ? new Color(0xE0,0xE7,0xFF) : new Color(0xED,0xE9,0xFE));
+                lbl.setBorder(new EmptyBorder(2, 8, 2, 8));
+                return lbl;
+            });
     }
 
     private void styleTable(JTable table) {

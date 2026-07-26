@@ -9,6 +9,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.Image;
 import java.util.Map;
 
 public class LecturerGroupsPanel extends JPanel {
@@ -43,8 +44,8 @@ public class LecturerGroupsPanel extends JPanel {
         body.setBackground(BG);
         body.setBorder(new EmptyBorder(24, 24, 40, 24));
 
-        // Header
-        JLabel title = new JLabel("👥 My Groups");
+        // Header — mirrors lecturer/groups.blade.php page-header with fa-people-group icon
+        JLabel title = new JLabel("\uD83D\uDC65 My Groups"); // 👥 = fa-people-group
         title.setFont(new Font("Segoe UI", Font.BOLD, 22));
         title.setForeground(TEXT);
         title.setAlignmentX(LEFT_ALIGNMENT);
@@ -53,12 +54,25 @@ public class LecturerGroupsPanel extends JPanel {
         sub.setForeground(MUTED);
         sub.setAlignmentX(LEFT_ALIGNMENT);
 
+        // forum-favicon.png as panel icon — mirrors asset('images/forum-favicon.png')
+        JLabel faviconLbl = new JLabel();
+        new SwingWorker<ImageIcon, Void>() {
+            @Override protected ImageIcon doInBackground() throws Exception {
+                java.net.URL url = new java.net.URL(ApiClient.BASE_URL.replace("/api","") + "/images/forum-favicon.png");
+                Image img = new ImageIcon(url).getImage().getScaledInstance(28, 28, Image.SCALE_SMOOTH);
+                return new ImageIcon(img);
+            }
+            @Override protected void done() {
+                try { faviconLbl.setIcon(get()); } catch (Exception ignored) {}
+            }
+        }.execute();
+
         statusLbl = new JLabel(" ");
         statusLbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         statusLbl.setForeground(MUTED);
         statusLbl.setAlignmentX(LEFT_ALIGNMENT);
 
-        JButton refreshBtn = new JButton("⟳ Refresh");
+        JButton refreshBtn = new JButton("\u27F3 Refresh");
         refreshBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
         refreshBtn.setForeground(Color.WHITE);
         refreshBtn.setBackground(PRIMARY);
@@ -71,8 +85,13 @@ public class LecturerGroupsPanel extends JPanel {
         headerRow.setBackground(BG);
         headerRow.setAlignmentX(LEFT_ALIGNMENT);
         headerRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        headerRow.add(title,      BorderLayout.WEST);
-        headerRow.add(refreshBtn, BorderLayout.EAST);
+        // left side: favicon + title
+        JPanel headerLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        headerLeft.setOpaque(false);
+        headerLeft.add(faviconLbl);
+        headerLeft.add(title);
+        headerRow.add(headerLeft,  BorderLayout.WEST);
+        headerRow.add(refreshBtn,  BorderLayout.EAST);
 
         // Create group form card
         JPanel formCard = sectionCard("➕ Create New Group", PRIMARY);
@@ -101,7 +120,7 @@ public class LecturerGroupsPanel extends JPanel {
         form.add(createBtn, gc);
         formCard.add(form, BorderLayout.CENTER);
 
-        // Groups table card
+        // Groups table card — mirrors .card with fa-list header icon
         JPanel tableCard = sectionCard("📋 Your Groups", PRIMARY);
         groupsModel = new DefaultTableModel(
             new String[]{"ID", "Name", "Description", "Members", "Created"}, 0) {
@@ -109,9 +128,44 @@ public class LecturerGroupsPanel extends JPanel {
         };
         JTable table = new JTable(groupsModel);
         table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        table.setRowHeight(30);
+        table.setRowHeight(36);
         table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
         table.setGridColor(BORDER_C);
+        // Custom renderer for Name column — mirrors gradient .g-icon circle in lecturer/groups.blade.php
+        table.getColumnModel().getColumn(1).setCellRenderer((tbl, value, isSelected, hasFocus, row2, col2) -> {
+            JPanel cell = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+            cell.setBackground(isSelected ? new Color(0xE0,0xE7,0xFF) : Color.WHITE);
+            JLabel iconLbl = new JLabel("👥", SwingConstants.CENTER) {
+                @Override protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setPaint(new GradientPaint(0, 0, new Color(0x63,0x66,0xF1), getWidth(), getHeight(), new Color(0x8B,0x5C,0xF6)));
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 9, 9);
+                    g2.dispose();
+                    super.paintComponent(g);
+                }
+            };
+            iconLbl.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 12));
+            iconLbl.setForeground(Color.WHITE);
+            iconLbl.setOpaque(false);
+            iconLbl.setPreferredSize(new Dimension(28, 28));
+            JLabel nameLbl = new JLabel(value == null ? "" : value.toString());
+            nameLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            nameLbl.setForeground(new Color(0x0F,0x17,0x2A));
+            cell.add(iconLbl);
+            cell.add(nameLbl);
+            return cell;
+        });
+        // Members column — mirrors purple badge
+        table.getColumnModel().getColumn(3).setCellRenderer((tbl, value, isSelected, hasFocus, row2, col2) -> {
+            JLabel lbl = new JLabel(value == null ? "" : value.toString(), SwingConstants.CENTER);
+            lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            lbl.setForeground(new Color(0x5B,0x21,0xB6));
+            lbl.setOpaque(true);
+            lbl.setBackground(isSelected ? new Color(0xE0,0xE7,0xFF) : new Color(0xED,0xE9,0xFE));
+            lbl.setBorder(new EmptyBorder(2, 8, 2, 8));
+            return lbl;
+        });
 
         JButton deleteBtn = new JButton("🗑 Delete Selected");
         styleBtn(deleteBtn, DANGER);

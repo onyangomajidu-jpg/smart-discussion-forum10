@@ -206,7 +206,7 @@ public class AdminDashboardPanel extends JPanel {
         return row;
     }
 
-    // Recent Users: Name, Email, Role, Joined, Status
+    // Recent Users: Name (with avatar circle), Email, Role, Joined, Status
     private JPanel buildRecentUsersCard() {
         usersModel = new DefaultTableModel(
             new String[]{"Name", "Email", "Role", "Joined", "Status"}, 0) {
@@ -214,9 +214,36 @@ public class AdminDashboardPanel extends JPanel {
         };
         JTable table = new JTable(usersModel);
         table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        table.setRowHeight(28);
+        table.setRowHeight(36);
         table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
         table.setGridColor(BORDER_C);
+        // Avatar circle renderer for Name column — mirrors admin/dashboard.blade.php user rows
+        table.getColumnModel().getColumn(0).setCellRenderer((tbl, value, sel, foc, row, col) -> {
+            String name = value == null ? "" : value.toString();
+            String initial = name.isEmpty() ? "?" : String.valueOf(name.charAt(0)).toUpperCase();
+            JPanel cell = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
+            cell.setBackground(sel ? tbl.getSelectionBackground() : tbl.getBackground());
+            JLabel avatar = new JLabel(initial, SwingConstants.CENTER) {
+                @Override protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setPaint(new GradientPaint(0, 0, PRIMARY, getWidth(), getHeight(), PURPLE));
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                    g2.dispose();
+                    super.paintComponent(g);
+                }
+            };
+            avatar.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            avatar.setForeground(Color.WHITE);
+            avatar.setOpaque(false);
+            avatar.setPreferredSize(new Dimension(28, 28));
+            JLabel nameLbl = new JLabel(name);
+            nameLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            nameLbl.setForeground(sel ? tbl.getSelectionForeground() : TEXT);
+            cell.add(avatar);
+            cell.add(nameLbl);
+            return cell;
+        });
         return sectionCard("👥 Recent Users", PRIMARY, new JScrollPane(table));
     }
 
@@ -373,12 +400,14 @@ public class AdminDashboardPanel extends JPanel {
         usersModel.setRowCount(0);
         for (JsonNode u : s.path("recent_users")) {
             String joined = u.path("created_at").asText("—");
+            String role   = u.path("role").asText();
+            String roleIcon = role.equals("lecturer") ? "🎫 " : role.equals("admin") ? "🛡 " : "🎓 ";
             usersModel.addRow(new Object[]{
                 u.path("name").asText(),
                 u.path("email").asText(),
-                u.path("role").asText(),
+                roleIcon + role,
                 joined.length() >= 10 ? joined.substring(0, 10) : joined,
-                u.path("is_active").asBoolean(true) ? "Active" : "Inactive"
+                u.path("is_active").asBoolean(true) ? "✅ Active" : "🔴 Inactive"
             });
         }
     }
