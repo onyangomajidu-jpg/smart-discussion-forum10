@@ -167,8 +167,9 @@ class ContentManagementService implements IContentManagement
     {
         $post = Post::findOrFail($postId);
         $this->authorizeOwner($post->user_id);
+        $disk = config('filesystems.default');
         foreach (['audio_path', 'image_path', 'file_path'] as $col) {
-            if ($post->$col) Storage::disk('public')->delete($post->$col);
+            if ($post->$col) Storage::disk($disk)->delete($post->$col);
         }
         return (bool) $post->delete();
     }
@@ -177,9 +178,10 @@ class ContentManagementService implements IContentManagement
     {
         $topic = Topic::findOrFail($topicId);
         $this->authorizeOwner($topic->user_id);
+        $disk = config('filesystems.default');
         foreach ($topic->posts as $post) {
             foreach (['audio_path', 'image_path', 'file_path'] as $col) {
-                if ($post->$col) Storage::disk('public')->delete($post->$col);
+                if ($post->$col) Storage::disk($disk)->delete($post->$col);
             }
         }
         return (bool) $topic->delete();

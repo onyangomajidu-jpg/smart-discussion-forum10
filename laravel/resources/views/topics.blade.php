@@ -138,22 +138,22 @@
         }
         .conv-header h2 { font-size: 18px; color: #2d3748; }
         .conv-header-meta { font-size: 13px; color: #718096; }
-        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 4px; }
+        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
 
         /* ── Chat bubble styles (WhatsApp group) ── */
-        .chat-row { display: flex; align-items: flex-end; gap: 4px; margin-bottom: 2px; }
+        .chat-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 0; }
         .chat-row.mine { flex-direction: row-reverse; }
 
         /* Avatar — small, pinned to bottom of bubble like WhatsApp */
         .chat-avatar {
-            width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+            width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            font-size: 11px; font-weight: 800; color: #fff;
+            font-size: 13px; font-weight: 800; color: #fff;
             background: linear-gradient(135deg,#667eea,#764ba2);
-            overflow: hidden; align-self: flex-end;
-            box-shadow: 0 1px 3px rgba(0,0,0,.22);
+            overflow: hidden; align-self: flex-start;
+            box-shadow: 0 1px 4px rgba(0,0,0,.18);
             border: 2px solid #fff;
-            margin-bottom: 0;
+            margin-top: 2px;
         }
         .chat-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
         .chat-row.mine .chat-avatar { background: linear-gradient(135deg,#25d366,#128c7e); }
@@ -1038,21 +1038,26 @@
         const title = document.querySelector('.conv-header h2').textContent.trim();
         let lines = ['📚 Discussion: "' + title + '"', ''];
         document.querySelectorAll('#messages .chat-row').forEach(row => {
-            const author = row.querySelector('.chat-meta .author');
-            const time   = row.querySelector('.chat-meta span:not(.author)');
-            const body   = row.querySelector('.chat-bubble');
-            if (author && body) {
-                const prefix = row.classList.contains('topic-origin') ? '[Topic] ' : '';
-                lines.push(prefix + '[' + (time ? time.textContent.trim() : '') + '] ' + author.textContent.trim() + ': ' + body.textContent.trim());
-                row.querySelectorAll('.reply-bubble').forEach(r => {
-                    const ra = r.querySelector('.reply-author');
-                    const rb = r.lastChild;
-                    if (ra) lines.push('  ↩ ' + ra.textContent.trim() + ': ' + (rb ? rb.textContent.trim() : ''));
-                });
-                lines.push('');
+            const bubble = row.querySelector('.chat-bubble');
+            if (!bubble) return;
+            const authorEl = bubble.querySelector('.bubble-author');
+            const timeEl   = bubble.querySelector('.bubble-time');
+            const isMe = row.classList.contains('mine');
+            const author = isMe ? 'You' : (authorEl ? authorEl.textContent.trim() : 'Unknown');
+            const time   = timeEl ? timeEl.textContent.trim() : '';
+            const clone = bubble.cloneNode(true);
+            clone.querySelectorAll('.bubble-author, .bubble-time, .reply-quote').forEach(el => el.remove());
+            const body = clone.textContent.trim();
+            const prefix = row.classList.contains('topic-origin') ? '[Topic] ' : '';
+            lines.push(prefix + '[' + time + '] ' + author + ': ' + body);
+            const quote = bubble.querySelector('.reply-quote');
+            if (quote) {
+                const qa = quote.querySelector('.rq-author');
+                const qb = quote.querySelector('.rq-body');
+                if (qa && qb) lines.push('  ↩ ' + qa.textContent.trim() + ': ' + qb.textContent.trim());
             }
+            lines.push('');
         });
-        lines.push(window.location.href);
         return lines.join('\n');
     }
 
@@ -1060,16 +1065,12 @@
         if (!selectedPlatform) return;
         const statusEl = document.getElementById('shareStatus');
         const conversation = buildConversationText();
-        const topicUrl = encodeURIComponent(window.location.href);
         const text = encodeURIComponent(conversation);
-        const twitterText = encodeURIComponent(
-            '📚 "' + document.querySelector('.conv-header h2').textContent.trim() + '" — join the discussion on Discussion Hub'
-        );
         const shareUrls = {
             whatsapp: 'https://wa.me/?text=' + text,
-            twitter:  'https://twitter.com/intent/tweet?text=' + twitterText + '&url=' + topicUrl,
-            facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + topicUrl + '&quote=' + text,
-            linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + topicUrl,
+            twitter:  'https://twitter.com/intent/tweet?text=' + text,
+            facebook: 'https://www.facebook.com/sharer/sharer.php?quote=' + text + '&u=' + encodeURIComponent(window.location.href),
+            linkedin: 'https://www.linkedin.com/sharing/share-offsite/?summary=' + text + '&url=' + encodeURIComponent(window.location.href),
         };
         window.open(shareUrls[selectedPlatform], '_blank', 'noopener,noreferrer');
         statusEl.style.color = '#276749';
@@ -1168,6 +1169,13 @@
         const myName = @json(auth()->user()->name);
         let lastFetch = new Date().toISOString();
 
+        const storageBase = '{{ rtrim(config("app.url"), "/") }}/storage/';
+
+        function storageUrl(path) {
+            if (!path) return '';
+            return storageBase + path;
+        }
+
         function buildBubble(post) {
             const isMe = post.user_id === myId;
             const authorName = post.author_name || 'User';
@@ -1180,18 +1188,70 @@
             const initial = authorName.charAt(0).toUpperCase();
             const avatarHtml = `<div class="chat-avatar">${initial}</div>`;
             let inner = '';
+
             if (post.body) {
                 const authorTag = isMe ? '' : `<a href="/messages/${post.user_id}" class="bubble-author" style="color:${color}">${escHtml(authorName)}</a>`;
                 inner += `<div class="chat-bubble" id="post-body-${post.id}">${authorTag}${escHtml(post.body)}<span class="bubble-time">${timeStr}</span></div>`;
             }
-            let actionsHtml = `<div class="chat-actions">
-                <button class="btn-sm btn-reply" title="Reply" onclick="setReply(${post.id},'${isMe?'You':authorName.replace(/'/g,"\\'")}','${escHtml(post.body||'Attachment').replace(/'/g,"\\'")}');">&#8617;</button>`;
+
+            if (post.image_path) {
+                const imgUrl = storageUrl(post.image_path);
+                const authorTag = (!post.body && !isMe) ? `<span class="bubble-author" style="color:${color};display:block;padding:5px 8px 0;font-size:12.5px;font-weight:700">${escHtml(authorName)}</span>` : '';
+                inner += `${authorTag}<div class="img-msg-bubble"><img src="${imgUrl}" alt="Image" loading="lazy"><span class="img-time-badge">${timeStr}</span><a href="${imgUrl}" download class="btn-img-save" title="Save image">&#8595;</a></div>`;
+            }
+
+            if (post.file_path) {
+                const ext = (post.file_name || '').split('.').pop().toLowerCase();
+                const icons = {pdf:'📕',doc:'📘',docx:'📘',xls:'📗',xlsx:'📗',csv:'📗',ppt:'📙',pptx:'📙',zip:'🗜️',rar:'🗜️','7z':'🗜️',mp3:'🎵',wav:'🎵',ogg:'🎵',mp4:'🎬',mov:'🎬',avi:'🎬'};
+                const fileIcon = icons[ext] || '📄';
+                const fileUrl = storageUrl(post.file_path);
+                const rawSize = post.file_size || 0;
+                const fileSize = rawSize >= 1048576 ? (rawSize/1048576).toFixed(1)+'MB' : Math.round(rawSize/1024)+'KB';
+                const authorTag = (!post.body && !isMe) ? `<span class="bubble-author" style="color:${color};display:block;font-size:12.5px;font-weight:700;margin-bottom:3px">${escHtml(authorName)}</span>` : '';
+                inner += `${authorTag}<div class="file-msg-bubble"><div class="file-type-icon">${fileIcon}</div><div class="file-info"><div class="fname" title="${escHtml(post.file_name||'Document')}">${escHtml(post.file_name||'Document')}</div><div class="fmeta"><span>${ext.toUpperCase()}</span><span class="fmeta-dot"></span><span>${fileSize}</span></div></div><a href="${fileUrl}" download="${escHtml(post.file_name||'file')}" class="btn-file-dl" title="Download">&#8595;</a></div><div class="file-bubble-footer"><span class="file-bubble-time">${timeStr}</span></div>`;
+            }
+
+            if (post.audio_path) {
+                const audioUrl = storageUrl(post.audio_path);
+                const authorTag = (!post.body && !isMe) ? `<span class="bubble-author" style="color:${color};display:block;font-size:12.5px;font-weight:700;margin-bottom:3px">${escHtml(authorName)}</span>` : '';
+                const waveHeights = [8,14,20,28,22,16,26,18,10,24,20,14,22,8,18,26,12,20,30,14];
+                const waveBars = waveHeights.map(h => `<span style="height:${h}px"></span>`).join('');
+                inner += `${authorTag}<div class="audio-msg-bubble"><button class="audio-play-btn" onclick="toggleAudio(this)" type="button">&#9654;</button><div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;"><span class="audio-label">Voice message</span><div class="audio-waveform">${waveBars}</div></div><span class="audio-duration">0:00</span><audio preload="auto" src="${audioUrl}" style="display:none"></audio></div><div class="audio-bubble-footer">${timeStr}</div>`;
+            }
+
+            let actionsHtml = `<div class="chat-actions"><button class="btn-sm btn-reply" title="Reply" onclick="setReply(${post.id},'${isMe?'You':authorName.replace(/'/g,"\\'")}','${escHtml(post.body||'Attachment').replace(/'/g,"\\'")}');">&#8617;</button>`;
             if (isMe) actionsHtml += `<button class="btn-sm btn-edit" title="Edit" onclick="editPost(${post.id},\`${(post.body||'').replace(/`/g,'\\`')}\`)">&#9998;</button><button class="btn-sm btn-delete" title="Delete" onclick="deletePost(${post.id})">&#128465;</button>`;
             actionsHtml += '</div>';
+
             row.innerHTML =
                 (!isMe ? avatarHtml : '') +
                 `<div class="chat-bubble-wrap">${inner}${actionsHtml}</div>` +
                 (isMe ? avatarHtml : '');
+
+            // Wire up audio players added dynamically
+            row.querySelectorAll('.audio-msg-bubble').forEach(function(bubble) {
+                const audio = bubble.querySelector('audio');
+                const durEl = bubble.querySelector('.audio-duration');
+                audio.addEventListener('loadedmetadata', function() {
+                    if (audio.duration === Infinity || isNaN(audio.duration)) {
+                        audio.currentTime = 1e101;
+                        audio.addEventListener('timeupdate', function onFix() {
+                            audio.removeEventListener('timeupdate', onFix);
+                            audio.currentTime = 0;
+                            if (isFinite(audio.duration)) durEl.textContent = fmtTime(audio.duration);
+                        }, { once: true });
+                    } else {
+                        durEl.textContent = fmtTime(audio.duration);
+                    }
+                });
+                audio.addEventListener('timeupdate', function() { durEl.textContent = fmtTime(audio.currentTime); });
+                audio.addEventListener('ended', function() {
+                    bubble.querySelector('.audio-play-btn').innerHTML = '&#9654;';
+                    bubble.querySelector('.audio-waveform').classList.remove('playing');
+                    if (isFinite(audio.duration)) durEl.textContent = fmtTime(audio.duration);
+                });
+            });
+
             return row;
         }
 

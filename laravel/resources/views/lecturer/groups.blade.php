@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'My Groups — SmartForum')
+@section('title', 'My Groups-Discussion Hub')
 
 @push('styles')
 <style>
