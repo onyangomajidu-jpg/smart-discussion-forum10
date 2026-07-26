@@ -55,9 +55,19 @@ class PostController extends Controller
         }
 
         return response()->json(
-            $query->get()->map(fn($p) => array_merge($p->toArray(), [
+            $query->get()->map(fn($p) => [
+                'id'          => $p->id,
+                'topic_id'    => $p->topic_id,
+                'user_id'     => $p->user_id,
                 'author_name' => $p->author?->name ?? 'User',
-            ]))
+                'body'        => $p->body,
+                'audio_path'  => $p->audio_path,
+                'image_path'  => $p->image_path,
+                'file_path'   => $p->file_path,
+                'file_name'   => $p->file_name,
+                'file_size'   => $p->file_size,
+                'created_at'  => $p->created_at,
+            ])
         );
     }
 

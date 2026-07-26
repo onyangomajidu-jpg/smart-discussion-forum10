@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Lecturer Analytics — SmartForum')
+@section('title', 'Lecturer Analytics-Discussion Hub')
 
 @push('styles')
 <style>
@@ -296,7 +296,7 @@
                         <th><i class="fa-solid fa-user"></i> Student</th>
                         <th><i class="fa-solid fa-clipboard-list"></i> Quiz</th>
                         <th><i class="fa-solid fa-star"></i> Score</th>
-                        <th><i class="fa-solid fa-trophy"></i> Grade</th>
+                        <th><i class="fa-solid fa-award"></i> Grade</th>
                         <th><i class="fa-solid fa-circle-check"></i> Status</th>
                         <th><i class="fa-solid fa-clock"></i> Submitted</th>
                     </tr>

@@ -77,15 +77,15 @@
             width: 34px; height: 34px; border-radius: 6px; align-items: center; justify-content: center;
             font-size: 15px; cursor: pointer; flex-shrink: 0;
         }
-        .panel-backdrop {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+        .panel-backdrop { 
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); 
             z-index: 499; opacity: 0; transition: opacity .2s;
         }
-        .panel-backdrop.show { display: block; opacity: 1; }
+        .panel-backdrop.show { display: block; opacity: 1; } 
 
         @media (max-width: 768px) {
             .mobile-toggle-btn { display: flex; }
-            .navbar h1 span.full-title { display: none; }
+            .navbar h1 span.full-title { display: none; } 
             .nav-username { display: none; }
             .btn-logout span { display: none; }
 

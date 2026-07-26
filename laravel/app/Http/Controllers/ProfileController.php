@@ -55,7 +55,7 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
-        $user = \App\Models\User::findOrFail(auth()->id());
+        $user = auth()->user();
 
         $request->validate([
             'name'             => ['required', 'string', 'max:255'],
@@ -70,31 +70,30 @@ class ProfileController extends Controller
             if (!$request->filled('current_password')) {
                 return back()->withErrors(['current_password' => 'Enter your current password to set a new one.'])->withInput();
             }
-            if (!Hash::check($request->current_password, $user->getOriginal('password') ?? $user->password)) {
+            if (!Hash::check($request->current_password, $user->password)) {
                 return back()->withErrors(['current_password' => 'Current password is incorrect.'])->withInput();
             }
         }
 
-        $user->name  = $request->input('name');
-        $user->email = $request->input('email');
-        $user->bio   = $request->input('bio');
+        $updates = [
+            'name'  => $request->input('name'),
+            'email' => $request->input('email'),
+            'bio'   => $request->input('bio'),
+        ];
 
         if ($request->hasFile('avatar') && $request->file('avatar')->isValid()) {
             $disk = config('filesystems.default');
             if ($user->avatar) {
                 Storage::disk($disk)->delete($user->avatar);
             }
-            $user->avatar = $request->file('avatar')->store('avatars', $disk);
+            $updates['avatar'] = $request->file('avatar')->store('avatars', $disk);
         }
 
         if ($request->filled('password')) {
-            // Use DB update to bypass the model's 'hashed' cast (avoids double-hashing)
-            \Illuminate\Support\Facades\DB::table('users')
-                ->where('id', $user->id)
-                ->update(['password' => Hash::make($request->input('password'))]);
+            $updates['password'] = Hash::make($request->input('password'));
         }
 
-        $user->saveQuietly();
+        \Illuminate\Support\Facades\DB::table('users')->where('id', $user->id)->update($updates);
 
         return back()->with('success', 'Profile updated successfully.');
     }
