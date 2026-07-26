@@ -115,14 +115,15 @@ public class DashboardPanel extends JPanel {
         lblAttempts = new JLabel("—");
         lblAvg      = new JLabel("—");
 
-        row.add(statCard("💬", lblTopics,   "Topics Joined",   PURPLE));
-        row.add(statCard("✏",  lblPosts,    "Posts Made",      PRIMARY));
-        row.add(statCard("🎯", lblAttempts, "Quiz Attempts",   GREEN));
-        row.add(statCard("⭐", lblAvg,      "Avg Quiz Score",  AMBER));
+        row.add(statCard("💬", lblTopics,   "Topics Joined",  PURPLE));
+        row.add(statCard("✏",  lblPosts,    "Posts Made",     PRIMARY));
+        row.add(statCard("🎯", lblAttempts, "Quiz Attempts",  GREEN));
+        row.add(statCard("⭐", lblAvg,      "Avg Quiz Score", AMBER));
         return row;
     }
 
     private JPanel statCard(String icon, JLabel valLabel, String caption, Color accent) {
+        // Mirrors .dash-stat-card with .stat-icon in dashboard.blade.php
         JPanel card = new JPanel(new BorderLayout(0, 4));
         card.setBackground(SURFACE);
         card.setBorder(BorderFactory.createCompoundBorder(
@@ -130,17 +131,16 @@ public class DashboardPanel extends JPanel {
             BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(0xC7, 0xD2, 0xFE)),
                 new EmptyBorder(16, 18, 16, 18))));
-        JLabel ico = new JLabel(icon);
+        // .stat-icon — colored icon at top
+        JLabel ico = new JLabel(icon, SwingConstants.LEFT);
         ico.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
+        ico.setForeground(accent);
         valLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         valLabel.setForeground(accent);
-        JLabel lbl = new JLabel(caption);
-        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        JLabel lbl = new JLabel(caption.toUpperCase());
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 10));
         lbl.setForeground(MUTED);
-        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        top.setOpaque(false);
-        top.add(ico);
-        card.add(top,      BorderLayout.NORTH);
+        card.add(ico,      BorderLayout.NORTH);
         card.add(valLabel, BorderLayout.CENTER);
         card.add(lbl,      BorderLayout.SOUTH);
         return card;
@@ -154,43 +154,58 @@ public class DashboardPanel extends JPanel {
         grid.setAlignmentX(LEFT_ALIGNMENT);
         grid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 520));
 
-        // Topic Participation
+        // Topic Participation — mirrors .panel-topics with fa-comments icon
         recentTopicsPanel = new JPanel();
         recentTopicsPanel.setLayout(new BoxLayout(recentTopicsPanel, BoxLayout.Y_AXIS));
         recentTopicsPanel.setBackground(SURFACE);
         recentTopicsPanel.add(emptyState("💬", "No topic participation yet."));
-        grid.add(panelCard("💬 Topic Participation", new Color(0x63, 0x66, 0xF1), recentTopicsPanel));
+        grid.add(panelCard("💬 Topic Participation", new Color(0x63, 0x66, 0xF1), recentTopicsPanel, true));
 
-        // Quiz Attempts
+        // Quiz Attempts — mirrors .panel-quiz with fa-bullseye icon
         recentAttemptsPanel = new JPanel();
         recentAttemptsPanel.setLayout(new BoxLayout(recentAttemptsPanel, BoxLayout.Y_AXIS));
         recentAttemptsPanel.setBackground(SURFACE);
         recentAttemptsPanel.add(emptyState("📋", "No quiz attempts yet."));
-        grid.add(panelCard("🎯 Quiz Attempts", CYAN, recentAttemptsPanel));
+        grid.add(panelCard("🎯 Quiz Attempts", CYAN, recentAttemptsPanel, true));
 
-        // My Groups
+        // My Groups — mirrors .panel-groups with fa-users icon
         groupsPanel = new JPanel();
         groupsPanel.setLayout(new BoxLayout(groupsPanel, BoxLayout.Y_AXIS));
         groupsPanel.setBackground(SURFACE);
         groupsPanel.add(emptyState("👥", "Not assigned to any group yet."));
-        grid.add(panelCard("👥 My Groups", PRIMARY, groupsPanel));
+        grid.add(panelCard("👥 My Groups", PRIMARY, groupsPanel, true));
 
-        // Statistics Review
+        // Statistics Review — mirrors .panel-stats with fa-chart-bar icon
         grid.add(buildStatsReviewCard());
 
         return grid;
     }
 
-    private JPanel panelCard(String title, Color accent, JPanel contentPanel) {
+    private JPanel panelCard(String title, Color accent, JPanel contentPanel, boolean withViewAll) {
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(SURFACE);
         card.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(3, 0, 0, 0, accent),
             BorderFactory.createLineBorder(BORDER_C)));
 
+        // .panel-header with gradient background
         JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(accent);
+        header.setOpaque(false);
         header.setBorder(new EmptyBorder(10, 14, 10, 14));
+        // Paint gradient matching Laravel panel headers
+        JPanel headerWrap = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setPaint(new GradientPaint(0, 0, accent, getWidth(), getHeight(),
+                    accent.darker()));
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
+        headerWrap.setOpaque(false);
+        headerWrap.add(header, BorderLayout.CENTER);
+
         JLabel lbl = new JLabel(title);
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
         lbl.setForeground(Color.WHITE);
@@ -201,8 +216,8 @@ public class DashboardPanel extends JPanel {
             JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.setBorder(null);
 
-        card.add(header, BorderLayout.NORTH);
-        card.add(scroll,  BorderLayout.CENTER);
+        card.add(headerWrap, BorderLayout.NORTH);
+        card.add(scroll,     BorderLayout.CENTER);
         return card;
     }
 
@@ -213,8 +228,16 @@ public class DashboardPanel extends JPanel {
             BorderFactory.createMatteBorder(3, 0, 0, 0, DANGER),
             BorderFactory.createLineBorder(BORDER_C)));
 
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(DANGER);
+        // .panel-stats header — gradient amber→red matching dashboard.blade.php
+        JPanel header = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setPaint(new GradientPaint(0, 0, AMBER, getWidth(), 0, DANGER));
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
+        header.setOpaque(false);
         header.setBorder(new EmptyBorder(10, 14, 10, 14));
         JLabel lbl = new JLabel("📊 Statistics Review");
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
@@ -281,8 +304,16 @@ public class DashboardPanel extends JPanel {
             BorderFactory.createMatteBorder(3, 0, 0, 0, new Color(0xDB, 0x27, 0x77)),
             BorderFactory.createLineBorder(BORDER_C)));
 
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(new Color(0x7C, 0x3A, 0xED));
+        // .panel-ai header — gradient purple→pink matching dashboard.blade.php
+        JPanel header = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setPaint(new GradientPaint(0, 0, new Color(0x7C,0x3A,0xED), getWidth(), 0, new Color(0xDB,0x27,0x77)));
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
+        header.setOpaque(false);
         header.setBorder(new EmptyBorder(10, 14, 10, 14));
         JLabel lbl = new JLabel("🤖 AI Recommended Topics");
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
@@ -356,17 +387,30 @@ public class DashboardPanel extends JPanel {
         barCompletion.setValue(compPct); lblCompPct.setText(compPct + "%");
         barAvgScore.setValue(avgPct);    lblAvgPct.setText(avg >= 0 ? avgPct + "%" : "N/A");
 
-        // Recent topics
+        // Recent topics — mirrors .list-row with .list-dot purple ●
         JsonNode rt = s.path("recentTopics");
         recentTopicsPanel.removeAll();
         if (rt.isArray() && rt.size() > 0) {
             for (JsonNode t : rt) {
-                JLabel row = new JLabel("● " + t.path("title").asText());
-                row.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-                row.setForeground(TEXT);
-                row.setBorder(new EmptyBorder(8, 12, 8, 12));
+                JPanel row = new JPanel(new BorderLayout(8, 0));
+                row.setBackground(SURFACE);
+                row.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_C),
+                    new EmptyBorder(8, 12, 8, 12)));
+                row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+                JLabel dot = new JLabel("●");
+                dot.setFont(new Font("Segoe UI", Font.BOLD, 10));
+                dot.setForeground(PURPLE);
+                JLabel title = new JLabel(t.path("title").asText());
+                title.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+                title.setForeground(TEXT);
+                JLabel arrow = new JLabel("›");
+                arrow.setFont(new Font("Segoe UI", Font.BOLD, 14));
+                arrow.setForeground(new Color(0xC4, 0xB5, 0xFD));
+                row.add(dot,   BorderLayout.WEST);
+                row.add(title, BorderLayout.CENTER);
+                row.add(arrow, BorderLayout.EAST);
                 recentTopicsPanel.add(row);
-                recentTopicsPanel.add(new JSeparator());
             }
         } else {
             recentTopicsPanel.add(emptyState("💬", "No topic participation yet."));
@@ -374,19 +418,36 @@ public class DashboardPanel extends JPanel {
         recentTopicsPanel.revalidate();
         recentTopicsPanel.repaint();
 
-        // Recent quiz attempts
+        // Recent quiz attempts — mirrors .list-row with ✓ cyan dot + .dash-badge score
         JsonNode ra = s.path("recentAttempts");
         recentAttemptsPanel.removeAll();
         if (ra.isArray() && ra.size() > 0) {
             for (JsonNode a : ra) {
                 double sc = a.path("score").asDouble(-1);
                 String scoreStr = sc >= 0 ? Math.round(sc) + "%" : "—";
-                JLabel row = new JLabel("✓ " + a.path("title").asText() + "  [" + scoreStr + "]");
-                row.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-                row.setForeground(TEXT);
-                row.setBorder(new EmptyBorder(8, 12, 8, 12));
+                JPanel row = new JPanel(new BorderLayout(8, 0));
+                row.setBackground(SURFACE);
+                row.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_C),
+                    new EmptyBorder(8, 12, 8, 12)));
+                row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+                JLabel dot = new JLabel("✓");
+                dot.setFont(new Font("Segoe UI", Font.BOLD, 10));
+                dot.setForeground(CYAN);
+                JLabel title = new JLabel(a.path("title").asText());
+                title.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+                title.setForeground(TEXT);
+                // .dash-badge
+                JLabel badge = new JLabel(scoreStr);
+                badge.setFont(new Font("Segoe UI", Font.BOLD, 11));
+                badge.setForeground(MUTED);
+                badge.setOpaque(true);
+                badge.setBackground(new Color(0xF1, 0xF5, 0xF9));
+                badge.setBorder(new EmptyBorder(2, 8, 2, 8));
+                row.add(dot,   BorderLayout.WEST);
+                row.add(title, BorderLayout.CENTER);
+                row.add(badge, BorderLayout.EAST);
                 recentAttemptsPanel.add(row);
-                recentAttemptsPanel.add(new JSeparator());
             }
         } else {
             recentAttemptsPanel.add(emptyState("📋", "No quiz attempts yet."));
@@ -414,14 +475,32 @@ public class DashboardPanel extends JPanel {
                         JPanel chip = new JPanel(new BorderLayout(8, 0));
                         chip.setBackground(new Color(0xF1, 0xF5, 0xF9));
                         chip.setBorder(new EmptyBorder(8, 12, 8, 12));
-                        chip.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
-                        JLabel name = new JLabel("👥 " + g.path("name").asText());
+                        chip.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+
+                        // Gradient icon circle — mirrors .g-icon in dashboard.blade.php
+                        JLabel gIcon = new JLabel("👥", SwingConstants.CENTER) {
+                            @Override protected void paintComponent(Graphics g2d) {
+                                Graphics2D g2 = (Graphics2D) g2d.create();
+                                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                                g2.setPaint(new GradientPaint(0, 0, new Color(0x63,0x66,0xF1), getWidth(), getHeight(), new Color(0x8B,0x5C,0xF6)));
+                                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                                g2.dispose();
+                                super.paintComponent(g2d);
+                            }
+                        };
+                        gIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
+                        gIcon.setForeground(Color.WHITE);
+                        gIcon.setOpaque(false);
+                        gIcon.setPreferredSize(new Dimension(34, 34));
+
+                        JLabel name = new JLabel(g.path("name").asText());
                         name.setFont(new Font("Segoe UI", Font.BOLD, 13));
                         name.setForeground(TEXT);
                         JLabel count = new JLabel(g.path("members_count").asInt(0) + " members");
                         count.setFont(new Font("Segoe UI", Font.PLAIN, 11));
                         count.setForeground(MUTED);
-                        chip.add(name,  BorderLayout.WEST);
+                        chip.add(gIcon, BorderLayout.WEST);
+                        chip.add(name,  BorderLayout.CENTER);
                         chip.add(count, BorderLayout.EAST);
                         groupsPanel.add(chip);
                         groupsPanel.add(new JSeparator());
@@ -442,20 +521,29 @@ public class DashboardPanel extends JPanel {
             for (JsonNode r : recs) {
                 String title = r.path("title").asText();
                 int    score = (int) Math.round(r.path("score").asDouble(0) * 100);
+                // .list-row with ★ pink dot + .ai-score — mirrors panel-ai in dashboard.blade.php
                 JPanel row = new JPanel(new BorderLayout(8, 0));
                 row.setBackground(SURFACE);
-                row.setBorder(new EmptyBorder(8, 0, 8, 0));
-                row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
-                JLabel t = new JLabel("★ " + title);
+                row.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_C),
+                    new EmptyBorder(8, 0, 8, 0)));
+                row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+                JLabel dot = new JLabel("★");
+                dot.setFont(new Font("Segoe UI Emoji", Font.BOLD, 12));
+                dot.setForeground(new Color(0xDB, 0x27, 0x77));
+                JLabel t = new JLabel(title);
                 t.setFont(new Font("Segoe UI", Font.PLAIN, 13));
                 t.setForeground(TEXT);
+                // .ai-score badge
                 JLabel s = new JLabel(score + "% match");
                 s.setFont(new Font("Segoe UI", Font.BOLD, 11));
                 s.setForeground(new Color(0xDB, 0x27, 0x77));
-                row.add(t, BorderLayout.WEST);
-                row.add(s, BorderLayout.EAST);
+                JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+                left.setOpaque(false);
+                left.add(dot); left.add(t);
+                row.add(left, BorderLayout.WEST);
+                row.add(s,    BorderLayout.EAST);
                 aiPanel.add(row);
-                aiPanel.add(new JSeparator());
             }
         }
         aiPanel.revalidate();

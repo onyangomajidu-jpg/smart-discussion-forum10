@@ -119,6 +119,26 @@ public class ApiClient {
         }
     }
 
+    /** Multipart POST to upload an avatar image file — mirrors profile/edit.blade.php avatar upload. */
+    public String uploadAvatar(String endpoint, java.io.File file) throws IOException {
+        RequestBody body = new MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("avatar", file.getName(),
+                RequestBody.create(file, MediaType.parse("image/*")))
+            .addFormDataPart("_method", "POST")
+            .build();
+        Request request = new Request.Builder()
+            .url(BASE_URL + endpoint)
+            .header("Accept", "application/json")
+            .header("Authorization", bearerToken != null ? "Bearer " + bearerToken : "")
+            .post(body)
+            .build();
+        try (Response response = http.newCall(request).execute()) {
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
+            return response.body() != null ? response.body().string() : "";
+        }
+    }
+
     /** Returns true if the Laravel server is reachable. */
     public boolean isOnline() {
         try {
