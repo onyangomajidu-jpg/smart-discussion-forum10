@@ -609,7 +609,7 @@
     </main>
 </div>
 
-{{-- Camera modal --}}
+{{-- Camera modal (must be in DOM before the JS below wires it up) --}}
 <div class="cam-modal" id="camModal">
     <video id="camVideo" autoplay playsinline></video>
     <canvas id="camCanvas" style="display:none"></canvas>

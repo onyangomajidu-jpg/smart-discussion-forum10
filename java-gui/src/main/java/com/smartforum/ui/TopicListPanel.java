@@ -333,23 +333,11 @@ public class TopicListPanel extends JPanel {
         public Component getListCellRendererComponent(
                 JList<? extends Topic> list, Topic t, int index,
                 boolean isSelected, boolean cellHasFocus) {
-<<<<<<< Updated upstream
-            JLabel lbl = (JLabel) super.getListCellRendererComponent(
-                    list, value, index, isSelected, cellHasFocus);
-            if (value instanceof Topic t) {
-                lbl.setText("<html><b>" + (t.pinned ? "📌 " : "") + esc(t.toString()) + "</b>" +
-                    "<br><font color='#6c757d' size='-2'>by " + esc(t.authorName) +
-                    "</font></html>");
-            }
-            lbl.setBorder(new EmptyBorder(8, 12, 8, 12));
-            return lbl;
-=======
 
             JPanel row = new JPanel(new BorderLayout(10, 0));
             row.setBackground(isSelected ? SEL_BG : BG);
             row.setBorder(new EmptyBorder(8, 10, 8, 10));
 
-            // Avatar circle — mirrors .topic-avatar in topics.blade.php
             String initials = t.title.length() >= 2
                 ? t.title.substring(0, 2).toUpperCase()
                 : t.title.substring(0, 1).toUpperCase();
@@ -370,7 +358,6 @@ public class TopicListPanel extends JPanel {
             avatar.setMinimumSize(new Dimension(38, 38));
             avatar.setMaximumSize(new Dimension(38, 38));
 
-            // Text content
             JPanel text = new JPanel();
             text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
             text.setOpaque(false);
@@ -391,7 +378,6 @@ public class TopicListPanel extends JPanel {
             row.add(avatar, BorderLayout.WEST);
             row.add(text,   BorderLayout.CENTER);
             return row;
->>>>>>> Stashed changes
         }
 
         private String esc(String s) {
