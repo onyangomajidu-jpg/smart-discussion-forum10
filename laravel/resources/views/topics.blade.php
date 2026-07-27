@@ -1173,7 +1173,7 @@
         const myName = @json(auth()->user()->name);
         let lastFetch = new Date().toISOString();
 
-        const storageBase = '{{ rtrim(Storage::url(""), "/") }}/';
+        const storageBase = '{{ rtrim(Storage::disk("public")->url(""), "/") }}/';
 
         function storageUrl(path) {
             if (!path) return '';
