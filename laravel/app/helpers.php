@@ -10,6 +10,6 @@ if (!function_exists('storage_url')) {
     function storage_url(?string $path): string
     {
         if (!$path) return '';
-        return Storage::disk(config('filesystems.default'))->url($path);
+        return Storage::disk('public')->url($path);
     }
 }
