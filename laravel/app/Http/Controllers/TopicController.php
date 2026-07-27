@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\CloudinaryUploader;
 use App\Services\ContentManagementService;
 use Illuminate\Http\Request;
 use App\Models\Topic;
@@ -10,7 +11,10 @@ use App\Models\TopicRemovalPeriod;
 
 class TopicController extends Controller
 {
-    public function __construct(private ContentManagementService $cms) {}
+    public function __construct(
+        private ContentManagementService $cms,
+        private CloudinaryUploader $uploader,
+    ) {}
 
     // Topics screen UI
     public function index(Request $request)
@@ -117,7 +121,7 @@ class TopicController extends Controller
     {
         $request->validate([
             'body'  => 'nullable|string',
-            'audio' => 'nullable|file|mimes:webm,ogg,mp4,wav,mp3|max:10240',
+            'audio' => 'nullable|file|max:10240',
             'image' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
             'file'  => 'nullable|file|max:20480',
         ]);
@@ -129,17 +133,14 @@ class TopicController extends Controller
         $data = ['body' => $request->input('body', '')];
 
         if ($request->hasFile('audio')) {
-            $url = $request->file('audio')->storeOnCloudinaryAs('audio/posts', uniqid('audio_'))->getSecurePath();
-            $data['audio_path'] = $url;
+            $data['audio_path'] = $this->uploader->upload($request->file('audio'), 'audio/posts');
         }
         if ($request->hasFile('image')) {
-            $url = $request->file('image')->storeOnCloudinaryAs('images/posts', uniqid('image_'))->getSecurePath();
-            $data['image_path'] = $url;
+            $data['image_path'] = $this->uploader->upload($request->file('image'), 'images/posts');
         }
         if ($request->hasFile('file')) {
             $uploaded = $request->file('file');
-            $url = $uploaded->storeOnCloudinaryAs('files/posts', uniqid('file_'))->getSecurePath();
-            $data['file_path'] = $url;
+            $data['file_path'] = $this->uploader->upload($uploaded, 'files/posts');
             $data['file_name'] = $uploaded->getClientOriginalName();
             $data['file_size'] = $uploaded->getSize();
         }
