@@ -1186,7 +1186,7 @@
         function storageUrl(path) {
             if (!path) return '';
             if (path.startsWith('http://') || path.startsWith('https://')) return path;
-            return '{{ rtrim(Storage::disk("public")->url(""), "/") }}/' + path;
+            return '/storage/' + path;
         }
 
         function buildBubble(post) {
@@ -1482,16 +1482,23 @@
         // Send audio independently — no text required
         sendAudioBtn.addEventListener('click', async function () {
             if (!audioBlob) return;
-            const fd = new FormData();
             const ext = audioBlob.type.includes('mp4') ? 'mp4'
                 : audioBlob.type.includes('ogg') ? 'ogg'
                 : 'webm';
-            fd.append('_token', document.querySelector('meta[name="csrf-token"]').content);
-            fd.append('audio', audioBlob, 'voice-message.' + ext);
-            fd.append('body', '');
-            const res = await fetch(postForm.action, { method: 'POST', body: fd });
-            if (res.redirected) { window.location.href = res.url; }
-            else { window.location.reload(); }
+            // Inject blob into a hidden file input and submit the form natively
+            const dt = new DataTransfer();
+            dt.items.add(new File([audioBlob], 'voice-message.' + ext, { type: audioBlob.type }));
+            let audioInput = document.getElementById('audioInput');
+            if (!audioInput) {
+                audioInput = document.createElement('input');
+                audioInput.type = 'file';
+                audioInput.name = 'audio';
+                audioInput.id = 'audioInput';
+                audioInput.style.display = 'none';
+                postForm.appendChild(audioInput);
+            }
+            audioInput.files = dt.files;
+            postForm.submit();
         });
     })();
 
@@ -1547,9 +1554,7 @@
         document.getElementById('micBtn').addEventListener('click', function () {
             const hasAttach = imgInput.files[0] || docInput.files[0];
             if (hasAttach) {
-                const fd = new FormData(document.getElementById('postForm'));
-                fetch(document.getElementById('postForm').action, { method: 'POST', body: fd })
-                    .then(r => r.redirected ? window.location.href = r.url : window.location.reload());
+                document.getElementById('postForm').submit();
             }
         });
 

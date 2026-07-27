@@ -983,6 +983,11 @@ setInterval(function() { fetch('/api/ping', {credentials:'same-origin'}).catch(f
 
     function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function fmtTime(s) { if(!isFinite(s)||isNaN(s))return'0:00'; return Math.floor(s/60)+':'+(Math.floor(s%60)).toString().padStart(2,'0'); }
+    function storageUrl(path) {
+        if (!path) return '';
+        if (path.startsWith('http://') || path.startsWith('https://')) return path;
+        return '/storage/' + path;
+    }
 
     function buildBubble(msg) {
         const isMe = msg.sender_id === myId;
@@ -1011,16 +1016,18 @@ setInterval(function() { fetch('/api/ping', {credentials:'same-origin'}).catch(f
                 inner += `<div class="chat-bubble" id="msg-body-${msg.id}">${bubbleContent}</div>`;
             }
             if (msg.image_path) {
-                inner += `<div class="img-msg-bubble"><img src="/storage/${msg.image_path}" loading="lazy"><span class="img-time-badge">${timeStr}</span><a href="/storage/${msg.image_path}" download class="btn-img-save">&#8595;</a></div>`;
+                const imgUrl = storageUrl(msg.image_path);
+                inner += `<div class="img-msg-bubble"><img src="${imgUrl}" loading="lazy"><span class="img-time-badge">${timeStr}</span><a href="${imgUrl}" download class="btn-img-save">&#8595;</a></div>`;
             }
             if (msg.audio_path) {
+                const audioUrl = storageUrl(msg.audio_path);
                 const heights = [8,14,20,28,22,16,26,18,10,24,20,14,22,8,18,26,12,20,30,14];
                 const bars = heights.map(h=>`<span style="height:${h}px"></span>`).join('');
                 inner += `<div class="audio-msg-bubble">`
                     + `<button class="audio-play-btn" onclick="toggleAudio(this)" type="button">&#9654;</button>`
                     + `<div style="flex:1;min-width:0"><div class="audio-waveform">${bars}</div>`
                     + `<div class="audio-bubble-footer"><span class="audio-duration">0:00</span><span style="flex:1"></span><span class="audio-bubble-time">${timeStr}</span></div></div>`
-                    + `<audio preload="auto" src="/storage/${msg.audio_path}" style="display:none"></audio></div>`;
+                    + `<audio preload="auto" src="${audioUrl}" style="display:none"></audio></div>`;
             }
             inner += `<div class="chat-actions">`
                 + `<button class="btn-sm btn-reply-msg" title="Reply" onclick="setReply(${msg.id},'${isMe?'You':otherName.replace(/'/g,"\\'")}','${escHtml(msg.body||'Attachment').replace(/'/g,"\\'")}');">&#8617;</button>`
