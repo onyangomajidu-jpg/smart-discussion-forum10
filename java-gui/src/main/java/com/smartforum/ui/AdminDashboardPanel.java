@@ -29,10 +29,10 @@ public class AdminDashboardPanel extends JPanel {
     private final ObjectMapper mapper = new ObjectMapper();
     private JTabbedPane        tabs;
 
-    // Stat labels
+    // Stat cards
     private JLabel lblMembers, lblLecturers, lblQuizzes, lblWarnings, lblBans;
 
-    // Platform summary labels
+    // Platform summary
     private JLabel lblTotalUsers, lblTotalGroups, lblTotalQuizzes, lblPublished, lblSubmissions;
 
     // Recent users table
@@ -59,41 +59,38 @@ public class AdminDashboardPanel extends JPanel {
         body.setBackground(BG);
         body.setBorder(new EmptyBorder(24, 24, 40, 24));
 
-        // Hero header
+        // Hero
         JPanel hero = new JPanel(new BorderLayout());
         hero.setBackground(new Color(0x1E, 0x1B, 0x4B));
         hero.setBorder(new EmptyBorder(24, 28, 24, 28));
         hero.setAlignmentX(LEFT_ALIGNMENT);
         hero.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
 
-        JLabel adminPortal = new JLabel("Administrator Portal");
-        adminPortal.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        adminPortal.setForeground(new Color(160, 160, 200));
-
-        JLabel heroTitle = new JLabel("Admin Dashboard");
-        heroTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        heroTitle.setForeground(Color.WHITE);
-
-        JLabel heroSub = new JLabel("Monitor users, warnings, bans, and platform activity.");
-        heroSub.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        heroSub.setForeground(new Color(180, 180, 210));
-
         JPanel heroLeft = new JPanel();
         heroLeft.setOpaque(false);
         heroLeft.setLayout(new BoxLayout(heroLeft, BoxLayout.Y_AXIS));
-        heroLeft.add(adminPortal);
+        JLabel portalLbl = new JLabel("Administrator Portal");
+        portalLbl.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        portalLbl.setForeground(new Color(160, 160, 200));
+        JLabel titleLbl = new JLabel("Admin Dashboard");
+        titleLbl.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        titleLbl.setForeground(Color.WHITE);
+        JLabel subLbl = new JLabel("Monitor users, warnings, bans, and platform activity.");
+        subLbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        subLbl.setForeground(new Color(180, 180, 210));
+        heroLeft.add(portalLbl);
         heroLeft.add(Box.createVerticalStrut(4));
-        heroLeft.add(heroTitle);
+        heroLeft.add(titleLbl);
         heroLeft.add(Box.createVerticalStrut(4));
-        heroLeft.add(heroSub);
+        heroLeft.add(subLbl);
 
         JPanel heroRight = new JPanel();
         heroRight.setOpaque(false);
         heroRight.setLayout(new BoxLayout(heroRight, BoxLayout.Y_AXIS));
-        JLabel loggedInAs = new JLabel("Logged in as");
-        loggedInAs.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        loggedInAs.setForeground(new Color(160, 160, 200));
-        loggedInAs.setAlignmentX(RIGHT_ALIGNMENT);
+        JLabel loggedAs = new JLabel("Logged in as");
+        loggedAs.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        loggedAs.setForeground(new Color(160, 160, 200));
+        loggedAs.setAlignmentX(RIGHT_ALIGNMENT);
         JLabel heroUser = new JLabel(user.getName());
         heroUser.setFont(new Font("Segoe UI", Font.BOLD, 15));
         heroUser.setForeground(Color.WHITE);
@@ -103,7 +100,7 @@ public class AdminDashboardPanel extends JPanel {
         heroDate.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         heroDate.setForeground(new Color(160, 160, 200));
         heroDate.setAlignmentX(RIGHT_ALIGNMENT);
-        heroRight.add(loggedInAs);
+        heroRight.add(loggedAs);
         heroRight.add(Box.createVerticalStrut(2));
         heroRight.add(heroUser);
         heroRight.add(Box.createVerticalStrut(2));
@@ -112,6 +109,7 @@ public class AdminDashboardPanel extends JPanel {
         hero.add(heroLeft,  BorderLayout.WEST);
         hero.add(heroRight, BorderLayout.EAST);
 
+        // Header row with status + refresh
         statusLbl = new JLabel(" ");
         statusLbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         statusLbl.setForeground(MUTED);
@@ -149,7 +147,7 @@ public class AdminDashboardPanel extends JPanel {
         add(scroll, BorderLayout.CENTER);
     }
 
-    // ── Stat cards ────────────────────────────────────────────────────────
+    // ── 5 stat cards: Members, Lecturers, Quizzes, Open Warnings, Active Bans ──
 
     private JPanel buildStatCards() {
         JPanel row = new JPanel(new GridLayout(1, 5, 12, 0));
@@ -195,31 +193,43 @@ public class AdminDashboardPanel extends JPanel {
         return card;
     }
 
-    // ── Bottom row: recent users + platform summary ───────────────────────
+    // ── Bottom row: Recent Users | Quick Actions | Platform Summary ──
 
     private JPanel buildBottomRow() {
         JPanel row = new JPanel(new GridLayout(1, 3, 16, 0));
         row.setBackground(BG);
         row.setAlignmentX(LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 420));
-
         row.add(buildRecentUsersCard());
         row.add(buildQuickActionsCard());
         row.add(buildPlatformSummaryCard());
         return row;
     }
 
+    // Recent Users: Name, Email, Role, Joined, Status
+    private JPanel buildRecentUsersCard() {
+        usersModel = new DefaultTableModel(
+            new String[]{"Name", "Email", "Role", "Joined", "Status"}, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        JTable table = new JTable(usersModel);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        table.setRowHeight(28);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        table.setGridColor(BORDER_C);
+        return sectionCard("👥 Recent Users", PRIMARY, new JScrollPane(table));
+    }
+
+    // Quick Actions: Warning Registry, Blacklist Log, All Quizzes
     private JPanel buildQuickActionsCard() {
         JPanel body = new JPanel();
         body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
         body.setBackground(SURFACE);
         body.setBorder(new EmptyBorder(12, 14, 12, 14));
 
-        body.add(quickActionRow("⚠️ Warning Registry", "View & resolve warnings", AMBER,    "⚖  Moderation"));
+        body.add(quickActionRow("⚠️ Warning Registry", "View & resolve warnings", AMBER,  "⚠  Warnings"));
         body.add(Box.createVerticalStrut(8));
-        body.add(quickActionRow("🚫 Blacklist Log",     "Manage banned users",     DANGER,   "⚖  Moderation"));
-        body.add(Box.createVerticalStrut(8));
-        body.add(quickActionRow("📋 All Quizzes",       "Browse quiz activity",    PRIMARY,  "⚖  Moderation"));
+        body.add(quickActionRow("🚫 Blacklist Log",     "Manage banned users",     DANGER, "🚫  Blacklists"));
 
         return sectionCard("⚡ Quick Actions", new Color(0x1E, 0x1B, 0x4B), body);
     }
@@ -232,9 +242,11 @@ public class AdminDashboardPanel extends JPanel {
             BorderFactory.createLineBorder(BORDER_C),
             new EmptyBorder(10, 12, 10, 12)));
         row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        JPanel icon = new JPanel();
-        icon.setPreferredSize(new Dimension(36, 36));
-        icon.setBackground(accent);
+
+        JPanel iconBox = new JPanel();
+        iconBox.setPreferredSize(new Dimension(36, 36));
+        iconBox.setBackground(accent);
+
         JPanel text = new JPanel();
         text.setOpaque(false);
         text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
@@ -246,8 +258,9 @@ public class AdminDashboardPanel extends JPanel {
         sublbl.setForeground(MUTED);
         text.add(lbl);
         text.add(sublbl);
-        row.add(icon, BorderLayout.WEST);
-        row.add(text, BorderLayout.CENTER);
+
+        row.add(iconBox, BorderLayout.WEST);
+        row.add(text,    BorderLayout.CENTER);
         row.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (tabs == null) return;
@@ -268,37 +281,24 @@ public class AdminDashboardPanel extends JPanel {
         return row;
     }
 
-    private JPanel buildRecentUsersCard() {
-        usersModel = new DefaultTableModel(
-            new String[]{"Name", "Email", "Role", "Joined", "Status"}, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
-        };
-        JTable table = new JTable(usersModel);
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        table.setRowHeight(28);
-        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
-        table.setGridColor(BORDER_C);
-
-        return sectionCard("👥 Recent Users", PRIMARY, new JScrollPane(table));
-    }
-
+    // Platform Summary: Total Users, Total Groups, Total Quizzes, Published, Submissions
     private JPanel buildPlatformSummaryCard() {
         JPanel body = new JPanel();
         body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
         body.setBackground(SURFACE);
         body.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        lblTotalUsers    = new JLabel("—");
-        lblTotalGroups   = new JLabel("—");
-        lblTotalQuizzes  = new JLabel("—");
-        lblPublished     = new JLabel("—");
-        lblSubmissions   = new JLabel("—");
+        lblTotalUsers   = new JLabel("—");
+        lblTotalGroups  = new JLabel("—");
+        lblTotalQuizzes = new JLabel("—");
+        lblPublished    = new JLabel("—");
+        lblSubmissions  = new JLabel("—");
 
-        body.add(summaryRow("Total Users",    lblTotalUsers,   PRIMARY));
-        body.add(summaryRow("Total Groups",   lblTotalGroups,  PURPLE));
-        body.add(summaryRow("Total Quizzes",  lblTotalQuizzes, CYAN));
-        body.add(summaryRow("Published",      lblPublished,    GREEN));
-        body.add(summaryRow("Submissions",    lblSubmissions,  AMBER));
+        body.add(summaryRow("Total Users",   lblTotalUsers,   PRIMARY));
+        body.add(summaryRow("Total Groups",  lblTotalGroups,  PURPLE));
+        body.add(summaryRow("Total Quizzes", lblTotalQuizzes, CYAN));
+        body.add(summaryRow("Published",     lblPublished,    GREEN));
+        body.add(summaryRow("Submissions",   lblSubmissions,  AMBER));
 
         return sectionCard("📊 Platform Summary", new Color(0x0F, 0x17, 0x2A), body);
     }
@@ -372,12 +372,12 @@ public class AdminDashboardPanel extends JPanel {
 
         usersModel.setRowCount(0);
         for (JsonNode u : s.path("recent_users")) {
-            String createdAt = u.path("created_at").asText("—");
+            String joined = u.path("created_at").asText("—");
             usersModel.addRow(new Object[]{
                 u.path("name").asText(),
                 u.path("email").asText(),
                 u.path("role").asText(),
-                createdAt.length() >= 10 ? createdAt.substring(0, 10) : createdAt,
+                joined.length() >= 10 ? joined.substring(0, 10) : joined,
                 u.path("is_active").asBoolean(true) ? "Active" : "Inactive"
             });
         }

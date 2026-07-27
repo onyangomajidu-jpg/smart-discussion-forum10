@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="{{ asset('images/forum-favicon.png') }}">
-    <title>Register - Smart Discussion Forum</title>
+    <title>Register - Discussion Hub</title>
     <style>
         * {
             margin: 0;
@@ -248,8 +248,8 @@
 <body>
     <div class="register-container">
         <div class="logo">
-            <img src="{{ asset('images/forum.png') }}" alt="Smart Discussion Forum">
-            <h1>Smart Discussion Forum</h1>
+            <img src="{{ asset('images/forum.png') }}" alt="Discussion Hub">
+            <h1>Discussion Hub</h1>
             <p>Create your account to join our community</p>
         </div>
 

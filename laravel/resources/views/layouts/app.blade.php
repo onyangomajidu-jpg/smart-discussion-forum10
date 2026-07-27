@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Smart Discussion Forum')</title>
+    <title>@yield('title', 'Discussion Hub')</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -338,7 +338,7 @@
     <a href="{{ auth()->check() && auth()->user()->isLecturer() ? route('lecturer.dashboard') : (auth()->check() && auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard')) }}" class="topnav-brand">
         <div class="brand-icon"><img src="{{ asset('images/forum.png') }}" alt="SmartForum Logo"></div>
         <div>
-            <div class="name">Smart Discussion Forum</div>
+            <div class="name">Discussion Hub</div>
             <div class="sub">Assessment Platform</div>
         </div>
     </a>
@@ -350,7 +350,10 @@
             <button class="topnav-icon-btn" id="notifBtn" title="Notifications" aria-haspopup="true" aria-expanded="false">
                 <i class="fa-solid fa-bell"></i>
             </button>
-            <span class="notif-badge" id="notifBadge" style="display:none"></span>
+            @auth
+            @php $unreadCount = auth()->user()->unreadNotifications()->count(); @endphp
+            <span class="notif-badge" id="notifBadge" style="{{ $unreadCount ? '' : 'display:none' }}">{{ $unreadCount > 9 ? '9+' : $unreadCount }}</span>
+            @endauth
 
             <div class="notif-dropdown" id="notifDropdown" role="menu">
                 <div class="notif-dd-header">
@@ -638,9 +641,16 @@ body.qpop-locked .qpop-overlay { pointer-events:all; }
     const markAll  = document.getElementById('notifMarkAll');
     if (!btn) return;
 
-    // Seed with system-generated notifications based on session flash / role
     const raw = [
         @auth
+        @foreach(auth()->user()->unreadNotifications()->latest()->take(20)->get() as $n)
+        @php
+            $d    = is_string($n->data) ? json_decode($n->data, true) : $n->data;
+            $type = $d['type'] ?? 'info';
+            $jsType = $type === 'warning' ? 'warning' : ($type === 'blacklist' ? 'danger' : 'info');
+        @endphp
+        { type: {{ Js::from($jsType) }}, text: {{ Js::from($d['message'] ?? '') }}, time: {{ Js::from($n->created_at->diffForHumans()) }}, unread: true },
+        @endforeach
         @if(session('success'))
         { type:'success', text: {{ Js::from(session('success')) }}, time:'Just now', unread:true },
         @endif
@@ -652,6 +662,16 @@ body.qpop-locked .qpop-overlay { pointer-events:all; }
         @endif
         @endauth
     ];
+
+    // Mark DB notifications as read after rendering
+    @auth
+    @if(auth()->user()->unreadNotifications()->exists())
+    fetch('{{ route("notifications.read") }}', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
+    });
+    @endif
+    @endauth
 
     const ICONS = { info:'fa-circle-info', success:'fa-circle-check', warning:'fa-triangle-exclamation', danger:'fa-circle-xmark' };
 

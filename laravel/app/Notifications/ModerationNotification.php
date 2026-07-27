@@ -19,6 +19,7 @@ class ModerationNotification extends Notification
         return match ($this->type) {
             'warning'   => ['type' => 'warning',   'message' => "You received a warning: {$this->reason}"],
             'blacklist' => ['type' => 'blacklist',  'message' => "You have been suspended for {$this->days} days: {$this->reason}"],
+            'pinned'    => ['type' => 'pinned',     'message' => $this->reason],
             default     => ['type' => $this->type,  'message' => $this->reason],
         };
     }

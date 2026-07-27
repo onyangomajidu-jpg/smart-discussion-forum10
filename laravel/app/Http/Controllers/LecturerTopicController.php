@@ -46,10 +46,12 @@ class LecturerTopicController extends Controller
             'body'  => 'required|string',
         ]);
 
-        $group = \App\Models\Group::firstOrCreate(
-            ['slug' => 'general'],
-            ['name' => 'General', 'description' => 'General discussion', 'created_by' => auth()->id()]
-        );
+        // Use the lecturer's first group, or fall back to general
+        $group = \App\Models\Group::where('created_by', auth()->id())->first()
+            ?? \App\Models\Group::firstOrCreate(
+                ['slug' => 'general'],
+                ['name' => 'General', 'description' => 'General discussion', 'created_by' => auth()->id()]
+            );
         $data['group_id'] = $group->id;
 
         try {
@@ -117,6 +119,20 @@ class LecturerTopicController extends Controller
     public function pinTopic(Topic $topic)
     {
         $topic->update(['is_pinned' => !$topic->is_pinned]);
+
+        if ($topic->is_pinned) {
+            $members = $topic->group->members()
+                ->wherePivot('role', 'member')
+                ->where('users.id', '!=', auth()->id())
+                ->get();
+            foreach ($members as $member) {
+                $member->notify(new \App\Notifications\ModerationNotification(
+                    'pinned',
+                    'Topic "' . $topic->title . '" has been pinned by ' . auth()->user()->name . '.'
+                ));
+            }
+        }
+
         $status = $topic->is_pinned ? 'pinned' : 'unpinned';
         return back()->with('success', "Topic {$status}.");
     }

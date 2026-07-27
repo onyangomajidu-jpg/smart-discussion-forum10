@@ -51,6 +51,7 @@ class AIEngine
         $activityTopics = DB::table('posts')
             ->join('topics', 'posts.topic_id', '=', 'topics.id')
             ->where('posts.user_id', $memberId)
+            ->whereNull('topics.deleted_at')
             ->select('topics.id', 'topics.title', 'topics.body')
             ->distinct()
             ->get();
@@ -65,7 +66,6 @@ class AIEngine
         }
 
         if (empty($interestProfile)) {
-            // Cold-start: recommend highest-viewed topics
             $this->storeColdStartRecommendations($memberId);
             return;
         }
@@ -73,14 +73,17 @@ class AIEngine
         arsort($interestProfile);
         $topInterests = array_slice(array_keys($interestProfile), 0, 3);
 
-        // 2. Score all topics the user has NOT yet participated in
-        $candidateTopics = DB::table('topics')
+        // 2. Score all topics (not just unparticipated ones)
+        $allTopics = DB::table('topics')
             ->whereNull('deleted_at')
-            ->whereNotIn('id', $activityTopics->pluck('id'))
             ->select('id', 'title', 'body')
             ->get();
 
-        foreach ($candidateTopics as $topic) {
+        $participatedIds = $activityTopics->pluck('id')->all();
+        $stored = 0;
+
+        // First pass: topics the user has NOT participated in
+        foreach ($allTopics->whereNotIn('id', $participatedIds) as $topic) {
             $tags  = $this->classifyTopic($topic->title . ' ' . $topic->body);
             $score = 0;
             foreach ($topInterests as $interest) {
@@ -88,7 +91,27 @@ class AIEngine
             }
             if ($score > 0) {
                 $this->upsertRecommendation($memberId, $topic->id, array_keys($tags), $score);
+                $stored++;
             }
+        }
+
+        // Second pass: if fewer than 5 found, fill with participated topics scored by interest
+        if ($stored < 5) {
+            foreach ($allTopics->whereIn('id', $participatedIds) as $topic) {
+                $tags  = $this->classifyTopic($topic->title . ' ' . $topic->body);
+                $score = 0;
+                foreach ($topInterests as $interest) {
+                    $score += $tags[$interest] ?? 0;
+                }
+                $this->upsertRecommendation($memberId, $topic->id, array_keys($tags), max($score, 0.1));
+                $stored++;
+                if ($stored >= 5) break;
+            }
+        }
+
+        // Third pass: if still nothing, cold-start
+        if ($stored === 0) {
+            $this->storeColdStartRecommendations($memberId);
         }
     }
 
@@ -103,7 +126,7 @@ class AIEngine
 
         foreach ($popular as $topic) {
             $tags = $this->classifyTopic($topic->title . ' ' . $topic->body);
-            $this->upsertRecommendation($memberId, $topic->id, array_keys($tags), 0.1);
+            $this->upsertRecommendation($memberId, $topic->id, $tags ? array_keys($tags) : ['general'], 0.1);
         }
     }
 

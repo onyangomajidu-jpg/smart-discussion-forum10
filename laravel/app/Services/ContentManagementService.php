@@ -174,7 +174,7 @@ class ContentManagementService implements IContentManagement
     private function authorizeOwner(int $ownerId): void
     {
         $user = Auth::user();
-        if ($user->id !== $ownerId && !$user->isAdmin() && !$user->isLecturer()) {
+        if ($user->id !== $ownerId && !$user->isAdmin()) {
             throw new \RuntimeException('Unauthorized.');
         }
     }

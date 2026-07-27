@@ -19,11 +19,8 @@ class RecommendationController extends Controller
     {
         $userId = $request->user()->id;
 
-        // If no recommendations stored yet, generate synchronously on first load
-        $count = DB::table('ai_recommendations')->where('user_id', $userId)->count();
-        if ($count === 0) {
-            $ai->generateRecommendation($userId);
-        }
+        // Regenerate recommendations on every load to reflect latest participation
+        $ai->generateRecommendation($userId);
 
         $recommendations = DB::table('ai_recommendations')
             ->join('topics', 'ai_recommendations.topic_id', '=', 'topics.id')

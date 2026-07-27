@@ -78,6 +78,7 @@ public class OfflineSyncManager {
         System.out.println("[OfflineSync] Online — starting synchronizeOfflineData()");
         uploadPending();
         downloadMissing();
+        downloadUserGroups();
         if (syncListener != null) syncListener.onSyncComplete();
         System.out.println("[OfflineSync] synchronizeOfflineData() complete.");
     }
@@ -230,6 +231,28 @@ public class OfflineSyncManager {
             ps.setInt(7,    n.path("upvotes").asInt(0));
             ps.setInt(8,    n.path("downvotes").asInt(0));
             ps.executeUpdate();
+        }
+    }
+
+    private void downloadUserGroups() {
+        try {
+            JsonNode groups = mapper.readTree(api.get("/groups"));
+            try (Connection conn = cache.connect(); Statement st = conn.createStatement()) {
+                st.execute("DELETE FROM user_groups");
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "INSERT OR IGNORE INTO user_groups (group_id) VALUES (?)")) {
+                    for (JsonNode g : groups) {
+                        // Only store groups the user has actually joined
+                        if (g.path("is_member").asBoolean(false)) {
+                            ps.setInt(1, g.path("id").asInt());
+                            ps.executeUpdate();
+                        }
+                    }
+                }
+            }
+            System.out.println("[OfflineSync] user_groups cached.");
+        } catch (Exception e) {
+            System.err.println("[OfflineSync] downloadUserGroups failed: " + e.getMessage());
         }
     }
 

@@ -115,6 +115,21 @@ class PostController extends Controller
     {
         if (!in_array(auth()->user()->role, ['lecturer', 'admin'])) abort(403);
         $topic->update(['is_pinned' => !$topic->is_pinned]);
+
+        if ($topic->is_pinned) {
+            // Notify all students in the topic's group
+            $students = $topic->group->members()
+                ->where('role', 'member')
+                ->where('users.id', '!=', auth()->id())
+                ->get();
+            foreach ($students as $student) {
+                $student->notify(new \App\Notifications\ModerationNotification(
+                    'pinned',
+                    "Topic \"" . $topic->title . "\" has been pinned by " . auth()->user()->name . "."
+                ));
+            }
+        }
+
         return response()->json(['is_pinned' => $topic->is_pinned]);
     }
 

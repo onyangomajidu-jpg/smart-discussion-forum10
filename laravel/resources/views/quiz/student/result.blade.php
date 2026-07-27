@@ -91,7 +91,7 @@
 <body>
 
 <nav class="navbar">
-    <h1>🎓 Smart Discussion Forum</h1>
+    <h1>🎓 Discussion Hub</h1>
     <a href="{{ route('quizzes.index') }}">← All Quizzes</a>
 </nav>
 

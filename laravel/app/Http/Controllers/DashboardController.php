@@ -2,37 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AIEngine;
 use App\Models\Quiz;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, AIEngine $ai)
     {
         $user   = $request->user();
         $groups = $user->groups()->orderBy('name')->get();
-<<<<<<< Updated upstream
-
-        $quizAnnouncements  = [];
-        $quizModalTriggers  = [];
-        if ($user->role === 'member') {
-            $allPending = Quiz::published()
-                ->whereHas('group.members', fn ($q) => $q->where('users.id', $user->id))
-                ->where(fn ($q) => $q->whereNull('hard_deadline')->orWhere('hard_deadline', '>', now()))
-                ->with('group')
-                ->orderBy('unlock_date')
-                ->get();
-
-            // Banner: upcoming quizzes where lecturer has sent a reminder
-            $quizAnnouncements = $allPending
-                ->filter(fn ($q) => $q->isUpcoming() && !is_null($q->reminder_sent_at))
-                ->values();
-        }
-
-        return view('dashboard', compact('user', 'groups', 'quizAnnouncements'));
-=======
         $uid    = $user->id;
-
 
         // KPI cards
         $topicsJoined = DB::table('topic_user')->where('user_id', $uid)->count();
@@ -114,7 +95,5 @@ class DashboardController extends Controller
             'engPct', 'compPct', 'avgPct',
             'recommendations', 'quizAnnouncements'
         ));
-
->>>>>>> Stashed changes
     }
 }
