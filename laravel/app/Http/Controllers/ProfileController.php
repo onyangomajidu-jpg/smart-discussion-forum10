@@ -82,11 +82,10 @@ class ProfileController extends Controller
         ];
 
         if ($request->hasFile('avatar') && $request->file('avatar')->isValid()) {
-            $disk = config('filesystems.default');
             if ($user->avatar) {
-                Storage::disk($disk)->delete($user->avatar);
+                Storage::disk('public')->delete($user->avatar);
             }
-            $updates['avatar'] = $request->file('avatar')->store('avatars', $disk);
+            $updates['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
 
         if ($request->filled('password')) {
