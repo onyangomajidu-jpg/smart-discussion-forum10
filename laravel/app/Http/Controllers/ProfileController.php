@@ -14,6 +14,11 @@ class ProfileController extends Controller
         return view('profile.edit', ['user' => auth()->user()]);
     }
 
+    public function show(\App\Models\User $user)
+    {
+        return view('profile.show', ['user' => $user]);
+    }
+
     public function apiShow(Request $request)
     {
         $user = $request->user();
@@ -82,10 +87,10 @@ class ProfileController extends Controller
         ];
 
         if ($request->hasFile('avatar') && $request->file('avatar')->isValid()) {
-            if ($user->avatar) {
+            if ($user->avatar && !str_starts_with($user->avatar, 'http')) {
                 Storage::disk('public')->delete($user->avatar);
             }
-            $updates['avatar'] = $request->file('avatar')->store('avatars', 'public');
+            $updates['avatar'] = $request->file('avatar')->storeOnCloudinaryAs('avatars', uniqid('avatar_'))->getSecurePath();
         }
 
         if ($request->filled('password')) {

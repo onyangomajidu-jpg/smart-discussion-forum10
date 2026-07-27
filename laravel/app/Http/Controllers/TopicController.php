@@ -129,14 +129,14 @@ class TopicController extends Controller
         $data = ['body' => $request->input('body', '')];
 
         if ($request->hasFile('audio')) {
-            $data['audio_path'] = $request->file('audio')->store('audio/posts', 'public');
+            $data['audio_path'] = $request->file('audio')->storeOnCloudinaryAs('audio/posts', uniqid('audio_'))->getSecurePath();
         }
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('images/posts', 'public');
+            $data['image_path'] = $request->file('image')->storeOnCloudinaryAs('images/posts', uniqid('image_'))->getSecurePath();
         }
         if ($request->hasFile('file')) {
             $uploaded = $request->file('file');
-            $data['file_path'] = $uploaded->store('files/posts', 'public');
+            $data['file_path'] = $uploaded->storeOnCloudinaryAs('files/posts', uniqid('file_'))->getSecurePath();
             $data['file_name'] = $uploaded->getClientOriginalName();
             $data['file_size'] = $uploaded->getSize();
         }
