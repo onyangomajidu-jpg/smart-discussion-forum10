@@ -119,14 +119,20 @@ $topics = $query->latest()->get()
         $data = ['body' => $request->input('body', '')];
 
         if ($request->hasFile('audio')) {
-            $data['audio_path'] = $request->file('audio')->storeOnCloudinaryAs('audio/posts', uniqid('audio_'))->getSecurePath();
+            $path = 'audio/posts/'.uniqid('audio_');
+            \Illuminate\Support\Facades\Storage::disk('cloudinary')->putFileAs('', $request->file('audio'), $path);
+            $data['audio_path'] = \Illuminate\Support\Facades\Storage::disk('cloudinary')->url($path);
         }
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->storeOnCloudinaryAs('images/posts', uniqid('image_'))->getSecurePath();
+            $path = 'images/posts/'.uniqid('image_');
+            \Illuminate\Support\Facades\Storage::disk('cloudinary')->putFileAs('', $request->file('image'), $path);
+            $data['image_path'] = \Illuminate\Support\Facades\Storage::disk('cloudinary')->url($path);
         }
         if ($request->hasFile('file')) {
             $uploaded = $request->file('file');
-            $data['file_path'] = $uploaded->storeOnCloudinaryAs('files/posts', uniqid('file_'))->getSecurePath();
+            $path = 'files/posts/'.uniqid('file_');
+            \Illuminate\Support\Facades\Storage::disk('cloudinary')->putFileAs('', $uploaded, $path);
+            $data['file_path'] = \Illuminate\Support\Facades\Storage::disk('cloudinary')->url($path);
             $data['file_name'] = $uploaded->getClientOriginalName();
             $data['file_size'] = $uploaded->getSize();
         }
