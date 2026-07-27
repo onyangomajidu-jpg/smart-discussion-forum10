@@ -121,7 +121,7 @@ class TopicController extends Controller
     {
         $request->validate([
             'body'  => 'nullable|string',
-            'audio' => 'nullable|file|max:10240',
+            'audio' => 'nullable|file|mimes:webm,ogg,mp4,wav,mp3|max:10240',
             'image' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
             'file'  => 'nullable|file|max:20480',
         ]);
