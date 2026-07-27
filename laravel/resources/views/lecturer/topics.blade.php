@@ -1088,8 +1088,11 @@
 
         function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-        const storageBase = '{{ rtrim(Storage::disk("public")->url(""), "/") }}/';
-        function storageUrl(path) { return path ? storageBase + path : ''; }
+        function storageUrl(path) {
+            if (!path) return '';
+            if (path.startsWith('http://') || path.startsWith('https://')) return path;
+            return '{{ rtrim(Storage::disk("public")->url(""), "/") }}/' + path;
+        }
 
         function buildBubble(post) {
             const isMe = post.user_id === myId;
