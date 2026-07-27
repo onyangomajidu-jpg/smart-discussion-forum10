@@ -18,13 +18,15 @@ import java.net.URL;
  */
 public class LecturerDashboardPanel extends JPanel {
 
-    private static final Color C1      = new Color(0x63, 0x66, 0xF1); // indigo  (#6366f1)
-    private static final Color C2      = new Color(0x8B, 0x5C, 0xF6); // purple  (#8b5cf6)
-    private static final Color BG      = new Color(0xF1, 0xF5, 0xF9);
-    private static final Color SURFACE = Color.WHITE;
-    private static final Color BORDER  = new Color(0xE2, 0xE8, 0xF0);
-    private static final Color TEXT    = new Color(0x0F, 0x17, 0x2A);
-    private static final Color MUTED   = new Color(0x64, 0x74, 0x8B);
+    // Values now come from Theme (single source of truth shared with every
+    // other panel) instead of being re-declared per-file.
+    private static final Color C1      = Theme.PRIMARY;   // indigo  (#6366f1)
+    private static final Color C2      = Theme.SECONDARY; // purple  (#8b5cf6)
+    private static final Color BG      = Theme.BG;
+    private static final Color SURFACE = Theme.SURFACE;
+    private static final Color BORDER  = Theme.BORDER;
+    private static final Color TEXT    = Theme.TEXT;
+    private static final Color MUTED   = Theme.MUTED;
 
     private final AuthUser    user;
     private final JTabbedPane tabs;

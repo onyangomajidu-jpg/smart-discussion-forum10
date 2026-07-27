@@ -8,19 +8,25 @@ import com.smartforum.cache.LocalCacheDatabase;
 import com.smartforum.model.AuthUser;
 import com.smartforum.sync.ForumWebSocketListener;
 import com.smartforum.sync.OfflineSyncManager;
+import com.smartforum.ui.components.SidebarLink;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.Component;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class MainWindow extends JFrame {
 
-    private static final Color PRIMARY = new Color(0x66, 0x7E, 0xEA);
+    // Kept as an alias so the rest of this file (and any future edits) can
+    // keep referring to PRIMARY, but the real value now lives in Theme so
+    // every panel in the app shares one source of truth for colors.
+    private static final Color PRIMARY = Theme.PRIMARY;
 
     private final AuthUser               user;
     private final AuthService            authService;
@@ -51,7 +57,7 @@ public class MainWindow extends JFrame {
 
         // ── Panels ────────────────────────────────────────────────────────
         ConversationPanel conversationPanel =
-            new ConversationPanel(cache, user, syncManager);
+            new ConversationPanel(cache, user, syncManager, authService.getWebSession());
 
         // ── WebSocket ─────────────────────────────────────────────────────
         wsListener = new ForumWebSocketListener(conversationPanel);
@@ -69,6 +75,7 @@ public class MainWindow extends JFrame {
         GroupsPanel      groupsPanel      = new GroupsPanel(api, user);
         ProfilePanel     profilePanel     = new ProfilePanel(api, user);
         QuizPanel        quizPanel        = new QuizPanel(api, user);
+        MessagesPanel    messagesPanel    = new MessagesPanel(user, authService.getWebSession());
         LecturerAnalyticsPanel lecturerAnalyticsPanel =
             (user.isLecturer() || user.isAdmin()) ? new LecturerAnalyticsPanel(api) : null;
 
@@ -85,6 +92,7 @@ public class MainWindow extends JFrame {
         setTitle("Discussion Hub — " + user.getName());
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(1200, 720);
+        setMinimumSize(new Dimension(960, 600));
         setLocationRelativeTo(null);
 
         JSplitPane split = new JSplitPane(
@@ -95,10 +103,13 @@ public class MainWindow extends JFrame {
 
         JTabbedPane tabs = new JTabbedPane();
         if (user.isAdmin()) {
-            AdminDashboardPanel adminDashboardPanel = new AdminDashboardPanel(api, user);
+            AdminDashboardPanel  adminDashboardPanel  = new AdminDashboardPanel(api, user);
             WarningRegistryPanel warningRegistryPanel = new WarningRegistryPanel(api, user);
             BlacklistLogPanel    blacklistLogPanel    = new BlacklistLogPanel(api, user);
+            UserManagementPanel  userManagementPanel  = new UserManagementPanel(api, user);
             tabs.addTab("🏠  Dashboard",       adminDashboardPanel);
+            tabs.addTab("👥  User Management", userManagementPanel);
+            tabs.addTab("💬  Messages",         messagesPanel);
             tabs.addTab("⚠️  Warnings",         warningRegistryPanel);
             tabs.addTab("🚫  Blacklist Log",    blacklistLogPanel);
             tabs.addTab("👤  Profile",           profilePanel);
@@ -107,6 +118,7 @@ public class MainWindow extends JFrame {
             tabs.addChangeListener(e -> {
                 Component sel = tabs.getSelectedComponent();
                 if (sel == adminDashboardPanel)   adminDashboardPanel.loadData();
+                else if (sel == userManagementPanel)  userManagementPanel.loadUsers();
                 else if (sel == warningRegistryPanel) warningRegistryPanel.loadAll();
                 else if (sel == blacklistLogPanel)    blacklistLogPanel.loadAll();
             });
@@ -120,6 +132,7 @@ public class MainWindow extends JFrame {
             tabs.addTab("\uD83D\uDCCB  My Quizzes",         quizPanel);
             tabs.addTab("\uD83D\uDCCA  Analytics",          analyticsPanel);
             tabs.addTab("\uD83D\uDCAC  Forum",              split);
+            tabs.addTab("\u2709\uFE0F  Messages",           messagesPanel);
             tabs.addTab("\uD83D\uDC65  Groups",             groupsLecPanel);
             tabs.addTab("\uD83D\uDCC8  Statistics",         statisticsPanel);
             tabs.addTab("\uD83D\uDC64  Profile",            profilePanel);
@@ -145,6 +158,7 @@ public class MainWindow extends JFrame {
             // fa-people-group Groups  (Forum is embedded inside Dashboard quick-link / separate tab)
             tabs.addTab("\uD83C\uDFE0  Dashboard",  dashboardPanel);
             tabs.addTab("\uD83D\uDCAC  Forum",       split);
+            tabs.addTab("\u2709\uFE0F  Messages",    messagesPanel);
             tabs.addTab("\uD83D\uDCDD  My Quizzes", quizPanel);
             tabs.addTab("\uD83D\uDCC8  Analytics",  statisticsPanel);
             tabs.addTab("\uD83D\uDC65  Groups",      groupsPanel);
@@ -164,6 +178,8 @@ public class MainWindow extends JFrame {
                 else if (sel == quizPanel) quizPanel.loadQuizzes();
             });
         }
+
+        applySidebarStyle(tabs);
 
         getContentPane().setLayout(new BorderLayout());
         getContentPane().add(buildTopBar(), BorderLayout.NORTH);
@@ -203,11 +219,60 @@ public class MainWindow extends JFrame {
         });
     }
 
+    // ── Sidebar (mirrors app.blade.php's <aside class="sidebar">) ─────────
+    //
+    // The navigation logic (selecting a tab, quick-jump-by-title from the
+    // dashboard "quick action" cards, sync-on-select listeners) all already
+    // lives on the JTabbedPane elsewhere in this file and in
+    // AdminDashboardPanel / LecturerDashboardPanel. Rather than rip that
+    // wiring out, this re-skins the tab strip itself: LEFT placement plus a
+    // custom SidebarLink component per tab, so it looks and behaves like
+    // Laravel's left sidebar (icon + label rows, active tint, left accent
+    // bar) while every existing setSelectedIndex()/title-lookup call keeps
+    // working unchanged.
+    private void applySidebarStyle(JTabbedPane tabs) {
+        tabs.setTabPlacement(JTabbedPane.LEFT);
+        tabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
+        tabs.setFont(Theme.fontSemibold(13));
+        tabs.setBackground(Theme.SURFACE);
+        tabs.setForeground(Theme.TEXT);
+        tabs.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Theme.BORDER));
+
+        List<SidebarLink> rows = new ArrayList<>();
+        for (int i = 0; i < tabs.getTabCount(); i++) {
+            String raw = tabs.getTitleAt(i);
+            int sp = raw.indexOf(' ');
+            String icon  = sp > 0 ? raw.substring(0, sp).trim()  : "\u2022";
+            String label = sp > 0 ? raw.substring(sp).trim()     : raw.trim();
+            SidebarLink row = new SidebarLink(icon, label);
+            row.setPreferredSize(new Dimension(210, 42));
+            final int idx = i;
+            row.onClick(() -> tabs.setSelectedIndex(idx));
+            tabs.setTabComponentAt(i, row);
+            rows.add(row);
+        }
+        Runnable syncActive = () -> {
+            int sel = tabs.getSelectedIndex();
+            for (int i = 0; i < rows.size(); i++) rows.get(i).setActive(i == sel);
+        };
+        tabs.addChangeListener(e -> syncActive.run());
+        syncActive.run();
+    }
+
     // ── Top bar ───────────────────────────────────────────────────────────
 
     private JPanel buildTopBar() {
-        JPanel bar = new JPanel(new BorderLayout());
-        bar.setBackground(PRIMARY);
+        JPanel bar = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setPaint(Theme.brandGradient(getWidth(), getHeight()));
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        bar.setOpaque(false);
         bar.setBorder(new EmptyBorder(8, 16, 8, 16));
 
         // Brand: logo image + name (mirrors topnav-brand in app.blade.php)

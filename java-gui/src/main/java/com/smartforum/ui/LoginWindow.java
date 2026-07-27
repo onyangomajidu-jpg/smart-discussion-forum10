@@ -9,6 +9,7 @@ import com.smartforum.model.AuthUser;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import javax.imageio.ImageIO;
 import java.io.IOException;
 import java.net.URL;
 
@@ -16,8 +17,8 @@ public class LoginWindow extends JFrame {
 
     private static final Color PRIMARY   = new Color(0x66, 0x7E, 0xEA);
     private static final Color SECONDARY = new Color(0x76, 0x4B, 0xA2);
-    private static final Color BORDER_C  = new Color(0xE1, 0xE4, 0xE8);
     private static final Color TEXT_MUTE = new Color(0x6C, 0x75, 0x7D);
+    private static final Color BORDER_C  = new Color(0xE1, 0xE4, 0xE8);
 
     private final AuthService        authService;
     private final ApiClient          api;
@@ -39,9 +40,8 @@ public class LoginWindow extends JFrame {
     private void buildUI() {
         setTitle("Discussion Hub — Login");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setResizable(false);
+        setResizable(true);
 
-        // favicon
         new SwingWorker<Image, Void>() {
             @Override protected Image doInBackground() throws Exception {
                 return new ImageIcon(new URL(
@@ -52,7 +52,7 @@ public class LoginWindow extends JFrame {
             }
         }.execute();
 
-        // gradient background
+        // Full gradient background — matches Laravel body gradient 135deg #667eea -> #764ba2
         JPanel root = new JPanel(new GridBagLayout()) {
             @Override protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -61,31 +61,34 @@ public class LoginWindow extends JFrame {
                 g2.fillRect(0, 0, getWidth(), getHeight());
             }
         };
-        root.setBorder(new EmptyBorder(30, 30, 30, 30));
+        root.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         root.add(buildCard());
         setContentPane(root);
-        setSize(500, 680);
+        setSize(520, 720);
+        setMinimumSize(new Dimension(480, 680));
         setLocationRelativeTo(null);
     }
 
     private JPanel buildCard() {
-        JPanel card = new JPanel();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        // Single card panel, GridBagLayout, padding 50px 40px — matches .login-card
+        JPanel card = new JPanel(new GridBagLayout());
         card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(BORDER_C, 1),
-            new EmptyBorder(40, 40, 36, 40)
-        ));
+        card.setPreferredSize(new Dimension(420, 660));
+        card.setBorder(new EmptyBorder(50, 40, 40, 40));
 
-        // ── Logo ──────────────────────────────────────────────────────────
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx   = 0;
+        gbc.fill    = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+
+        // ── Logo — matches .logo img (64x64, centered) ────────────────────
         JLabel logoImg = new JLabel("💬", SwingConstants.CENTER);
         logoImg.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 48));
-        logoImg.setAlignmentX(CENTER_ALIGNMENT);
         new SwingWorker<ImageIcon, Void>() {
             @Override protected ImageIcon doInBackground() throws Exception {
                 URL url = new URL(ApiClient.BASE_URL.replace("/api", "") + "/images/forum.png");
-                Image img = new ImageIcon(url).getImage().getScaledInstance(64, 64, Image.SCALE_SMOOTH);
+                Image img = ImageIO.read(url).getScaledInstance(64, 64, Image.SCALE_SMOOTH);
                 return new ImageIcon(img);
             }
             @Override protected void done() {
@@ -93,33 +96,31 @@ public class LoginWindow extends JFrame {
             }
         }.execute();
 
+        // ── Title — matches .logo h1 ──────────────────────────────────────
         JLabel title = new JLabel("Discussion Hub", SwingConstants.CENTER);
         title.setFont(new Font("Segoe UI", Font.BOLD, 22));
         title.setForeground(PRIMARY);
-        title.setAlignmentX(CENTER_ALIGNMENT);
 
+        // ── Subtitle — matches .logo p ────────────────────────────────────
         JLabel sub = new JLabel("Welcome back! Please login to your account", SwingConstants.CENTER);
         sub.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         sub.setForeground(TEXT_MUTE);
-        sub.setAlignmentX(CENTER_ALIGNMENT);
 
-        // ── Alert box (hidden until error) ────────────────────────────────
+        // ── Alert — matches .alert-danger ─────────────────────────────────
         statusLabel = new JLabel(" ", SwingConstants.CENTER);
         statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         statusLabel.setForeground(new Color(0x72, 0x1C, 0x24));
         statusLabel.setOpaque(true);
         statusLabel.setBackground(new Color(0xF8, 0xD7, 0xDA));
         statusLabel.setBorder(new EmptyBorder(10, 12, 10, 12));
-        statusLabel.setAlignmentX(CENTER_ALIGNMENT);
-        statusLabel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
         statusLabel.setVisible(false);
 
-        // ── Email ─────────────────────────────────────────────────────────
+        // ── Email — matches .form-group ───────────────────────────────────
         JLabel emailLbl = fieldLabel("Email Address");
         emailField = new JTextField();
         styleField(emailField);
 
-        // ── Password + show/hide ──────────────────────────────────────────
+        // ── Password + eye toggle — matches .password-wrapper ─────────────
         JLabel passLbl = fieldLabel("Password");
         passwordField = new JPasswordField();
         styleField(passwordField);
@@ -140,19 +141,16 @@ public class LoginWindow extends JFrame {
 
         JPanel passRow = new JPanel(new BorderLayout(4, 0));
         passRow.setBackground(Color.WHITE);
-        passRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
-        passRow.setAlignmentX(LEFT_ALIGNMENT);
         passRow.add(passwordField, BorderLayout.CENTER);
         passRow.add(eyeBtn, BorderLayout.EAST);
 
-        // ── Remember me ───────────────────────────────────────────────────
+        // ── Remember me — matches .checkbox-group ─────────────────────────
         rememberMe = new JCheckBox("Remember me");
         rememberMe.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         rememberMe.setForeground(TEXT_MUTE);
         rememberMe.setBackground(Color.WHITE);
-        rememberMe.setAlignmentX(LEFT_ALIGNMENT);
 
-        // ── Login button (gradient) ───────────────────────────────────────
+        // ── Login button full-width — matches .btn-login ──────────────────
         loginButton = new JButton("Login") {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -169,27 +167,23 @@ public class LoginWindow extends JFrame {
         loginButton.setContentAreaFilled(false);
         loginButton.setBorderPainted(false);
         loginButton.setFocusPainted(false);
-        loginButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        loginButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
         loginButton.setPreferredSize(new Dimension(340, 48));
-        loginButton.setAlignmentX(LEFT_ALIGNMENT);
+        loginButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         loginButton.addActionListener(e -> attemptLogin());
         getRootPane().setDefaultButton(loginButton);
 
-        // ── Forgot password ───────────────────────────────────────────────
+        // ── Forgot password — matches .links a ────────────────────────────
         JButton forgotLink = linkButton("Forgot your password?");
         forgotLink.addActionListener(e ->
             JOptionPane.showMessageDialog(this,
                 "Visit: http://localhost:8000/forgot-password",
                 "Reset Password", JOptionPane.INFORMATION_MESSAGE));
 
-        // ── Divider ───────────────────────────────────────────────────────
+        // ── Divider — matches .divider ────────────────────────────────────
         JSeparator divider = new JSeparator();
         divider.setForeground(BORDER_C);
-        divider.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
-        divider.setAlignmentX(LEFT_ALIGNMENT);
 
-        // ── Register row ──────────────────────────────────────────────────
+        // ── Register row — matches bottom .links ──────────────────────────
         JButton registerLink = linkButton("Register here");
         registerLink.addActionListener(e ->
             JOptionPane.showMessageDialog(this,
@@ -197,39 +191,27 @@ public class LoginWindow extends JFrame {
                 "Register", JOptionPane.INFORMATION_MESSAGE));
         JPanel registerRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 0));
         registerRow.setBackground(Color.WHITE);
-        registerRow.setAlignmentX(CENTER_ALIGNMENT);
         JLabel noAccount = new JLabel("Don't have an account?");
         noAccount.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         noAccount.setForeground(TEXT_MUTE);
         registerRow.add(noAccount);
         registerRow.add(registerLink);
 
-        // ── Assemble ──────────────────────────────────────────────────────
-        card.add(logoImg);
-        card.add(Box.createVerticalStrut(14));
-        card.add(title);
-        card.add(Box.createVerticalStrut(6));
-        card.add(sub);
-        card.add(Box.createVerticalStrut(20));
-        card.add(statusLabel);
-        card.add(Box.createVerticalStrut(4));
-        card.add(emailLbl);
-        card.add(Box.createVerticalStrut(8));
-        card.add(emailField);
-        card.add(Box.createVerticalStrut(20));
-        card.add(passLbl);
-        card.add(Box.createVerticalStrut(8));
-        card.add(passRow);
-        card.add(Box.createVerticalStrut(20));
-        card.add(rememberMe);
-        card.add(Box.createVerticalStrut(20));
-        card.add(loginButton);
-        card.add(Box.createVerticalStrut(15));
-        card.add(forgotLink);
-        card.add(Box.createVerticalStrut(20));
-        card.add(divider);
-        card.add(Box.createVerticalStrut(20));
-        card.add(registerRow);
+        // ── Assemble — insets mirror Laravel margin-bottom values ─────────
+        int row = 0;
+        gbc.gridy = row++; gbc.insets = new Insets(0, 0, 14, 0); card.add(logoImg, gbc);
+        gbc.gridy = row++; gbc.insets = new Insets(0, 0, 6, 0);  card.add(title, gbc);
+        gbc.gridy = row++; gbc.insets = new Insets(0, 0, 35, 0); card.add(sub, gbc);
+        gbc.gridy = row++; gbc.insets = new Insets(0, 0, 20, 0); card.add(statusLabel, gbc);
+        gbc.gridy = row++; gbc.insets = new Insets(0, 0, 8, 0);  card.add(emailLbl, gbc);
+        gbc.gridy = row++; gbc.insets = new Insets(0, 0, 20, 0); card.add(emailField, gbc);
+        gbc.gridy = row++; gbc.insets = new Insets(0, 0, 8, 0);  card.add(passLbl, gbc);
+        gbc.gridy = row++; gbc.insets = new Insets(0, 0, 20, 0); card.add(passRow, gbc);
+        gbc.gridy = row++; gbc.insets = new Insets(0, 0, 20, 0); card.add(rememberMe, gbc);
+        gbc.gridy = row++; gbc.insets = new Insets(0, 0, 15, 0); card.add(loginButton, gbc);
+        gbc.gridy = row++; gbc.insets = new Insets(0, 0, 20, 0); card.add(forgotLink, gbc);
+        gbc.gridy = row++; gbc.insets = new Insets(0, 0, 20, 0); card.add(divider, gbc);
+        gbc.gridy = row++;  gbc.insets = new Insets(0, 0, 0, 0); card.add(registerRow, gbc);
 
         return card;
     }
@@ -283,7 +265,6 @@ public class LoginWindow extends JFrame {
         JLabel lbl = new JLabel(text);
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
         lbl.setForeground(new Color(0x33, 0x33, 0x33));
-        lbl.setAlignmentX(LEFT_ALIGNMENT);
         return lbl;
     }
 
@@ -293,9 +274,7 @@ public class LoginWindow extends JFrame {
             BorderFactory.createLineBorder(BORDER_C, 2),
             new EmptyBorder(10, 12, 10, 12)
         ));
-        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
-        field.setPreferredSize(new Dimension(340, 42));
-        field.setAlignmentX(LEFT_ALIGNMENT);
+        field.setPreferredSize(new Dimension(340, 44));
     }
 
     private JButton linkButton(String text) {
@@ -306,7 +285,6 @@ public class LoginWindow extends JFrame {
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setAlignmentX(CENTER_ALIGNMENT);
         return btn;
     }
 }

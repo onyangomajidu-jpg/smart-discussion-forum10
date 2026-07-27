@@ -19,11 +19,14 @@ import java.util.function.Consumer;
  */
 public class TopicListPanel extends JPanel {
 
-    private static final Color PRIMARY  = new Color(0x66, 0x7E, 0xEA);
-    private static final Color SECONDARY= new Color(0x76, 0x4B, 0xA2);
+    // PRIMARY/SECONDARY were off-brand (#667EEA/#764BA2); now the exact
+    // Laravel gradient via Theme. BG/SEL_BG are distinct sidebar-list tints
+    // (not part of Laravel's root palette), so they stay local.
+    private static final Color PRIMARY  = Theme.PRIMARY;
+    private static final Color SECONDARY= Theme.SECONDARY;
     private static final Color BG       = new Color(0xF8, 0xF9, 0xFA);
     private static final Color SEL_BG   = new Color(0xE8, 0xEC, 0xFD);
-    private static final Color BORDER_C = new Color(0xE2, 0xE8, 0xF0);
+    private static final Color BORDER_C = Theme.BORDER;
 
     private final LocalCacheDatabase      cache;
     private final AuthUser                user;
@@ -324,8 +327,8 @@ public class TopicListPanel extends JPanel {
     // ── Cell renderer ─────────────────────────────────────────────────────
 
     private static class TopicCellRenderer implements ListCellRenderer<Topic> {
-        private static final Color PRIMARY   = new Color(0x66, 0x7E, 0xEA);
-        private static final Color SECONDARY = new Color(0x76, 0x4B, 0xA2);
+        private static final Color PRIMARY   = Theme.PRIMARY;
+        private static final Color SECONDARY = Theme.SECONDARY;
         private static final Color SEL_BG    = new Color(0xE8, 0xEC, 0xFD);
         private static final Color BG        = new Color(0xF8, 0xF9, 0xFA);
 
