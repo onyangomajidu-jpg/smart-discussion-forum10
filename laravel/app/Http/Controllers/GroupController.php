@@ -18,6 +18,23 @@ class GroupController extends Controller
         return view('lecturer.groups', compact('groups'));
     }
 
+    // API: list lecturer's own groups
+    public function apiMyGroups(Request $request)
+    {
+        $groups = Group::where('created_by', $request->user()->id)
+            ->withCount('members')
+            ->orderBy('name')
+            ->get()
+            ->map(fn($g) => [
+                'id'           => $g->id,
+                'name'         => $g->name,
+                'description'  => $g->description,
+                'members_count'=> $g->members_count,
+                'created_at'   => $g->created_at,
+            ]);
+        return response()->json($groups);
+    }
+
     // API: list all groups with membership status
     public function apiIndex(Request $request)
     {

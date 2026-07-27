@@ -16,13 +16,15 @@ import java.util.Map;
 
 public class ProfilePanel extends JPanel {
 
-    private static final Color PRIMARY  = new Color(0x4F, 0x46, 0xE5);
-    private static final Color BG       = new Color(0xF1, 0xF5, 0xF9);
-    private static final Color SURFACE  = Color.WHITE;
-    private static final Color MUTED    = new Color(0x64, 0x74, 0x8B);
-    private static final Color TEXT     = new Color(0x0F, 0x17, 0x2A);
-    private static final Color DANGER   = new Color(0xEF, 0x44, 0x44);
-    private static final Color BORDER_C = new Color(0xE2, 0xE8, 0xF0);
+    // Values now come from Theme (single source of truth shared with every
+    // other panel) instead of being re-declared per-file.
+    private static final Color PRIMARY  = Theme.PRIMARY_DARK;
+    private static final Color BG       = Theme.BG;
+    private static final Color SURFACE  = Theme.SURFACE;
+    private static final Color MUTED    = Theme.MUTED;
+    private static final Color TEXT     = Theme.TEXT;
+    private static final Color DANGER   = Theme.DANGER;
+    private static final Color BORDER_C = Theme.BORDER;
 
     private final ApiClient api;
     private final AuthUser  user;
@@ -91,8 +93,40 @@ public class ProfilePanel extends JPanel {
         gc.insets = new Insets(6, 4, 6, 4);
         gc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Read-only fields
-        gc.gridx = 0; gc.gridy = 0; gc.weightx = 0;
+        // Avatar — mirrors topnav-avatar / sidebar-footer-avatar in app.blade.php
+        JLabel avatarLbl = new JLabel(String.valueOf(user.getName().charAt(0)).toUpperCase(), SwingConstants.CENTER) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setPaint(new GradientPaint(0, 0, PRIMARY, getWidth(), getHeight(), new Color(0x8B, 0x5C, 0xF6)));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        avatarLbl.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        avatarLbl.setForeground(Color.WHITE);
+        avatarLbl.setOpaque(false);
+        avatarLbl.setPreferredSize(new Dimension(72, 72));
+        if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
+            new SwingWorker<ImageIcon, Void>() {
+                @Override protected ImageIcon doInBackground() throws Exception {
+                    java.net.URL url = new java.net.URL(
+                        com.smartforum.api.ApiClient.BASE_URL.replace("/api", "") + "/storage/" + user.getAvatar());
+                    Image img = new ImageIcon(url).getImage().getScaledInstance(72, 72, Image.SCALE_SMOOTH);
+                    return new ImageIcon(img);
+                }
+                @Override protected void done() {
+                    try { avatarLbl.setIcon(get()); avatarLbl.setText(null); } catch (Exception ignored) {}
+                }
+            }.execute();
+        }
+
+        gc.gridx = 0; gc.gridy = 0; gc.gridwidth = 2; gc.anchor = GridBagConstraints.CENTER;
+        form.add(avatarLbl, gc);
+        gc.gridwidth = 1; gc.anchor = GridBagConstraints.WEST;
+
+        gc.gridx = 0; gc.gridy = 1; gc.weightx = 0;
         form.add(label("Email"), gc);
         gc.gridx = 1; gc.weightx = 1;
         JLabel emailLbl = new JLabel(user.getEmail());
@@ -100,32 +134,86 @@ public class ProfilePanel extends JPanel {
         emailLbl.setForeground(MUTED);
         form.add(emailLbl, gc);
 
-        gc.gridx = 0; gc.gridy = 1; gc.weightx = 0;
+        gc.gridx = 0; gc.gridy = 2; gc.weightx = 0;
         form.add(label("Role"), gc);
         gc.gridx = 1; gc.weightx = 1;
-        JLabel roleLbl = new JLabel(user.getRole().toUpperCase());
-        roleLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        String roleIcon = user.isAdmin() ? "🛡 Admin" : user.isLecturer() ? "📋 Lecturer" : "🎓 Student";
+        JLabel roleLbl = new JLabel(roleIcon);
+        roleLbl.setFont(new Font("Segoe UI Emoji", Font.BOLD, 13));
         roleLbl.setForeground(PRIMARY);
         form.add(roleLbl, gc);
 
-        gc.gridx = 0; gc.gridy = 2; gc.weightx = 0;
+        // Joined date — mirrors .profile-meta-row Joined in profile/edit.blade.php
+        gc.gridx = 0; gc.gridy = 3; gc.weightx = 0;
+        form.add(label("Joined"), gc);
+        gc.gridx = 1; gc.weightx = 1;
+        JLabel joinedLbl = new JLabel("—");
+        joinedLbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        joinedLbl.setForeground(MUTED);
+        form.add(joinedLbl, gc);
+
+        gc.gridx = 0; gc.gridy = 4; gc.weightx = 0;
         form.add(label("Name"), gc);
         gc.gridx = 1; gc.weightx = 1;
         tfName = new JTextField();
         tfName.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         form.add(tfName, gc);
 
-        gc.gridx = 0; gc.gridy = 3; gc.weightx = 0;
+        gc.gridx = 0; gc.gridy = 5; gc.weightx = 0;
         form.add(label("Bio"), gc);
         gc.gridx = 1; gc.weightx = 1;
         tfBio = new JTextField();
         tfBio.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         form.add(tfBio, gc);
 
-        gc.gridx = 1; gc.gridy = 4; gc.weightx = 1;
+        // Avatar upload — mirrors "Change Photo" btn in profile/edit.blade.php
+        gc.gridx = 0; gc.gridy = 6; gc.weightx = 0;
+        form.add(label("Avatar"), gc);
+        gc.gridx = 1; gc.weightx = 1;
+        JButton avatarBtn = new JButton("📷 Change Photo");
+        avatarBtn.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 12));
+        avatarBtn.setForeground(PRIMARY);
+        avatarBtn.setBackground(new Color(0xEE, 0xF2, 0xFF));
+        avatarBtn.setBorderPainted(false);
+        avatarBtn.setFocusPainted(false);
+        avatarBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        avatarBtn.addActionListener(e -> {
+            javax.swing.JFileChooser fc = new javax.swing.JFileChooser();
+            fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+                "Images", "jpg", "jpeg", "png", "gif", "webp"));
+            if (fc.showOpenDialog(this) == javax.swing.JFileChooser.APPROVE_OPTION) {
+                java.io.File f = fc.getSelectedFile();
+                new SwingWorker<Void, Void>() {
+                    @Override protected Void doInBackground() throws Exception {
+                        api.uploadAvatar("/profile/avatar", f);
+                        return null;
+                    }
+                    @Override protected void done() {
+                        try { get(); showStatus("Avatar updated.", new Color(0x10, 0xB9, 0x81)); }
+                        catch (Exception ex) { showStatus("Avatar upload failed: " + ex.getMessage(), DANGER); }
+                    }
+                }.execute();
+            }
+        });
+        form.add(avatarBtn, gc);
+
+        gc.gridx = 1; gc.gridy = 7; gc.weightx = 1;
         JButton saveBtn = primaryButton("Save Changes");
         saveBtn.addActionListener(e -> saveProfile());
         form.add(saveBtn, gc);
+
+        // Populate joined date
+        new SwingWorker<JsonNode, Void>() {
+            @Override protected JsonNode doInBackground() throws Exception {
+                return mapper.readTree(api.get("/profile"));
+            }
+            @Override protected void done() {
+                try {
+                    String created = get().path("user").path("created_at").asText("");
+                    if (!created.isEmpty()) joinedLbl.setText(created.substring(0, 10));
+                } catch (Exception ignored) {}
+            }
+        }.execute();
 
         card.add(form, BorderLayout.CENTER);
         return card;

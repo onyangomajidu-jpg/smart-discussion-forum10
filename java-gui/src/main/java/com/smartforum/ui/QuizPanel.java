@@ -12,18 +12,22 @@ import java.util.*;
 
 public class QuizPanel extends JPanel {
 
-    private static final Color PRIMARY  = new Color(0x63, 0x66, 0xF1);
-    private static final Color PURPLE   = new Color(0x8B, 0x5C, 0xF6);
-    private static final Color GREEN    = new Color(0x10, 0xB9, 0x81);
-    private static final Color AMBER    = new Color(0xF5, 0x9E, 0x0B);
-    private static final Color DANGER   = new Color(0xEF, 0x44, 0x44);
+    // Values now come from Theme (single source of truth shared with every
+    // other panel) instead of being re-declared per-file. CYAN is a distinct
+    // accent (not part of Laravel's root palette), so it stays local. DARK
+    // and TEXT were duplicate declarations of the same value.
+    private static final Color PRIMARY  = Theme.PRIMARY;
+    private static final Color PURPLE   = Theme.SECONDARY;
+    private static final Color GREEN    = Theme.SUCCESS;
+    private static final Color AMBER    = Theme.WARNING;
+    private static final Color DANGER   = Theme.DANGER;
     private static final Color CYAN     = new Color(0x06, 0xB6, 0xD4);
-    private static final Color DARK     = new Color(0x0F, 0x17, 0x2A);
-    private static final Color BG       = new Color(0xF1, 0xF5, 0xF9);
-    private static final Color SURFACE  = Color.WHITE;
-    private static final Color MUTED    = new Color(0x64, 0x74, 0x8B);
-    private static final Color TEXT     = new Color(0x0F, 0x17, 0x2A);
-    private static final Color BORDER_C = new Color(0xE2, 0xE8, 0xF0);
+    private static final Color DARK     = Theme.TEXT;
+    private static final Color BG       = Theme.BG;
+    private static final Color SURFACE  = Theme.SURFACE;
+    private static final Color MUTED    = Theme.MUTED;
+    private static final Color TEXT     = Theme.TEXT;
+    private static final Color BORDER_C = Theme.BORDER;
 
     private final ApiClient    api;
     private final AuthUser     user;
@@ -161,6 +165,8 @@ public class QuizPanel extends JPanel {
         boolean isOpen    = q.path("is_open").asBoolean(false);
         boolean isUpcoming= q.path("is_upcoming").asBoolean(false);
         boolean isClosed  = !isOpen && !isUpcoming && !attempted;
+        // Lecturer uses status field: published/draft/closed
+        String lecturerStatus = q.path("status").asText("");
 
         String state;
         Color accentColor;
@@ -168,7 +174,23 @@ public class QuizPanel extends JPanel {
         Color iconBg;
         Color iconFg;
 
-        if (attempted) {
+        if (user.isLecturer() || user.isAdmin()) {
+            // Mirrors .icon-published/.icon-draft/.icon-closed in quiz/lecturer/index.blade.php
+            switch (lecturerStatus) {
+                case "published" -> {
+                    state = "open"; accentColor = GREEN;
+                    iconText = "▶"; iconBg = new Color(0xD1,0xFA,0xE5); iconFg = new Color(0x06,0x5F,0x46);
+                }
+                case "draft" -> {
+                    state = "upcoming"; accentColor = AMBER;
+                    iconText = "✏"; iconBg = new Color(0xFE,0xF3,0xC7); iconFg = new Color(0x92,0x40,0x0E);
+                }
+                default -> {
+                    state = "closed"; accentColor = DANGER;
+                    iconText = "🔒"; iconBg = new Color(0xFE,0xE2,0xE2); iconFg = new Color(0x99,0x1B,0x1B);
+                }
+            }
+        } else if (attempted) {
             state = "done"; accentColor = PURPLE;
             iconText = "✓"; iconBg = new Color(0xED, 0xE9, 0xFE); iconFg = new Color(0x5B, 0x21, 0xB6);
         } else if (isOpen) {
@@ -192,13 +214,21 @@ public class QuizPanel extends JPanel {
                 BorderFactory.createLineBorder(BORDER_C),
                 new EmptyBorder(16, 16, 16, 16))));
 
-        // Icon
-        JLabel iconLbl = new JLabel(iconText, SwingConstants.CENTER);
-        iconLbl.setFont(new Font("Segoe UI Emoji", Font.BOLD, 18));
+        // Icon — mirrors .quiz-icon-wrap in quiz/student/index.blade.php
+        JLabel iconLbl = new JLabel(iconText, SwingConstants.CENTER) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(iconBg);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        iconLbl.setFont(new Font("Segoe UI Emoji", Font.BOLD, 20));
         iconLbl.setForeground(iconFg);
-        iconLbl.setOpaque(true);
-        iconLbl.setBackground(iconBg);
-        iconLbl.setPreferredSize(new Dimension(48, 48));
+        iconLbl.setOpaque(false);
+        iconLbl.setPreferredSize(new Dimension(52, 52));
         iconLbl.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
 
         // Info
@@ -217,9 +247,12 @@ public class QuizPanel extends JPanel {
 
         JPanel metaRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 14, 0));
         metaRow.setOpaque(false);
-        metaRow.add(metaItem("👥 " + q.path("group_name").asText("—")));
-        metaRow.add(metaItem("⏱ " + q.path("duration_minutes").asInt() + " min"));
-        metaRow.add(metaItem("❓ " + q.path("questions_count").asInt(0) + " questions"));
+        metaRow.add(metaItem("👥", PRIMARY,  q.path("group_name").asText("—")));
+        metaRow.add(metaItem("⏱", AMBER,   q.path("duration_minutes").asInt() + " min"));
+        metaRow.add(metaItem("❓", PURPLE,  q.path("questions_count").asInt(0) + " questions"));
+        if (user.isLecturer() || user.isAdmin()) {
+            metaRow.add(metaItem("👥", GREEN, q.path("attempts_count").asInt(0) + " submissions"));
+        }
 
         info.add(titleRow);
         info.add(Box.createVerticalStrut(4));
@@ -231,18 +264,27 @@ public class QuizPanel extends JPanel {
         int quizId = q.path("id").asInt();
 
         if (user.isLecturer() || user.isAdmin()) {
-            // Lecturer view: Publish (if draft) + Results
             String status = q.path("status").asText("draft");
             if ("draft".equals(status)) {
                 JButton publishBtn = new JButton("📤 Publish");
                 styleBtn(publishBtn, GREEN);
                 publishBtn.addActionListener(e -> publishQuiz(quizId));
                 actionPanel.add(publishBtn);
+            } else {
+                JButton remindBtn = new JButton("🔔 Remind");
+                styleBtn(remindBtn, AMBER);
+                remindBtn.addActionListener(e -> sendReminder(quizId, q.path("title").asText()));
+                actionPanel.add(remindBtn);
             }
             JButton resultsBtn = new JButton("📊 Results");
             styleBtn(resultsBtn, CYAN);
             resultsBtn.addActionListener(e -> showLecturerResults(quizId, q.path("title").asText()));
             actionPanel.add(resultsBtn);
+            JButton deleteBtn = new JButton("🗑");
+            styleBtn(deleteBtn, DANGER);
+            deleteBtn.setToolTipText("Delete Quiz");
+            deleteBtn.addActionListener(e -> deleteQuiz(quizId, q.path("title").asText()));
+            actionPanel.add(deleteBtn);
         } else if (attempted) {
             JButton resultBtn = new JButton("📋 View Result");
             styleBtn(resultBtn, PURPLE);
@@ -284,9 +326,10 @@ public class QuizPanel extends JPanel {
         return badge;
     }
 
-    private JLabel metaItem(String text) {
-        JLabel l = new JLabel(text);
-        l.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+    private JLabel metaItem(String icon, Color iconColor, String text) {
+        // Mirrors .quiz-meta-item with colored fa icon in quiz/student/index.blade.php
+        JLabel l = new JLabel(icon + " " + text);
+        l.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 12));
         l.setForeground(MUTED);
         return l;
     }
@@ -513,6 +556,55 @@ public class QuizPanel extends JPanel {
                 } catch (Exception e) {
                     JOptionPane.showMessageDialog(QuizPanel.this,
                         "Publish failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
+    }
+
+    // ── Send reminder ─────────────────────────────────────────────────────
+
+    private void sendReminder(int quizId, String quizTitle) {
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Send reminder to all group members for \"" + quizTitle + "\"?",
+            "Confirm Reminder", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) return;
+        new SwingWorker<JsonNode, Void>() {
+            @Override protected JsonNode doInBackground() throws Exception {
+                return mapper.readTree(api.post("/lecturer/quizzes/" + quizId + "/remind", Map.of()));
+            }
+            @Override protected void done() {
+                try {
+                    get();
+                    JOptionPane.showMessageDialog(QuizPanel.this,
+                        "Reminder sent successfully.", "Reminder Sent",
+                        JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(QuizPanel.this,
+                        "Reminder failed: " + e.getMessage(), "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
+    }
+
+    // ── Delete quiz ───────────────────────────────────────────────────────
+
+    private void deleteQuiz(int quizId, String quizTitle) {
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Delete quiz \"" + quizTitle + "\"? This cannot be undone.",
+            "Confirm Delete", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (confirm != JOptionPane.YES_OPTION) return;
+        new SwingWorker<Void, Void>() {
+            @Override protected Void doInBackground() throws Exception {
+                api.delete("/lecturer/quizzes/" + quizId);
+                return null;
+            }
+            @Override protected void done() {
+                try { get(); loadQuizzes(); }
+                catch (Exception e) {
+                    JOptionPane.showMessageDialog(QuizPanel.this,
+                        "Delete failed: " + e.getMessage(), "Error",
+                        JOptionPane.ERROR_MESSAGE);
                 }
             }
         }.execute();
@@ -756,59 +848,171 @@ public class QuizPanel extends JPanel {
         JPanel main = new JPanel(new BorderLayout());
         main.setBackground(BG);
 
+        // ── Timer header — mirrors .quiz-header in take.blade.php ─────────
+        JPanel quizHeader = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setPaint(new GradientPaint(0, 0, DARK, getWidth(), 0, new Color(0x31,0x2E,0x81)));
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
+        quizHeader.setOpaque(false);
+        quizHeader.setBorder(new EmptyBorder(10, 16, 10, 16));
+
+        JLabel titleLbl = new JLabel("🎓 " + title);
+        titleLbl.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        titleLbl.setForeground(Color.WHITE);
+
+        // Timer box — mirrors .timer-box
         JLabel timerLbl = new JLabel(String.format("⏱ %02d:00", duration), SwingConstants.CENTER);
         timerLbl.setFont(new Font("Segoe UI", Font.BOLD, 20));
         timerLbl.setForeground(GREEN);
         timerLbl.setOpaque(true);
-        timerLbl.setBackground(DARK);
-        timerLbl.setBorder(new EmptyBorder(12, 0, 12, 0));
+        timerLbl.setBackground(new Color(255,255,255,30));
+        timerLbl.setBorder(new EmptyBorder(8, 18, 8, 18));
+
+        quizHeader.add(titleLbl,  BorderLayout.WEST);
+        quizHeader.add(timerLbl,  BorderLayout.EAST);
+
+        // ── Progress strip — mirrors .progress-strip ──────────────────────
+        int totalQs = qs.size();
+        JProgressBar answerBar = new JProgressBar(0, totalQs);
+        answerBar.setForeground(PRIMARY);
+        answerBar.setBackground(BORDER_C);
+        answerBar.setBorderPainted(false);
+        answerBar.setPreferredSize(new Dimension(0, 8));
+        JLabel answerVal = new JLabel("0 / " + totalQs);
+        answerVal.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        answerVal.setForeground(MUTED);
+
+        JProgressBar timeBar = new JProgressBar(0, duration * 60);
+        timeBar.setValue(duration * 60);
+        timeBar.setForeground(GREEN);
+        timeBar.setBackground(BORDER_C);
+        timeBar.setBorderPainted(false);
+        timeBar.setPreferredSize(new Dimension(0, 8));
+
+        JPanel progressStrip = new JPanel(new GridLayout(1, 2, 16, 0));
+        progressStrip.setBackground(SURFACE);
+        progressStrip.setBorder(new EmptyBorder(8, 16, 8, 16));
+        JPanel ap = new JPanel(new BorderLayout(6, 0)); ap.setBackground(SURFACE);
+        JLabel aLbl = new JLabel("✅ Answered"); aLbl.setFont(new Font("Segoe UI", Font.BOLD, 11)); aLbl.setForeground(MUTED);
+        ap.add(aLbl, BorderLayout.WEST); ap.add(answerBar, BorderLayout.CENTER); ap.add(answerVal, BorderLayout.EAST);
+        JPanel tp = new JPanel(new BorderLayout(6, 0)); tp.setBackground(SURFACE);
+        JLabel tLbl = new JLabel("⏱ Time"); tLbl.setFont(new Font("Segoe UI", Font.BOLD, 11)); tLbl.setForeground(MUTED);
+        tp.add(tLbl, BorderLayout.WEST); tp.add(timeBar, BorderLayout.CENTER);
+        progressStrip.add(ap); progressStrip.add(tp);
+
+        // ── Question navigator dots — mirrors .q-nav ──────────────────────
+        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 6));
+        navPanel.setBackground(SURFACE);
+        navPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER_C),
+            new EmptyBorder(8, 12, 8, 12)));
+        Map<Integer, JButton> dotMap = new LinkedHashMap<>();
+        JLabel navTitle = new JLabel("🗺 Question Navigator");
+        navTitle.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        navTitle.setForeground(MUTED);
+        navPanel.add(navTitle);
 
         JPanel questionsPanel = new JPanel();
         questionsPanel.setLayout(new BoxLayout(questionsPanel, BoxLayout.Y_AXIS));
         questionsPanel.setBackground(BG);
-        questionsPanel.setBorder(new EmptyBorder(16, 16, 16, 16));
+        questionsPanel.setBorder(new EmptyBorder(8, 16, 16, 16));
 
         Map<Integer, Map<Integer, JRadioButton>> radioMap = new LinkedHashMap<>();
+        Map<Integer, JPanel> cardMap = new LinkedHashMap<>();
 
         int qNum = 1;
         for (JsonNode q : qs) {
             int qId = q.path("id").asInt();
+
+            // Nav dot — mirrors .q-dot
+            JButton dot = new JButton(String.valueOf(qNum));
+            dot.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            dot.setPreferredSize(new Dimension(34, 34));
+            dot.setBackground(new Color(0xF8,0xFA,0xFC));
+            dot.setForeground(MUTED);
+            dot.setBorderPainted(true);
+            dot.setFocusPainted(false);
+            dot.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            dotMap.put(qId, dot);
+            navPanel.add(dot);
+
+            // Question card — mirrors .question-card
             JPanel qCard = new JPanel();
             qCard.setLayout(new BoxLayout(qCard, BoxLayout.Y_AXIS));
             qCard.setBackground(SURFACE);
             qCard.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 4, 0, 0, PRIMARY),
-                BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(BORDER_C),
-                    new EmptyBorder(14, 16, 14, 16))));
+                BorderFactory.createLineBorder(BORDER_C, 2),
+                new EmptyBorder(16, 18, 16, 18)));
             qCard.setAlignmentX(LEFT_ALIGNMENT);
             qCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+            cardMap.put(qId, qCard);
 
-            JLabel qLbl = new JLabel("<html><b>Q" + qNum + ". " + q.path("question").asText() + "</b></html>");
-            qLbl.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            // Badge row — mirrors .q-num-badge
+            JLabel numBadge = new JLabel("Q" + qNum + " of " + totalQs);
+            numBadge.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            numBadge.setForeground(Color.WHITE);
+            numBadge.setOpaque(true);
+            numBadge.setBackground(PRIMARY);
+            numBadge.setBorder(new EmptyBorder(3, 10, 3, 10));
+
+            JLabel qLbl = new JLabel("<html><b>" + q.path("question").asText() + "</b></html>");
+            qLbl.setFont(new Font("Segoe UI", Font.PLAIN, 15));
             qLbl.setForeground(TEXT);
+            qLbl.setAlignmentX(LEFT_ALIGNMENT);
+
+            int marks = q.path("marks").asInt(1);
+            JLabel marksLbl = new JLabel("⭐ " + marks + " mark" + (marks > 1 ? "s" : ""));
+            marksLbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+            marksLbl.setForeground(MUTED);
+            marksLbl.setAlignmentX(LEFT_ALIGNMENT);
+
+            qCard.add(numBadge);
+            qCard.add(Box.createVerticalStrut(10));
             qCard.add(qLbl);
+            qCard.add(Box.createVerticalStrut(4));
+            qCard.add(marksLbl);
             qCard.add(Box.createVerticalStrut(10));
 
             ButtonGroup bg = new ButtonGroup();
             Map<Integer, JRadioButton> radios = new LinkedHashMap<>();
             int idx = 0;
+            String[] letters = {"A","B","C","D","E","F"};
             for (JsonNode opt : q.path("options")) {
-                JRadioButton rb = new JRadioButton(opt.asText());
+                String letter = idx < letters.length ? letters[idx] : String.valueOf(idx);
+                JRadioButton rb = new JRadioButton(letter + ".  " + opt.asText());
                 rb.setFont(new Font("Segoe UI", Font.PLAIN, 13));
                 rb.setBackground(SURFACE);
+                rb.setAlignmentX(LEFT_ALIGNMENT);
                 bg.add(rb);
                 radios.put(idx, rb);
                 qCard.add(rb);
+                qCard.add(Box.createVerticalStrut(4));
                 idx++;
             }
             radioMap.put(qId, radios);
             questionsPanel.add(qCard);
-            questionsPanel.add(Box.createVerticalStrut(12));
+            questionsPanel.add(Box.createVerticalStrut(14));
             qNum++;
         }
 
-        JButton submitBtn = new JButton("Submit Quiz");
+        // Wire nav dots to scroll to card
+        JScrollPane questScroll = new JScrollPane(questionsPanel,
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        questScroll.setBorder(null);
+        for (Map.Entry<Integer, JButton> e : dotMap.entrySet()) {
+            int qId = e.getKey();
+            e.getValue().addActionListener(ev -> {
+                JPanel card = cardMap.get(qId);
+                if (card != null) card.scrollRectToVisible(card.getBounds());
+            });
+        }
+
+        JButton submitBtn = new JButton("🚀 Submit Quiz");
         styleBtn(submitBtn, PRIMARY);
 
         int[] secondsLeft = {duration * 60};
@@ -838,8 +1042,29 @@ public class QuizPanel extends JPanel {
             secondsLeft[0]--;
             int m = secondsLeft[0] / 60, s = secondsLeft[0] % 60;
             timerLbl.setText(String.format("⏱ %02d:%02d", m, s));
-            if (secondsLeft[0] <= 60)  timerLbl.setForeground(DANGER);
-            else if (secondsLeft[0] <= 180) timerLbl.setForeground(AMBER);
+            timeBar.setValue(secondsLeft[0]);
+            // answered count
+            int answeredCount = (int) radioMap.values().stream()
+                .filter(rm -> rm.values().stream().anyMatch(JRadioButton::isSelected)).count();
+            answerBar.setValue(answeredCount);
+            answerVal.setText(answeredCount + " / " + totalQs);
+            // colour transitions — mirrors timer-warning / timer-danger
+            if (secondsLeft[0] <= 60) {
+                timerLbl.setForeground(DANGER);
+                timeBar.setForeground(DANGER);
+            } else if (secondsLeft[0] <= 180) {
+                timerLbl.setForeground(AMBER);
+                timeBar.setForeground(AMBER);
+            }
+            // dot colour — mirrors .q-dot.answered
+            for (Map.Entry<Integer, Map<Integer, JRadioButton>> entry : radioMap.entrySet()) {
+                boolean ans = entry.getValue().values().stream().anyMatch(JRadioButton::isSelected);
+                JButton dot = dotMap.get(entry.getKey());
+                if (dot != null && ans) {
+                    dot.setBackground(PRIMARY);
+                    dot.setForeground(Color.WHITE);
+                }
+            }
             if (secondsLeft[0] <= 0) { timer.stop(); submitBtn.doClick(); }
         });
         timer.start();
@@ -848,14 +1073,27 @@ public class QuizPanel extends JPanel {
             @Override public void windowClosing(java.awt.event.WindowEvent ev) { timer.stop(); }
         });
 
-        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 10));
+        // Submit bar — mirrors .submit-bar
+        JLabel submitInfo = new JLabel("0 of " + totalQs + " questions answered");
+        submitInfo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        submitInfo.setForeground(MUTED);
+        JPanel bottom = new JPanel(new BorderLayout(12, 0));
         bottom.setBackground(SURFACE);
-        bottom.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER_C));
-        bottom.add(submitBtn);
+        bottom.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER_C),
+            new EmptyBorder(12, 16, 12, 16)));
+        bottom.add(submitInfo, BorderLayout.WEST);
+        bottom.add(submitBtn,  BorderLayout.EAST);
 
-        main.add(timerLbl, BorderLayout.NORTH);
-        main.add(new JScrollPane(questionsPanel), BorderLayout.CENTER);
-        main.add(bottom, BorderLayout.SOUTH);
+        JPanel northStack = new JPanel();
+        northStack.setLayout(new BoxLayout(northStack, BoxLayout.Y_AXIS));
+        northStack.add(quizHeader);
+        northStack.add(progressStrip);
+        northStack.add(navPanel);
+
+        main.add(northStack,   BorderLayout.NORTH);
+        main.add(questScroll,  BorderLayout.CENTER);
+        main.add(bottom,       BorderLayout.SOUTH);
         dialog.setContentPane(main);
         dialog.setVisible(true);
     }
@@ -914,7 +1152,7 @@ public class QuizPanel extends JPanel {
 
         JDialog d = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
             "Quiz Result", true);
-        d.setSize(440, 480);
+        d.setSize(460, 560);
         d.setLocationRelativeTo(this);
 
         JPanel panel = new JPanel();
@@ -922,9 +1160,34 @@ public class QuizPanel extends JPanel {
         panel.setBackground(SURFACE);
         panel.setBorder(new EmptyBorder(28, 32, 28, 32));
 
-        // Grade circle
-        JLabel gradeLbl = new JLabel(grade, SwingConstants.CENTER);
-        gradeLbl.setFont(new Font("Segoe UI", Font.BOLD, 64));
+        // Score ring — mirrors .score-ring SVG in result.blade.php
+        JPanel ring = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int cx = getWidth()/2, cy = getHeight()/2, r2 = 60;
+                g2.setStroke(new java.awt.BasicStroke(12, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+                g2.setColor(new Color(0xF0,0xF2,0xFF));
+                g2.drawOval(cx-r2, cy-r2, r2*2, r2*2);
+                g2.setColor(PRIMARY);
+                int angle = (int) Math.round(pct / 100.0 * 360);
+                g2.drawArc(cx-r2, cy-r2, r2*2, r2*2, 90, -angle);
+                g2.dispose();
+            }
+        };
+        ring.setBackground(SURFACE);
+        ring.setPreferredSize(new Dimension(140, 140));
+        ring.setMaximumSize(new Dimension(140, 140));
+        ring.setAlignmentX(CENTER_ALIGNMENT);
+
+        // Score text overlaid on ring
+        JLabel scoreLbl = new JLabel(score + " / " + max, SwingConstants.CENTER);
+        scoreLbl.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        scoreLbl.setForeground(TEXT);
+        scoreLbl.setAlignmentX(CENTER_ALIGNMENT);
+
+        // Grade letter — mirrors .grade-letter
         Color gradeColor = switch (grade) {
             case "A" -> new Color(0x15, 0x57, 0x24);
             case "B" -> new Color(0x0C, 0x54, 0x60);
@@ -932,35 +1195,70 @@ public class QuizPanel extends JPanel {
             case "D" -> new Color(0xE6, 0x7E, 0x22);
             default  -> DANGER;
         };
+        JLabel gradeLbl = new JLabel(grade, SwingConstants.CENTER);
+        gradeLbl.setFont(new Font("Segoe UI", Font.BOLD, 56));
         gradeLbl.setForeground(gradeColor);
         gradeLbl.setAlignmentX(CENTER_ALIGNMENT);
 
         JLabel pctLbl = new JLabel(pct + "%", SwingConstants.CENTER);
-        pctLbl.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        pctLbl.setFont(new Font("Segoe UI", Font.BOLD, 26));
         pctLbl.setForeground(PRIMARY);
         pctLbl.setAlignmentX(CENTER_ALIGNMENT);
 
+        // Pass/fail banner — mirrors .status-banner
         JLabel statusLbl = new JLabel(pass ? "✅  Passed" : "❌  Failed", SwingConstants.CENTER);
-        statusLbl.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        statusLbl.setForeground(pass ? GREEN : DANGER);
+        statusLbl.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        statusLbl.setForeground(pass ? new Color(0x15,0x57,0x24) : new Color(0x72,0x1C,0x24));
+        statusLbl.setOpaque(true);
+        statusLbl.setBackground(pass ? new Color(0xD4,0xED,0xDA) : new Color(0xF8,0xD7,0xDA));
+        statusLbl.setBorder(new EmptyBorder(8, 20, 8, 20));
         statusLbl.setAlignmentX(CENTER_ALIGNMENT);
 
         JSeparator sep = new JSeparator();
         sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
 
-        panel.add(gradeLbl);
+        panel.add(ring);
         panel.add(Box.createVerticalStrut(4));
-        panel.add(pctLbl);
+        panel.add(scoreLbl);
         panel.add(Box.createVerticalStrut(6));
+        panel.add(gradeLbl);
+        panel.add(pctLbl);
+        panel.add(Box.createVerticalStrut(8));
         panel.add(statusLbl);
-        panel.add(Box.createVerticalStrut(16));
+        panel.add(Box.createVerticalStrut(14));
         panel.add(sep);
-        panel.add(Box.createVerticalStrut(16));
+        panel.add(Box.createVerticalStrut(10));
         panel.add(detailRow("Score",        score + " / " + max));
         panel.add(detailRow("Grade",        grade));
         panel.add(detailRow("Status",       pass ? "Pass" : "Fail"));
         panel.add(detailRow("Submitted At", compAt));
-        panel.add(Box.createVerticalStrut(20));
+        panel.add(Box.createVerticalStrut(12));
+
+        // Grade scale — mirrors .grade-scale in result.blade.php
+        JPanel scalePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
+        scalePanel.setBackground(new Color(0xF8,0xF9,0xFF));
+        scalePanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER_C),
+            new EmptyBorder(6, 10, 6, 10)));
+        scalePanel.setAlignmentX(LEFT_ALIGNMENT);
+        scalePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+        JLabel scaleTitle = new JLabel("Grade Scale: ");
+        scaleTitle.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        scaleTitle.setForeground(MUTED);
+        scalePanel.add(scaleTitle);
+        String[][] scale = {{"A ≥80%","#D4EDDA","#155724"},{"B ≥65%","#D1ECF1","#0C5460"},
+                            {"C ≥50%","#FFF3CD","#856404"},{"D ≥40%","#FFE5D0","#E67E22"},{"F <40%","#F8D7DA","#DC3545"}};
+        for (String[] gs : scale) {
+            JLabel gl = new JLabel(gs[0]);
+            gl.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            gl.setOpaque(true);
+            gl.setBackground(Color.decode(gs[1]));
+            gl.setForeground(Color.decode(gs[2]));
+            gl.setBorder(new EmptyBorder(2, 8, 2, 8));
+            scalePanel.add(gl);
+        }
+        panel.add(scalePanel);
+        panel.add(Box.createVerticalStrut(16));
 
         JButton closeBtn = new JButton("Close");
         styleBtn(closeBtn, PRIMARY);
@@ -968,7 +1266,7 @@ public class QuizPanel extends JPanel {
         closeBtn.addActionListener(e -> d.dispose());
         panel.add(closeBtn);
 
-        d.setContentPane(panel);
+        d.setContentPane(new JScrollPane(panel));
         d.setVisible(true);
     }
 

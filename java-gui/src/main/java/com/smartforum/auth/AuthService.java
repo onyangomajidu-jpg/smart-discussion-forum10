@@ -3,6 +3,7 @@ package com.smartforum.auth;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartforum.api.ApiClient;
+import com.smartforum.api.WebSessionClient;
 import com.smartforum.cache.LocalCacheDatabase;
 import com.smartforum.model.AdminProfile;
 import com.smartforum.model.AuthUser;
@@ -32,12 +33,24 @@ public class AuthService {
     private final LocalCacheDatabase cache;
     private final ObjectMapper mapper = new ObjectMapper();
 
+    // Cookie/CSRF session client for the Laravel "web" routes that have no
+    // Sanctum-token equivalent (private messaging, topic attachment
+    // uploads — see WebSessionClient's own class comment). Established
+    // alongside the normal token login below, using the same credentials,
+    // and simply stays unauthenticated (features degrade gracefully) if
+    // that second login fails for any reason.
+    private final WebSessionClient webSession =
+        new WebSessionClient(ApiClient.BASE_URL.replace("/api", ""));
+
     private AuthUser currentUser;
 
     public AuthService(ApiClient api, LocalCacheDatabase cache) {
         this.api   = api;
         this.cache = cache;
     }
+
+    /** Session client for private messaging / attachment uploads (see class javadoc on WebSessionClient). */
+    public WebSessionClient getWebSession() { return webSession; }
 
     // ── Online login ──────────────────────────────────────────────────────
 
@@ -91,6 +104,19 @@ public class AuthService {
         enrichFromProfile(user);
 
         persistSession(user);
+
+        // Also establish a real browser-style session (cookies + CSRF) with
+        // the same credentials, for the handful of features that only exist
+        // as Laravel "web" routes (private messaging, topic attachment
+        // uploads — see WebSessionClient). Best-effort: failure here must
+        // never block login, since everything else in the app runs fine on
+        // the token API alone.
+        try {
+            webSession.login(email, password);
+        } catch (Exception e) {
+            System.err.println("[Auth] Web session unavailable (messaging/attachments will be disabled): " + e.getMessage());
+        }
+
         return user;
     }
 
@@ -102,6 +128,7 @@ public class AuthService {
         }
         api.setToken(null);
         currentUser = null;
+        webSession.logout();
         clearCachedSession();
     }
 

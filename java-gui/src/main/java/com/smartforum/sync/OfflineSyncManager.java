@@ -108,6 +108,37 @@ public class OfflineSyncManager {
         synchronizeOfflineData();
     }
 
+    // ── replyToPost() ─────────────────────────────────────────────────────
+
+    public com.smartforum.model.Reply replyToPost(int postId, String body) throws IOException {
+        String json = api.post("/posts/" + postId + "/reply", Map.of("body", body));
+        com.fasterxml.jackson.databind.JsonNode n = mapper.readTree(json);
+        return new com.smartforum.model.Reply(
+            n.path("id").asInt(),
+            n.path("post_id").asInt(),
+            n.path("user_id").asInt(),
+            n.path("author").path("name").asText("Unknown"),
+            n.path("body").asText(),
+            n.path("created_at").asText(""));
+    }
+
+    // ── getReplies() ──────────────────────────────────────────────────────
+
+    public java.util.List<com.smartforum.model.Reply> getReplies(int postId) throws IOException {
+        String json = api.get("/posts/" + postId + "/replies");
+        java.util.List<com.smartforum.model.Reply> replies = new java.util.ArrayList<>();
+        for (com.fasterxml.jackson.databind.JsonNode n : mapper.readTree(json)) {
+            replies.add(new com.smartforum.model.Reply(
+                n.path("id").asInt(),
+                n.path("post_id").asInt(),
+                n.path("user_id").asInt(),
+                n.path("author_name").asText("Unknown"),
+                n.path("body").asText(),
+                n.path("created_at").asText("")));
+        }
+        return replies;
+    }
+
     // ── deleteTopic() ─────────────────────────────────────────────────────
 
     public void deleteTopic(int topicId) throws IOException {
@@ -197,19 +228,21 @@ public class OfflineSyncManager {
     private void upsertTopic(Connection conn, JsonNode n) throws SQLException {
         String sql = """
             INSERT OR REPLACE INTO cached_topics
-                (id, group_id, user_id, title, body, author_name, is_pinned, is_locked, views, cached_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                (id, group_id, user_id, title, slug, body, author_name, is_pinned, is_locked, views, posts_count, cached_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
             """;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1,    n.path("id").asInt());
             ps.setInt(2,    n.path("group_id").asInt());
             ps.setInt(3,    n.path("user_id").asInt(0));
             ps.setString(4, n.path("title").asText());
-            ps.setString(5, n.path("body").asText());
-            ps.setString(6, n.path("author_name").asText("Unknown"));
-            ps.setInt(7,    n.path("is_pinned").asInt(0));
-            ps.setInt(8,    n.path("is_locked").asInt(0));
-            ps.setInt(9,    n.path("views").asInt(0));
+            ps.setString(5, n.path("slug").asText(""));
+            ps.setString(6, n.path("body").asText());
+            ps.setString(7, n.path("author_name").asText("Unknown"));
+            ps.setInt(8,    n.path("is_pinned").asInt(0));
+            ps.setInt(9,    n.path("is_locked").asInt(0));
+            ps.setInt(10,   n.path("views").asInt(0));
+            ps.setInt(11,   n.path("posts_count").asInt(0));
             ps.executeUpdate();
         }
     }

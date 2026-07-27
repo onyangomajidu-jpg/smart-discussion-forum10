@@ -2,16 +2,18 @@
 
 namespace App\Services;
 
-use Cloudinary\Cloudinary;
 use Illuminate\Http\UploadedFile;
 
 class CloudinaryUploader
 {
-    private Cloudinary $sdk;
+    private ?object $sdk = null;
 
-    public function __construct()
+    private function sdk(): object
     {
-        $this->sdk = new Cloudinary(config('cloudinary.cloud_url'));
+        if (!$this->sdk) {
+            $this->sdk = new \Cloudinary\Cloudinary(config('cloudinary.cloud_url'));
+        }
+        return $this->sdk;
     }
 
     /**
@@ -31,7 +33,7 @@ class CloudinaryUploader
                       : (str_starts_with($mime, 'video/') || str_starts_with($mime, 'audio/') ? 'video'
                       : 'raw');
 
-        $result = $this->sdk->uploadApi()->upload(
+        $result = $this->sdk()->uploadApi()->upload(
             $file->getRealPath(),
             [
                 'folder'        => $folder,

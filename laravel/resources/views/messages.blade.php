@@ -343,7 +343,7 @@
             @endif
         </button>
         <span class="d-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;">{{ auth()->user()->name }}</span>
-        <a href="{{ route('dashboard') }}" class="btn-logout" style="text-decoration:none;">&#8592; Dashboard</a>
+        <a href="{{ auth()->user()->isLecturer() ? route('lecturer.dashboard') : (auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard')) }}" class="btn-logout" style="text-decoration:none;">&#8592; Dashboard</a>
         <form action="{{ route('logout') }}" method="POST">
             @csrf
             <button type="submit" class="btn-logout">Logout</button>
@@ -609,7 +609,7 @@
     </main>
 </div>
 
-{{-- Camera modal --}}
+{{-- Camera modal (must be in DOM before the JS below wires it up) --}}
 <div class="cam-modal" id="camModal">
     <video id="camVideo" autoplay playsinline></video>
     <canvas id="camCanvas" style="display:none"></canvas>
