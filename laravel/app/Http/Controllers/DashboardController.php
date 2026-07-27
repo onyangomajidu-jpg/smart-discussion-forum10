@@ -2,11 +2,8 @@
 
 namespace App\Http\Controllers;
 
-
 use App\Services\AIEngine;
-
 use App\Models\Quiz;
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -78,17 +75,16 @@ class DashboardController extends Controller
                 'score' => $r->score,
             ]);
 
-        // Quiz announcements — reminder banners for member
-        $quizAnnouncements = [];
+        $quizAnnouncements = collect();
         if ($user->role === 'member') {
-            $allPending = Quiz::published()
+            $quizAnnouncements = Quiz::published()
                 ->whereHas('group.members', fn ($q) => $q->where('users.id', $user->id))
                 ->where(fn ($q) => $q->whereNull('hard_deadline')->orWhere('hard_deadline', '>', now()))
+                ->whereNotNull('reminder_sent_at')
                 ->with('group')
                 ->orderBy('unlock_date')
-                ->get();
-            $quizAnnouncements = $allPending
-                ->filter(fn ($q) => $q->isUpcoming() && !is_null($q->reminder_sent_at))
+                ->get()
+                ->filter(fn ($q) => $q->isUpcoming())
                 ->values();
         }
 

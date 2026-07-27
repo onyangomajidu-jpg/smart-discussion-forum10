@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\CloudinaryUploader;
 use App\Services\ContentManagementService;
 use Illuminate\Http\Request;
 use App\Models\Topic;
@@ -9,7 +10,10 @@ use App\Models\Post;
 
 class LecturerTopicController extends Controller
 {
-    public function __construct(private ContentManagementService $cms) {}
+    public function __construct(
+        private ContentManagementService $cms,
+        private CloudinaryUploader $uploader,
+    ) {}
 
     public function index(Request $request)
     {
@@ -80,7 +84,7 @@ class LecturerTopicController extends Controller
     {
         $request->validate([
             'body'  => 'nullable|string',
-            'audio' => 'nullable|file|mimes:webm,ogg,mp4,wav,mp3|max:10240',
+            'audio' => 'nullable|file|max:10240',
             'image' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
             'file'  => 'nullable|file|max:20480',
         ]);
@@ -91,16 +95,15 @@ class LecturerTopicController extends Controller
 
         $data = ['body' => $request->input('body', '')];
 
-        $disk = config('filesystems.default');
         if ($request->hasFile('audio')) {
-            $data['audio_path'] = $request->file('audio')->store('audio/posts', $disk);
+            $data['audio_path'] = $this->uploader->upload($request->file('audio'), 'audio/posts');
         }
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('images/posts', $disk);
+            $data['image_path'] = $this->uploader->upload($request->file('image'), 'images/posts');
         }
         if ($request->hasFile('file')) {
             $uploaded = $request->file('file');
-            $data['file_path'] = $uploaded->store('files/posts', $disk);
+            $data['file_path'] = $this->uploader->upload($uploaded, 'files/posts');
             $data['file_name'] = $uploaded->getClientOriginalName();
             $data['file_size'] = $uploaded->getSize();
         }

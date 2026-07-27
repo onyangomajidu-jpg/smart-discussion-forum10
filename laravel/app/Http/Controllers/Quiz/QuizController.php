@@ -155,7 +155,7 @@ class QuizController extends Controller
         };
 
         $deadline = $assembleDateTime('hard_deadline');
-        if ($deadline && $deadline->isPast()) {
+        if ($deadline && $deadline->isPast() && $deadline->ne($quiz->hard_deadline)) {
             return back()->withErrors(['hard_deadline_date' => 'The deadline must be a future time.'])->withInput();
         }
 
@@ -246,7 +246,7 @@ class QuizController extends Controller
                 'duration'      => $q->duration_minutes,
                 'hard_deadline' => $q->hard_deadline?->format('d M, H:i'),
                 'url'           => route('quizzes.take', $q),
-                'unlock_ms'     => $q->unlock_date ? $q->unlock_date->utc()->timestamp * 1000 : 0,
+                'unlock_ms'     => $q->unlock_date ? $q->unlock_date->timestamp * 1000 : 0,
             ])
             ->values();
 

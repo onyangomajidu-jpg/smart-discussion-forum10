@@ -37,6 +37,7 @@ Route::middleware('auth')->group(function () {
     // Profile
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profile.show');
 
     // AI Recommendations — displayRecommendation() (AI sequence, Fig 3.13)
     Route::get('/recommendations', [App\Http\Controllers\Api\RecommendationController::class, 'index'])->name('recommendations');

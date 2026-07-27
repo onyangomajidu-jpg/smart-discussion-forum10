@@ -107,6 +107,15 @@
 .summary-row .s-label { font-size: 13px; color: #64748b; display: flex; align-items: center; gap: 7px; }
 .summary-row .s-val { font-size: 15px; font-weight: 800; color: #f59e0b; }
 .marks-input { width: 90px !important; }
+
+@media (max-width: 768px) {
+    .create-hero { padding: 18px 16px; gap: 12px; }
+    .create-hero::after { font-size: 50px; right: 16px; }
+    .create-hero .hero-icon-box { width: 44px; height: 44px; font-size: 20px; }
+    .question-block { padding: 16px; }
+    .option-row input[type=text] { font-size: 12px; padding: 8px 10px; }
+    .marks-input { width: 70px !important; }
+}
 </style>
 @endpush
 
@@ -131,7 +140,7 @@
 <form action="{{ route('lecturer.quizzes.update', $quiz) }}" method="POST" id="quizForm">
 @csrf
 
-<div style="display:grid;grid-template-columns:1fr 380px;gap:22px;align-items:start">
+<div style="display:grid;grid-template-columns:1fr 380px;gap:22px;align-items:start" class="quiz-edit-grid">
 
     {{-- LEFT --}}
     <div>
@@ -293,6 +302,12 @@
     </div>
 </div>
 </form>
+
+<style>
+@media (max-width: 900px) {
+    .quiz-edit-grid { grid-template-columns: 1fr !important; }
+}
+</style>
 
 @endsection
 

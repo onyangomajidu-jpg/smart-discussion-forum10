@@ -587,13 +587,13 @@
                 @else
                 {{-- Topic origin bubble --}}
                 <div class="chat-row topic-origin">
-                    <div class="chat-avatar">
+                    <a href="{{ route('profile.show', $activeTopic->author) }}" class="chat-avatar" style="text-decoration:none;" title="{{ $activeTopic->author->name }}">
                         @if($activeTopic->author->avatar)
                             <img src="{{ storage_url($activeTopic->author->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr($activeTopic->author->name,0,1)) }}
                         @endif
-                    </div>
+                    </a>
                     <div class="chat-bubble-wrap">
                         <div class="chat-bubble">
                             <span class="bubble-author" style="color:#d97706">{{ $activeTopic->author->name }}</span>
@@ -630,13 +630,13 @@
                 {{-- ── Regular post bubble ── --}}
                 <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="post-{{ $item->id }}" data-ts="{{ $item->created_at->toISOString() }}">
                     @if(!$isMe)
-                    <div class="chat-avatar">
+                    <a href="{{ route('profile.show', $item->author) }}" class="chat-avatar" style="text-decoration:none;" title="{{ $item->author->name }}">
                         @if($item->author->avatar)
                             <img src="{{ storage_url($item->author->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr($item->author->name,0,1)) }}
                         @endif
-                    </div>
+                    </a>
                     @endif
                     <div class="chat-bubble-wrap">
                         @if($item->body)
@@ -713,13 +713,13 @@
                         </div>
                     </div>
                     @if($isMe)
-                    <div class="chat-avatar">
+                    <a href="{{ route('profile.show', auth()->user()) }}" class="chat-avatar" style="text-decoration:none;" title="{{ auth()->user()->name }}">
                         @if(auth()->user()->avatar)
                             <img src="{{ storage_url(auth()->user()->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr(auth()->user()->name,0,1)) }}
                         @endif
-                    </div>
+                    </a>
                     @endif
                 </div>
 
@@ -734,18 +734,18 @@
                     $quoteTarget = $item->parent ? 'reply-'.$item->parent->id : 'post-'.$parentPost->id;
                 @endphp
                 <div class="chat-row {{ $rIsMe ? 'mine' : '' }}" id="reply-{{ $item->id }}" data-ts="{{ $item->created_at->toISOString() }}">
-                    @if(!$rIsMe)
-                    <div class="chat-avatar">
+                    @if(!$isMe)
+                    <a href="{{ route('profile.show', $item->author) }}" class="chat-avatar" style="text-decoration:none;" title="{{ $item->author->name }}">
                         @if($item->author->avatar)
                             <img src="{{ storage_url($item->author->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr($item->author->name,0,1)) }}
                         @endif
-                    </div>
+                    </a>
                     @endif
                     <div class="chat-bubble-wrap">
                         <div class="chat-bubble">
-                            @if(!$rIsMe)<span class="bubble-author" style="color:{{ $rColor }}">{{ $item->author->name }}</span>@endif
+                            @if(!$isMe)<span class="bubble-author" style="color:{{ $rColor }}">{{ $item->author->name }}</span>@endif
                             <div class="reply-quote" onclick="document.getElementById('{{ $quoteTarget }}')?.scrollIntoView({behavior:'smooth',block:'center'})">
                                 <div class="rq-author" style="color:{{ $quoteColor }}">{{ $quoteAuthor }}</div>
                                 <div class="rq-body">{{ $quoteBody }}</div>
@@ -757,14 +757,14 @@
                                 onclick="setReply({{ $parentPost->id }}, '{{ $rIsMe ? 'You' : addslashes($item->author->name) }}', '{{ addslashes(Str::limit($item->body, 60)) }}', {{ $item->id }})">&#8617;</button>
                         </div>
                     </div>
-                    @if($rIsMe)
-                    <div class="chat-avatar">
+                    @if($isMe)
+                    <a href="{{ route('profile.show', auth()->user()) }}" class="chat-avatar" style="text-decoration:none;" title="{{ auth()->user()->name }}">
                         @if(auth()->user()->avatar)
                             <img src="{{ storage_url(auth()->user()->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr(auth()->user()->name,0,1)) }}
                         @endif
-                    </div>
+                    </a>
                     @endif
                 </div>
                 @endif
@@ -1183,11 +1183,10 @@
         const myName = @json(auth()->user()->name);
         let lastFetch = new Date().toISOString();
 
-        const storageBase = '{{ rtrim(Storage::url(""), "/") }}/';
-
         function storageUrl(path) {
             if (!path) return '';
-            return storageBase + path;
+            if (path.startsWith('http://') || path.startsWith('https://')) return path;
+            return '/storage/' + path;
         }
 
         function buildBubble(post) {
@@ -1292,7 +1291,8 @@
                 .catch(() => {});
         }
 
-        setInterval(pollPosts, 3000);
+        pollPosts();
+        setInterval(pollPosts, 1500);
 
         // Typing indicator via Echo whisper (kept if Echo is available)
         if (typeof window.Echo !== 'undefined') {
@@ -1482,16 +1482,23 @@
         // Send audio independently — no text required
         sendAudioBtn.addEventListener('click', async function () {
             if (!audioBlob) return;
-            const fd = new FormData();
             const ext = audioBlob.type.includes('mp4') ? 'mp4'
                 : audioBlob.type.includes('ogg') ? 'ogg'
                 : 'webm';
-            fd.append('_token', document.querySelector('meta[name="csrf-token"]').content);
-            fd.append('audio', audioBlob, 'voice-message.' + ext);
-            fd.append('body', '');
-            const res = await fetch(postForm.action, { method: 'POST', body: fd });
-            if (res.redirected) { window.location.href = res.url; }
-            else { window.location.reload(); }
+            // Inject blob into a hidden file input and submit the form natively
+            const dt = new DataTransfer();
+            dt.items.add(new File([audioBlob], 'voice-message.' + ext, { type: audioBlob.type }));
+            let audioInput = document.getElementById('audioInput');
+            if (!audioInput) {
+                audioInput = document.createElement('input');
+                audioInput.type = 'file';
+                audioInput.name = 'audio';
+                audioInput.id = 'audioInput';
+                audioInput.style.display = 'none';
+                postForm.appendChild(audioInput);
+            }
+            audioInput.files = dt.files;
+            postForm.submit();
         });
     })();
 
@@ -1547,9 +1554,7 @@
         document.getElementById('micBtn').addEventListener('click', function () {
             const hasAttach = imgInput.files[0] || docInput.files[0];
             if (hasAttach) {
-                const fd = new FormData(document.getElementById('postForm'));
-                fetch(document.getElementById('postForm').action, { method: 'POST', body: fd })
-                    .then(r => r.redirected ? window.location.href = r.url : window.location.reload());
+                document.getElementById('postForm').submit();
             }
         });
 

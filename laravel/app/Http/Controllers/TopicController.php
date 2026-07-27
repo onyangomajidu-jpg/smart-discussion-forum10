@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\CloudinaryUploader;
 use App\Services\ContentManagementService;
 use Illuminate\Http\Request;
 use App\Models\Topic;
@@ -10,7 +11,10 @@ use App\Models\TopicRemovalPeriod;
 
 class TopicController extends Controller
 {
-    public function __construct(private ContentManagementService $cms) {}
+    public function __construct(
+        private ContentManagementService $cms,
+        private CloudinaryUploader $uploader,
+    ) {}
 
     // Topics screen UI
     public function index(Request $request)
@@ -118,16 +122,15 @@ $topics = $query->latest()->get()
 
         $data = ['body' => $request->input('body', '')];
 
-        $disk = config('filesystems.default');
         if ($request->hasFile('audio')) {
-            $data['audio_path'] = $request->file('audio')->store('audio/posts', $disk);
+            $data['audio_path'] = $this->uploader->upload($request->file('audio'), 'audio/posts');
         }
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('images/posts', $disk);
+            $data['image_path'] = $this->uploader->upload($request->file('image'), 'images/posts');
         }
         if ($request->hasFile('file')) {
             $uploaded = $request->file('file');
-            $data['file_path'] = $uploaded->store('files/posts', $disk);
+            $data['file_path'] = $this->uploader->upload($uploaded, 'files/posts');
             $data['file_name'] = $uploaded->getClientOriginalName();
             $data['file_size'] = $uploaded->getSize();
         }
