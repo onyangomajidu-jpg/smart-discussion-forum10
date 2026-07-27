@@ -90,7 +90,9 @@ class ProfileController extends Controller
             if ($user->avatar && !str_starts_with($user->avatar, 'http')) {
                 Storage::disk('public')->delete($user->avatar);
             }
-            $updates['avatar'] = $request->file('avatar')->storeOnCloudinaryAs('avatars', uniqid('avatar_'))->getSecurePath();
+            $path = 'avatars/'.uniqid('avatar_');
+            Storage::disk('cloudinary')->putFileAs('', $request->file('avatar'), $path);
+            $updates['avatar'] = Storage::disk('cloudinary')->url($path);
         }
 
         if ($request->filled('password')) {
