@@ -13,14 +13,17 @@ import java.util.Map;
 
 public class GroupsPanel extends JPanel {
 
-    private static final Color PRIMARY  = new Color(0x4F, 0x46, 0xE5);
-    private static final Color GREEN    = new Color(0x10, 0xB9, 0x81);
-    private static final Color DANGER   = new Color(0xEF, 0x44, 0x44);
-    private static final Color BG       = new Color(0xF1, 0xF5, 0xF9);
-    private static final Color SURFACE  = Color.WHITE;
-    private static final Color MUTED    = new Color(0x64, 0x74, 0x8B);
-    private static final Color TEXT     = new Color(0x0F, 0x17, 0x2A);
-    private static final Color BORDER_C = new Color(0xE2, 0xE8, 0xF0);
+    // Values now come from Theme (single source of truth shared with every
+    // other panel) instead of being re-declared per-file. PURPLE here is a
+    // distinct deep-violet accent (not Laravel's --secondary), so it stays local.
+    private static final Color PRIMARY  = Theme.PRIMARY_DARK;
+    private static final Color GREEN    = Theme.SUCCESS;
+    private static final Color DANGER   = Theme.DANGER;
+    private static final Color BG       = Theme.BG;
+    private static final Color SURFACE  = Theme.SURFACE;
+    private static final Color MUTED    = Theme.MUTED;
+    private static final Color TEXT     = Theme.TEXT;
+    private static final Color BORDER_C = Theme.BORDER;
     private static final Color PURPLE   = new Color(0x5B, 0x21, 0xB6);
 
     private final ApiClient    api;

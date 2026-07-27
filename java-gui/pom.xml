@@ -21,6 +21,7 @@
         <sqlite.version>3.49.0.0</sqlite.version>
         <jackson.version>2.18.3</jackson.version>
         <okhttp.version>4.12.0</okhttp.version>
+        <webcamcapture.version>0.3.12</webcamcapture.version>
     </properties>
 
     <dependencies>
@@ -43,6 +44,16 @@
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
             <version>${okhttp.version}</version>
+        </dependency>
+
+        <!-- Real webcam capture for the 📸 camera-attachment button (Topics
+             and Messages). Code guards against this failing to find a
+             device/driver at runtime and falls back to a screen capture,
+             so the app still runs fine on a machine with no webcam. -->
+        <dependency>
+            <groupId>com.github.sarxos</groupId>
+            <artifactId>webcam-capture</artifactId>
+            <version>${webcamcapture.version}</version>
         </dependency>
 
         <!-- JFreeChart — bar/pie charts in Statistics panel (Days 17-18) -->

@@ -139,6 +139,31 @@ public class ApiClient {
         }
     }
 
+    /**
+     * Multipart POST for attachments (image, file, audio).
+     * fieldName  — form field name expected by the API ("image", "file", "audio")
+     * mimeType   — e.g. "image/jpeg", "audio/wav", "application/octet-stream"
+     * extraFields — additional string fields (e.g. topic_id, body)
+     */
+    public String postMultipart(String endpoint, String fieldName, java.io.File file,
+                                String mimeType, Map<String, Object> extraFields) throws IOException {
+        MultipartBody.Builder mb = new MultipartBody.Builder().setType(MultipartBody.FORM);
+        mb.addFormDataPart(fieldName, file.getName(),
+            RequestBody.create(file, MediaType.parse(mimeType)));
+        for (Map.Entry<String, Object> e : extraFields.entrySet())
+            mb.addFormDataPart(e.getKey(), String.valueOf(e.getValue()));
+        Request request = new Request.Builder()
+            .url(BASE_URL + endpoint)
+            .header("Accept", "application/json")
+            .header("Authorization", bearerToken != null ? "Bearer " + bearerToken : "")
+            .post(mb.build())
+            .build();
+        try (Response response = http.newCall(request).execute()) {
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
+            return response.body() != null ? response.body().string() : "";
+        }
+    }
+
     /** Returns true if the Laravel server is reachable. */
     public boolean isOnline() {
         try {

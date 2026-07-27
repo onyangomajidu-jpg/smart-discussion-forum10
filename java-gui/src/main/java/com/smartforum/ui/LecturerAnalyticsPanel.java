@@ -16,16 +16,19 @@ import java.awt.Image;
  */
 public class LecturerAnalyticsPanel extends JPanel {
 
-    private static final Color PRIMARY  = new Color(0x63, 0x66, 0xF1);
-    private static final Color GREEN    = new Color(0x10, 0xB9, 0x81);
-    private static final Color AMBER    = new Color(0xF5, 0x9E, 0x0B);
-    private static final Color PURPLE   = new Color(0x8B, 0x5C, 0xF6);
-    private static final Color DANGER   = new Color(0xEF, 0x44, 0x44);
-    private static final Color DARK     = new Color(0x0F, 0x17, 0x2A);
-    private static final Color BG       = new Color(0xF1, 0xF5, 0xF9);
-    private static final Color SURFACE  = Color.WHITE;
-    private static final Color MUTED    = new Color(0x64, 0x74, 0x8B);
-    private static final Color BORDER_C = new Color(0xE2, 0xE8, 0xF0);
+    // Values now come from Theme (single source of truth shared with every
+    // other panel) instead of being re-declared per-file. DARK is a distinct
+    // near-black accent used for chart labels, not Laravel's --text token.
+    private static final Color PRIMARY  = Theme.PRIMARY;
+    private static final Color GREEN    = Theme.SUCCESS;
+    private static final Color AMBER    = Theme.WARNING;
+    private static final Color PURPLE   = Theme.SECONDARY;
+    private static final Color DANGER   = Theme.DANGER;
+    private static final Color DARK     = Theme.TEXT;
+    private static final Color BG       = Theme.BG;
+    private static final Color SURFACE  = Theme.SURFACE;
+    private static final Color MUTED    = Theme.MUTED;
+    private static final Color BORDER_C = Theme.BORDER;
 
     private final ApiClient    api;
     private final ObjectMapper mapper = new ObjectMapper();
