@@ -10,11 +10,11 @@ class BlacklistMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
+        if ($request->routeIs('login', 'logout', 'password.*')) {
+            return $next($request);
+        }
+
         if (auth()->check() && auth()->user()->isBanned()) {
-            // Skip the ban check on the login/logout routes to avoid redirect loops
-            if ($request->routeIs('login', 'logout', 'password.*')) {
-                return $next($request);
-            }
 
             $ban = auth()->user()->blacklists()
                 ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))

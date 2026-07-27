@@ -1181,7 +1181,8 @@
                 .catch(() => {});
         }
 
-        setInterval(pollPosts, 3000);
+        pollPosts();
+        setInterval(pollPosts, 1500);
 
         if (typeof window.Echo !== 'undefined') {
             window.Echo.channel('topic.{{ $activeTopic->id }}').listenForWhisper('typing', (e) => {
