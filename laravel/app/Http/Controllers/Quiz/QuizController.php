@@ -155,7 +155,7 @@ class QuizController extends Controller
         };
 
         $deadline = $assembleDateTime('hard_deadline');
-        if ($deadline && $deadline->isPast()) {
+        if ($deadline && $deadline->isPast() && $deadline->ne($quiz->hard_deadline)) {
             return back()->withErrors(['hard_deadline_date' => 'The deadline must be a future time.'])->withInput();
         }
 
