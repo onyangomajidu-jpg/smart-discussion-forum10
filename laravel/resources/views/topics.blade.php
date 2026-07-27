@@ -1173,11 +1173,10 @@
         const myName = @json(auth()->user()->name);
         let lastFetch = new Date().toISOString();
 
-        const storageBase = '{{ rtrim(Storage::disk("public")->url(""), "/") }}/';
-
         function storageUrl(path) {
             if (!path) return '';
-            return storageBase + path;
+            if (path.startsWith('http://') || path.startsWith('https://')) return path;
+            return '{{ rtrim(Storage::disk("public")->url(""), "/") }}/' + path;
         }
 
         function buildBubble(post) {
