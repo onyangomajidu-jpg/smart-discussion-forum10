@@ -1292,7 +1292,8 @@
                 .catch(() => {});
         }
 
-        setInterval(pollPosts, 3000);
+        pollPosts();
+        setInterval(pollPosts, 1500);
 
         // Typing indicator via Echo whisper (kept if Echo is available)
         if (typeof window.Echo !== 'undefined') {
