@@ -47,7 +47,7 @@ class TopicController extends Controller
         $posts = collect();
 
         if ($request->filled('topic')) {
-            $activeTopic = Topic::with(['author', 'posts.author', 'posts.replies.author', 'participants', 'blockedParticipants', 'removedParticipants'])
+            $activeTopic = Topic::with(['author', 'posts.author', 'posts.replies.author', 'posts.replies.parent.author', 'participants', 'blockedParticipants', 'removedParticipants'])
                 ->findOrFail($request->topic);
             $posts = collect();
             $isRemoved = $activeTopic->removedParticipants->contains(auth()->id());
@@ -93,7 +93,7 @@ class TopicController extends Controller
 
     public function show(Topic $topic)
     {
-        $topic->load(['author', 'posts.author', 'posts.replies.author', 'participants', 'blockedParticipants', 'removedParticipants']);
+        $topic->load(['author', 'posts.author', 'posts.replies.author', 'posts.replies.parent.author', 'participants', 'blockedParticipants', 'removedParticipants']);
         $topic->increment('views');
         $isRemoved = $topic->removedParticipants->contains(auth()->id());
         $userGroupIds  = auth()->user()->groups()->pluck('groups.id');
@@ -115,7 +115,32 @@ class TopicController extends Controller
     // participateDiscussion()
     public function participate(Request $request, int $topicId)
     {
-        $data = $request->validate(['body' => 'required|string']);
+        $request->validate([
+            'body'  => 'nullable|string',
+            'audio' => 'nullable|file|mimes:webm,ogg,mp4,wav,mp3|max:10240',
+            'image' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
+            'file'  => 'nullable|file|max:20480',
+        ]);
+
+        if (!$request->filled('body') && !$request->hasFile('audio') && !$request->hasFile('image') && !$request->hasFile('file')) {
+            return back()->withErrors(['body' => 'Please enter a message or attach a file.']);
+        }
+
+        $data = ['body' => $request->input('body', '')];
+
+        $disk = config('filesystems.default');
+        if ($request->hasFile('audio')) {
+            $data['audio_path'] = $request->file('audio')->store('audio/posts', $disk);
+        }
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('images/posts', $disk);
+        }
+        if ($request->hasFile('file')) {
+            $uploaded = $request->file('file');
+            $data['file_path'] = $uploaded->store('files/posts', $disk);
+            $data['file_name'] = $uploaded->getClientOriginalName();
+            $data['file_size'] = $uploaded->getSize();
+        }
 
         try {
             $this->cms->participateDiscussion($topicId, $data);
@@ -214,7 +239,7 @@ class TopicController extends Controller
             ->latest('restored_at')
             ->value('restored_at');
 
-        $query = $topic->posts()->with(['author', 'replies.author']);
+        $query = $topic->posts()->with(['author', 'replies.author', 'replies.parent.author']);
 
         if ($latestRestoration) {
             $query->where('created_at', '>=', $latestRestoration);

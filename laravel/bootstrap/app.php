@@ -13,6 +13,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust Render's edge proxy so Laravel knows the original request
+        // was HTTPS (Render terminates TLS and forwards plain HTTP internally).
+        // Without this, url()/route()/form actions get generated as http://
+        // even though the page loaded over https://, triggering the browser's
+        // "not secure" mixed-content warning on form submit.
+        $middleware->trustProxies(at: '*');
+
         // Register custom middleware aliases
         $middleware->alias([
             'member'        => \App\Http\Middleware\MemberMiddleware::class,

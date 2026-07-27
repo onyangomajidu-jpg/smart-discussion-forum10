@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/forum-favicon.png') }}">
     <title>@yield('title', 'Discussion Hub')</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -62,6 +63,20 @@
         .topnav-brand .name { font-size:16px; font-weight:800; letter-spacing:-.4px; }
         .topnav-brand .sub  { font-size:10px; opacity:.7; font-weight:500; letter-spacing:.3px; text-transform:uppercase; }
         .topnav-right { display:flex; align-items:center; gap:10px; }
+
+        /* Mobile sidebar toggle — hidden on desktop, shown via media query below */
+        .mobile-menu-btn {
+            display:none; background:rgba(255,255,255,.15); border:1.5px solid rgba(255,255,255,.3);
+            color:#fff; width:38px; height:38px; border-radius:9px; align-items:center; justify-content:center;
+            font-size:16px; cursor:pointer; flex-shrink:0;
+        }
+        .mobile-menu-btn:hover { background:rgba(255,255,255,.25); }
+
+        .sidebar-backdrop {
+            display:none; position:fixed; inset:0; background:rgba(15,23,42,.5);
+            z-index:399; opacity:0; transition:opacity .2s;
+        }
+        .sidebar-backdrop.show { display:block; opacity:1; }
 
         /* Notification bell + dropdown */
         .notif-wrap { position:relative; }
@@ -323,10 +338,51 @@
 
         /* ── Responsive ─────────────────────────────────────────────── */
         @media(max-width:768px) {
-            .sidebar { display:none; }
-            .main { padding:16px; }
+            .mobile-menu-btn { display:flex; }
+            .sidebar {
+                position:fixed; top:64px; left:0; z-index:400;
+                width:260px; height:calc(100vh - 64px);
+                transform:translateX(-100%);
+                transition:transform .25s ease;
+                box-shadow:4px 0 24px rgba(0,0,0,.15);
+            }
+            .sidebar.open { transform:translateX(0); }
+            .main { padding:12px; }
             .form-row { grid-template-columns:1fr; }
             .stats-grid { grid-template-columns:repeat(2,1fr); }
+
+            /* Keep the top bar from overflowing on narrow phones */
+            .topnav { padding:0 10px; gap:6px; }
+            .topnav-brand .sub { display:none; }
+            .topnav-brand .name { font-size:14px; }
+            .topnav-user-info { display:none; }
+            .topnav-logout-btn span { display:none; }
+            .topnav-logout-btn { padding:7px 9px; }
+            .topnav-divider { display:none; }
+
+            /* Notification dropdown: fixed full-width panel on mobile */
+            .notif-dropdown {
+                position:fixed;
+                top:64px;
+                left:8px;
+                right:8px;
+                width:auto;
+                max-height:70vh;
+                overflow-y:auto;
+                border-radius:12px;
+            }
+
+            /* Cards & tables */
+            .card-body { padding:14px; }
+            .card-header { padding:12px 14px; }
+            thead th, tbody td { padding:10px 10px; font-size:12px; }
+            .btn { padding:9px 14px; font-size:12px; }
+            .page-header h1 { font-size:20px; }
+        }
+        @media(max-width:480px) {
+            .topnav-brand .name { font-size:13px; }
+            .stats-grid { grid-template-columns:1fr 1fr; }
+            .main { padding:10px; }
         }
     </style>
     @stack('styles')
@@ -335,6 +391,9 @@
 <body>
 
 <nav class="topnav">
+    <button class="mobile-menu-btn" id="sidebarToggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false">
+        <i class="fa-solid fa-bars"></i>
+    </button>
     <a href="{{ auth()->check() && auth()->user()->isLecturer() ? route('lecturer.dashboard') : (auth()->check() && auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard')) }}" class="topnav-brand">
         <div class="brand-icon"><img src="{{ asset('images/forum.png') }}" alt="SmartForum Logo"></div>
         <div>
@@ -380,7 +439,7 @@
             <a href="{{ route('profile.edit') }}" style="display:flex;align-items:center;gap:0;text-decoration:none" title="Edit Profile">
                 <div class="topnav-avatar">
                     @if(auth()->user()->avatar)
-                        <img src="{{ asset('storage/' . auth()->user()->avatar) }}" style="width:100%;height:100%;object-fit:cover;border-radius:7px" alt="">
+                        <img src="{{ storage_url(auth()->user()->avatar) }}?v={{ auth()->user()->updated_at->timestamp }}" style="width:100%;height:100%;object-fit:cover;border-radius:7px" alt="">
                     @else
                         {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                     @endif
@@ -411,6 +470,7 @@
 </nav>
 
 <div class="app-body">
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
     <aside class="sidebar">
         @auth
         <div class="sidebar-nav">
@@ -434,6 +494,11 @@
             <a href="{{ route('lecturer.groups.index') }}" class="sidebar-link {{ request()->routeIs('lecturer.groups.*') ? 'active' : '' }}">
                 <span class="ico"><i class="fa-solid fa-people-group"></i></span> Groups
             </a>
+            <a href="{{ route('messages.index') }}" class="sidebar-link {{ request()->routeIs('messages.*') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-comment-dots"></i></span> Messages
+                @php $unreadDMs = \App\Http\Controllers\MessageController::unreadCountFor(auth()->id()); @endphp
+                @if($unreadDMs > 0)<span class="sidebar-badge">{{ $unreadDMs }}</span>@endif
+            </a>
         </div>
         @elseif(auth()->user()->isMember())
         <div class="sidebar-section">
@@ -450,6 +515,11 @@
             <a href="{{ route('groups.index') }}" class="sidebar-link {{ request()->routeIs('groups.*') ? 'active' : '' }}">
                 <span class="ico"><i class="fa-solid fa-people-group"></i></span> Groups
             </a>
+            <a href="{{ route('messages.index') }}" class="sidebar-link {{ request()->routeIs('messages.*') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-comment-dots"></i></span> Messages
+                @php $unreadDMs = \App\Http\Controllers\MessageController::unreadCountFor(auth()->id()); @endphp
+                @if($unreadDMs > 0)<span class="sidebar-badge">{{ $unreadDMs }}</span>@endif
+            </a>
         </div>
         @elseif(auth()->user()->isAdmin())
         <div class="sidebar-section">
@@ -465,6 +535,11 @@
             <a href="{{ route('admin.blacklists.index') }}" class="sidebar-link {{ request()->routeIs('admin.blacklists.*') ? 'active' : '' }}">
                 <span class="ico"><i class="fa-solid fa-ban"></i></span> Blacklist Log
             </a>
+            <a href="{{ route('messages.index') }}" class="sidebar-link {{ request()->routeIs('messages.*') ? 'active' : '' }}">
+                <span class="ico"><i class="fa-solid fa-comment-dots"></i></span> Messages
+                @php $unreadDMs = \App\Http\Controllers\MessageController::unreadCountFor(auth()->id()); @endphp
+                @if($unreadDMs > 0)<span class="sidebar-badge">{{ $unreadDMs }}</span>@endif
+            </a>
         </div>
         @endif
 
@@ -475,7 +550,7 @@
             <a href="{{ route('profile.edit') }}" style="display:flex;align-items:center;gap:10px;padding:12px 16px;text-decoration:none;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background=''">
                 <div class="sidebar-footer-avatar">
                     @if(auth()->user()->avatar)
-                        <img src="{{ asset('storage/' . auth()->user()->avatar) }}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" alt="">
+                        <img src="{{ storage_url(auth()->user()->avatar) }}?v={{ auth()->user()->updated_at->timestamp }}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" alt="">
                     @else
                         {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                     @endif
@@ -520,6 +595,43 @@
 </div>
 
 @stack('scripts')
+
+<script>
+    (function () {
+        var toggleBtn = document.getElementById('sidebarToggle');
+        var sidebar = document.querySelector('.sidebar');
+        var backdrop = document.getElementById('sidebarBackdrop');
+        if (!toggleBtn || !sidebar || !backdrop) return;
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            backdrop.classList.remove('show');
+            toggleBtn.setAttribute('aria-expanded', 'false');
+        }
+        function openSidebar() {
+            sidebar.classList.add('open');
+            backdrop.classList.add('show');
+            toggleBtn.setAttribute('aria-expanded', 'true');
+        }
+
+        toggleBtn.addEventListener('click', function () {
+            sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+        });
+        backdrop.addEventListener('click', closeSidebar);
+
+        // Close the drawer automatically after tapping a nav link on mobile
+        sidebar.querySelectorAll('a').forEach(function (link) {
+            link.addEventListener('click', closeSidebar);
+        });
+    })();
+</script>
+
+<script>
+// Keep-alive ping every 4 minutes to prevent Render free-tier spin-down
+setInterval(function() {
+    fetch('/api/ping', { credentials: 'same-origin' }).catch(function(){});
+}, 240000);
+</script>
 
 @auth
 @if(auth()->user()->isMember())

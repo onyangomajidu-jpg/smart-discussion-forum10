@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Lecturer Analytics — SmartForum')
+@section('title', 'Lecturer Analytics-Discussion Hub')
 
 @push('styles')
 <style>
@@ -10,6 +10,7 @@
     border-radius: 16px; padding: 32px 36px; margin-bottom: 28px;
     color: #fff; display: flex; align-items: center; justify-content: space-between;
     position: relative; overflow: hidden; box-shadow: 0 8px 32px rgba(15,23,42,.4);
+    min-width:0; word-break:break-word;
 }
 .lec-hero::before {
     content:''; position:absolute; top:-60px; right:-60px;
@@ -34,7 +35,8 @@
 .lec-kpi-lbl  { font-size:11px; color:#64748b; font-weight:600; margin-top:4px; text-transform:uppercase; letter-spacing:.4px; }
 
 /* ── Two-column layout ────────────────────────────────────────────── */
-.lec-grid { display:grid; grid-template-columns:1fr 380px; gap:22px; align-items:start; }
+.lec-grid { display:grid; grid-template-columns:1fr minmax(0,380px); gap:22px; align-items:start; }
+.lec-grid > * { min-width:0; }
 
 /* ── Live Evaluation Roster ───────────────────────────────────────── */
 .roster-card {
@@ -179,7 +181,39 @@
     .lec-kpi-grid { grid-template-columns:repeat(2,1fr); }
     .lec-grid     { grid-template-columns:1fr; }
 }
-@media(max-width:540px) {
+@media(max-width:768px) {
+    .lec-hero { padding:20px 16px; }
+    .lec-kpi-grid { gap:10px; }
+    .lec-kpi { padding:16px; }
+    .lec-kpi-val { font-size:22px; }
+    .compliance-meta { flex-wrap:wrap; gap:6px; }
+}
+@media(max-width:640px) {
+    .lec-hero { flex-direction:column; align-items:flex-start; gap:12px; padding:22px 20px; }
+    .lec-hero::after { display:none; }
+    .lec-hero > div:last-child { text-align:left; }
+    .lec-kpi-grid { grid-template-columns:repeat(2,1fr); gap:12px; }
+    .export-bar { flex-direction:column; align-items:flex-start; }
+    .export-btns { width:100%; }
+    .export-btn  { flex:1; justify-content:center; }
+    /* Roster table → card rows */
+    .roster-table thead { display:none; }
+    .roster-table tbody tr {
+        display:flex; flex-direction:column; gap:4px;
+        padding:12px 14px; border-bottom:1px solid #e2e8f0;
+    }
+    .roster-table tbody td {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:3px 0; border:none; font-size:13px;
+    }
+    .roster-table tbody td::before {
+        content:attr(data-label);
+        font-size:10px; font-weight:700; color:#94a3b8;
+        text-transform:uppercase; letter-spacing:.4px; flex-shrink:0; margin-right:8px;
+    }
+    .roster-search-input { max-width:100%; }
+}
+@media(max-width:400px) {
     .lec-kpi-grid { grid-template-columns:1fr; }
 }
 </style>
@@ -262,7 +296,7 @@
                         <th><i class="fa-solid fa-user"></i> Student</th>
                         <th><i class="fa-solid fa-clipboard-list"></i> Quiz</th>
                         <th><i class="fa-solid fa-star"></i> Score</th>
-                        <th><i class="fa-solid fa-trophy"></i> Grade</th>
+                        <th><i class="fa-solid fa-award"></i> Grade</th>
                         <th><i class="fa-solid fa-circle-check"></i> Status</th>
                         <th><i class="fa-solid fa-clock"></i> Submitted</th>
                     </tr>
@@ -270,7 +304,7 @@
                 <tbody>
                     @foreach($roster as $rec)
                     <tr>
-                        <td>
+                        <td data-label="Student">
                             <div style="display:flex;align-items:center;gap:10px">
                                 <div class="student-avatar">{{ strtoupper(substr($rec->user->name, 0, 1)) }}</div>
                                 <div>
@@ -279,24 +313,24 @@
                                 </div>
                             </div>
                         </td>
-                        <td style="font-size:12px;color:#374151;font-weight:500;max-width:160px">
+                        <td data-label="Quiz" style="font-size:12px;color:#374151;font-weight:500;max-width:160px">
                             <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ $rec->quiz->title }}</div>
                         </td>
-                        <td>
+                        <td data-label="Score">
                             <span style="font-weight:800;font-size:14px">{{ $rec->score }}</span>
                             <span style="color:#94a3b8;font-size:12px"> / {{ $rec->max_score }}</span>
                             <div class="progress" style="width:70px;margin-top:4px">
                                 <div class="progress-bar" style="width:{{ $rec->percentage }}%"></div>
                             </div>
                         </td>
-                        <td>
+                        <td data-label="Grade">
                             @php
                                 $g = $rec->grade;
                                 $cls = match($g) { 'A' => 'score-a', 'B' => 'score-b', 'C' => 'score-c', 'D' => 'score-d', default => 'score-f' };
                             @endphp
                             <span class="score-pill {{ $cls }}">{{ $g }}</span>
                         </td>
-                        <td>
+                        <td data-label="Status">
                             @if($rec->percentage >= 50)
                                 <span style="color:#065f46;font-weight:700;font-size:12px;display:flex;align-items:center;gap:4px">
                                     <i class="fa-solid fa-circle-check"></i> Pass
@@ -307,7 +341,7 @@
                                 </span>
                             @endif
                         </td>
-                        <td style="color:#64748b;font-size:12px">
+                        <td data-label="Submitted" style="color:#64748b;font-size:12px">
                             {{ $rec->completed_at?->format('d M Y H:i') ?? '—' }}
                         </td>
                     </tr>

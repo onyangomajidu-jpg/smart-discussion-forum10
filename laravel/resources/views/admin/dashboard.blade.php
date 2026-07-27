@@ -7,12 +7,14 @@
 .admin-hero {
     background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
     border-radius: 16px;
-    padding: 32px 36px;
+    padding: 24px 28px;
     margin-bottom: 28px;
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
     position: relative;
     overflow: hidden;
     box-shadow: 0 8px 32px rgba(15,23,42,.4);
@@ -60,6 +62,18 @@
 .qa-quiz    { background: linear-gradient(135deg,#ede9fe,#ddd6fe); color: #5b21b6; }
 .quick-action-label { font-size: 13px; font-weight: 700; }
 .quick-action-sub   { font-size: 11px; color: #64748b; margin-top: 2px; }
+@media (max-width: 768px) {
+    .admin-hero { padding: 18px 16px; }
+    .admin-hero-title { font-size: 18px; }
+    .admin-hero::after { display: none; }
+}
+@media (max-width: 900px) {
+    .admin-stats-grid { grid-template-columns: repeat(3, 1fr) !important; }
+    .admin-main-grid  { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 540px) {
+    .admin-stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
 </style>
 @endpush
 
@@ -81,7 +95,7 @@
 </div>
 
 {{-- Stats --}}
-<div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:28px">
+<div class="stats-grid admin-stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:28px">
     <div class="stat-card">
         <div class="stat-icon"><i class="fa-solid fa-users" style="color:#6366f1"></i></div>
         <div class="val">{{ \App\Models\User::where('role','member')->count() }}</div>
@@ -109,7 +123,7 @@
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 300px;gap:22px;align-items:start">
+<div style="display:grid;grid-template-columns:1fr 300px;gap:22px;align-items:start" class="admin-main-grid">
 
     {{-- Recent Users --}}
     <div class="card">

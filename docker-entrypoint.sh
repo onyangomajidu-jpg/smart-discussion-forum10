@@ -1,16 +1,25 @@
 #!/bin/sh
 set -e
 
-# Cache config/routes/views for speed (safe to fail on first boot before APP_KEY exists)
-php artisan config:cache || true
-php artisan route:cache || true
-php artisan view:cache || true
+# Make sure Laravel's writable directories genuinely exist every time the
+# container boots (not just at image build time) — Blade, sessions, and the
+# cache framework all fail hard if these are missing or unwritable.
+mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+chmod -R 775 storage bootstrap/cache
 
-# Create the storage symlink (idempotent)
+# Clear any stale cached config from a previous boot before doing anything else
+php artisan config:clear || true
+
+# Create the storage symlink (idempotent — fine if it already exists)
 php artisan storage:link || true
 
 # Run migrations on every boot so schema stays in sync with the deployed code
 php artisan migrate --force
+
+# NOTE: intentionally NOT running config:cache / route:cache / view:cache.
+# These are optional performance optimizations; skipping them avoids an
+# entire class of "works at build time, breaks at runtime" path bugs and
+# costs almost nothing on an app this size.
 
 # Render sets $PORT; fall back to 10000 for local docker runs
 PORT="${PORT:-10000}"

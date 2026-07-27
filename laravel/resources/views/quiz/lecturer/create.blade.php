@@ -43,6 +43,10 @@
     margin-bottom: 16px;
     position: relative;
     transition: all .2s;
+    overflow: hidden;
+    min-width: 0;
+    box-sizing: border-box;
+    width: 100%;
 }
 .question-block:hover { border-color: #c7d2fe; box-shadow: 0 4px 16px rgba(99,102,241,.08); }
 .question-block.focused { border-color: #6366f1; }
@@ -61,7 +65,7 @@
 }
 .remove-q:hover { background: #ef4444; color: #fff; }
 
-.option-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.option-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; min-width: 0; }
 .option-letter {
     width: 30px; height: 30px; border-radius: 8px;
     background: #e2e8f0; color: #64748b;
@@ -69,10 +73,10 @@
     font-size: 12px; font-weight: 700; flex-shrink: 0;
     transition: all .2s;
 }
-.option-row input[type=radio] { accent-color: #6366f1; width: 17px; height: 17px; flex-shrink: 0; cursor: pointer; }
+.option-row input[type=radio] { accent-color: #6366f1; width: 17px; height: 17px; flex-shrink: 0; cursor: pointer; margin: 0; }
 .option-row input[type=radio]:checked + .option-letter { background: #6366f1; color: #fff; }
 .option-row input[type=text] {
-    flex: 1; padding: 9px 13px;
+    flex: 1; min-width: 0; padding: 9px 13px;
     border: 2px solid #e2e8f0; border-radius: 9px;
     font-size: 13px; font-family: inherit; transition: all .2s;
 }
@@ -118,6 +122,23 @@
 
 .marks-input { width: 90px !important; }
 .section-divider { height: 1px; background: linear-gradient(90deg, #6366f1, transparent); margin: 20px 0; opacity: .2; }
+
+.quiz-create-grid { display: grid; grid-template-columns: 1fr 380px; gap: 22px; align-items: start; }
+@media (max-width: 900px) {
+    .quiz-create-grid { grid-template-columns: 1fr; }
+    .create-hero { padding: 20px 18px; gap: 12px; }
+    .create-hero::after { display: none; }
+    .create-hero .hero-icon-box { width: 44px; height: 44px; font-size: 20px; }
+    .marks-input { width: 70px !important; }
+}
+@media (max-width: 640px) {
+    .question-block { padding: 16px 12px; }
+    .option-row { flex-wrap: nowrap; overflow: hidden; }
+    .option-row input[type=text] { min-width: 0; width: 0; }
+    .time-inputs { flex-wrap: wrap !important; }
+    .time-inputs input, .time-inputs select { min-width: 0 !important; }
+    .form-row { grid-template-columns: 1fr; }
+}
 </style>
 @endpush
 
@@ -140,7 +161,7 @@
 <form action="{{ route('lecturer.quizzes.store') }}" method="POST" id="quizForm">
 @csrf
 
-<div style="display:grid;grid-template-columns:1fr 380px;gap:22px;align-items:start">
+<div class="quiz-create-grid">
 
     {{-- LEFT --}}
     <div>
@@ -185,7 +206,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label"><i class="fa-solid fa-unlock" style="color:#10b981;margin-right:5px"></i>Unlock Date</label>
-                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap" class="time-inputs">
                             <input type="date" name="unlock_date_date" class="form-control" style="flex:1;min-width:130px" value="{{ old('unlock_date_date') }}">
                             <input type="number" name="unlock_date_hour" class="form-control" style="width:64px" min="1" max="12" placeholder="hh" value="{{ old('unlock_date_hour') }}">
                             <span>:</span>
@@ -199,7 +220,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label"><i class="fa-solid fa-flag-checkered" style="color:#ef4444;margin-right:5px"></i>Hard Deadline</label>
-                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap" class="time-inputs">
                             <input type="date" name="hard_deadline_date" class="form-control" style="flex:1;min-width:130px" value="{{ old('hard_deadline_date') }}">
                             <input type="number" name="hard_deadline_hour" class="form-control" style="width:64px" min="1" max="12" placeholder="hh" value="{{ old('hard_deadline_hour') }}">
                             <span>:</span>
