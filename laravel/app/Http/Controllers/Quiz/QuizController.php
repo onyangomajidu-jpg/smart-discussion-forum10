@@ -246,7 +246,7 @@ class QuizController extends Controller
                 'duration'      => $q->duration_minutes,
                 'hard_deadline' => $q->hard_deadline?->format('d M, H:i'),
                 'url'           => route('quizzes.take', $q),
-                'unlock_ms'     => $q->unlock_date ? $q->unlock_date->utc()->timestamp * 1000 : 0,
+                'unlock_ms'     => $q->unlock_date ? $q->unlock_date->timestamp * 1000 : 0,
             ])
             ->values();
 
