@@ -109,7 +109,7 @@ class AssessmentService implements IAssessment
 
         $members = $quiz->group->members;
 
-        Notification::send($members, new QuizReminderNotification($quiz));
+        Notification::sendNow($members, new QuizReminderNotification($quiz));
 
         $quiz->update(['reminder_sent_at' => now()]);
 
