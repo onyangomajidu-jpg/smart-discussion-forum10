@@ -587,13 +587,13 @@
                 @else
                 {{-- Topic origin bubble --}}
                 <div class="chat-row topic-origin">
-                    <div class="chat-avatar">
+                    <a href="{{ route('profile.show', $activeTopic->author) }}" class="chat-avatar" style="text-decoration:none;" title="{{ $activeTopic->author->name }}">
                         @if($activeTopic->author->avatar)
                             <img src="{{ storage_url($activeTopic->author->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr($activeTopic->author->name,0,1)) }}
                         @endif
-                    </div>
+                    </a>
                     <div class="chat-bubble-wrap">
                         <div class="chat-bubble">
                             <span class="bubble-author" style="color:#d97706">{{ $activeTopic->author->name }}</span>
@@ -630,13 +630,13 @@
                 {{-- ── Regular post bubble ── --}}
                 <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="post-{{ $item->id }}" data-ts="{{ $item->created_at->toISOString() }}">
                     @if(!$isMe)
-                    <div class="chat-avatar">
+                    <a href="{{ route('profile.show', $item->author) }}" class="chat-avatar" style="text-decoration:none;" title="{{ $item->author->name }}">
                         @if($item->author->avatar)
                             <img src="{{ storage_url($item->author->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr($item->author->name,0,1)) }}
                         @endif
-                    </div>
+                    </a>
                     @endif
                     <div class="chat-bubble-wrap">
                         @if($item->body)
@@ -713,13 +713,13 @@
                         </div>
                     </div>
                     @if($isMe)
-                    <div class="chat-avatar">
+                    <a href="{{ route('profile.show', auth()->user()) }}" class="chat-avatar" style="text-decoration:none;" title="{{ auth()->user()->name }}">
                         @if(auth()->user()->avatar)
                             <img src="{{ storage_url(auth()->user()->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr(auth()->user()->name,0,1)) }}
                         @endif
-                    </div>
+                    </a>
                     @endif
                 </div>
 
@@ -734,18 +734,18 @@
                     $quoteTarget = $item->parent ? 'reply-'.$item->parent->id : 'post-'.$parentPost->id;
                 @endphp
                 <div class="chat-row {{ $rIsMe ? 'mine' : '' }}" id="reply-{{ $item->id }}" data-ts="{{ $item->created_at->toISOString() }}">
-                    @if(!$rIsMe)
-                    <div class="chat-avatar">
+                    @if(!$isMe)
+                    <a href="{{ route('profile.show', $item->author) }}" class="chat-avatar" style="text-decoration:none;" title="{{ $item->author->name }}">
                         @if($item->author->avatar)
                             <img src="{{ storage_url($item->author->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr($item->author->name,0,1)) }}
                         @endif
-                    </div>
+                    </a>
                     @endif
                     <div class="chat-bubble-wrap">
                         <div class="chat-bubble">
-                            @if(!$rIsMe)<span class="bubble-author" style="color:{{ $rColor }}">{{ $item->author->name }}</span>@endif
+                            @if(!$isMe)<span class="bubble-author" style="color:{{ $rColor }}">{{ $item->author->name }}</span>@endif
                             <div class="reply-quote" onclick="document.getElementById('{{ $quoteTarget }}')?.scrollIntoView({behavior:'smooth',block:'center'})">
                                 <div class="rq-author" style="color:{{ $quoteColor }}">{{ $quoteAuthor }}</div>
                                 <div class="rq-body">{{ $quoteBody }}</div>
@@ -757,14 +757,14 @@
                                 onclick="setReply({{ $parentPost->id }}, '{{ $rIsMe ? 'You' : addslashes($item->author->name) }}', '{{ addslashes(Str::limit($item->body, 60)) }}', {{ $item->id }})">&#8617;</button>
                         </div>
                     </div>
-                    @if($rIsMe)
-                    <div class="chat-avatar">
+                    @if($isMe)
+                    <a href="{{ route('profile.show', auth()->user()) }}" class="chat-avatar" style="text-decoration:none;" title="{{ auth()->user()->name }}">
                         @if(auth()->user()->avatar)
                             <img src="{{ storage_url(auth()->user()->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr(auth()->user()->name,0,1)) }}
                         @endif
-                    </div>
+                    </a>
                     @endif
                 </div>
                 @endif

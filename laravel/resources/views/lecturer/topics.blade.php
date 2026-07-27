@@ -548,13 +548,13 @@
 
                 {{-- Topic origin bubble --}}
                 <div class="chat-row topic-origin">
-                    <div class="chat-avatar">
+                    <a href="{{ route('profile.show', $activeTopic->author) }}" class="chat-avatar" style="text-decoration:none;" title="{{ $activeTopic->author->name }}">
                         @if($activeTopic->author->avatar)
                             <img src="{{ storage_url($activeTopic->author->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr($activeTopic->author->name,0,1)) }}
                         @endif
-                    </div>
+                    </a>
                     <div class="chat-bubble-wrap">
                         <div class="chat-bubble">
                             <span class="bubble-author" style="color:#d97706">{{ $activeTopic->author->name }}</span>
@@ -589,13 +589,13 @@
                 @if(!$isReply)
                 <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="post-{{ $item->id }}" data-ts="{{ $item->created_at->toISOString() }}">
                     @if(!$isMe)
-                    <div class="chat-avatar">
+                    <a href="{{ route('profile.show', $item->author) }}" class="chat-avatar" style="text-decoration:none;" title="{{ $item->author->name }}">
                         @if($item->author->avatar)
                             <img src="{{ storage_url($item->author->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr($item->author->name,0,1)) }}
                         @endif
-                    </div>
+                    </a>
                     @endif
                     <div class="chat-bubble-wrap">
                         @if($item->body)
@@ -664,13 +664,13 @@
                         </div>
                     </div>
                     @if($isMe)
-                    <div class="chat-avatar">
+                    <a href="{{ route('profile.show', auth()->user()) }}" class="chat-avatar" style="text-decoration:none;" title="{{ auth()->user()->name }}">
                         @if(auth()->user()->avatar)
                             <img src="{{ storage_url(auth()->user()->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr(auth()->user()->name,0,1)) }}
                         @endif
-                    </div>
+                    </a>
                     @endif
                 </div>
 
@@ -683,13 +683,13 @@
                 @endphp
                 <div class="chat-row {{ $isMe ? 'mine' : '' }}" id="reply-{{ $item->id }}" data-ts="{{ $item->created_at->toISOString() }}">
                     @if(!$isMe)
-                    <div class="chat-avatar">
+                    <a href="{{ route('profile.show', $item->author) }}" class="chat-avatar" style="text-decoration:none;" title="{{ $item->author->name }}">
                         @if($item->author->avatar)
                             <img src="{{ storage_url($item->author->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr($item->author->name,0,1)) }}
                         @endif
-                    </div>
+                    </a>
                     @endif
                     <div class="chat-bubble-wrap">
                         <div class="chat-bubble">
@@ -706,13 +706,13 @@
                         </div>
                     </div>
                     @if($isMe)
-                    <div class="chat-avatar">
+                    <a href="{{ route('profile.show', auth()->user()) }}" class="chat-avatar" style="text-decoration:none;" title="{{ auth()->user()->name }}">
                         @if(auth()->user()->avatar)
                             <img src="{{ storage_url(auth()->user()->avatar) }}" alt="">
                         @else
                             {{ strtoupper(substr(auth()->user()->name,0,1)) }}
                         @endif
-                    </div>
+                    </a>
                     @endif
                 </div>
                 @endif
