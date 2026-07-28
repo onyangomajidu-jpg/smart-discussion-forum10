@@ -77,25 +77,7 @@ public class MainWindow extends JFrame {
         ProfilePanel     profilePanel     = new ProfilePanel(api, user);
         QuizPanel        quizPanel        = new QuizPanel(api, user);
         MessagesPanel    messagesPanel    = new MessagesPanel(user, authService.getWebSession());
-        LecturerAnalyticsPanel lecturerAnalyticsPanel =
-            (user.isLecturer() || user.isAdmin()) ? new LecturerAnalyticsPanel(api) : null;
-
-        // ── Sync listener ─────────────────────────────────────────────────
-        syncManager.setSyncListener(() -> {
-            topicListPanel.refresh();
-            conversationPanel.refreshPosts();
-            conversationPanel.setStatus("✅ Sync complete");
-            statisticsPanel.loadData();
-            dashboardPanel.loadData();
-        });
-
-        StatisticsPanel        statisticsPanel = new StatisticsPanel(api, cache);
-        DashboardPanel         dashboardPanel  = new DashboardPanel(api, user);
-        GroupsPanel            groupsPanel     = new GroupsPanel(api, user);
-        ProfilePanel           profilePanel    = new ProfilePanel(api, user);
-        QuizPanel              quizPanel       = new QuizPanel(api, user);
-        ExportWindow           exportPanel     = new ExportWindow(api);
- (Fix analytics backend logic and update Java GUI and analytics views)
+        ExportWindow     exportPanel      = new ExportWindow(api);
 
         // ── Layout ────────────────────────────────────────────────────────
         setTitle("Discussion Hub — " + user.getName());
@@ -127,12 +109,8 @@ public class MainWindow extends JFrame {
             syncManager.setSyncListener(() -> adminDashboardPanel.loadData());
             tabs.addChangeListener(e -> {
                 Component sel = tabs.getSelectedComponent();
-<<<<<<< HEAD
-                if (sel == adminDashboardPanel)   adminDashboardPanel.loadData();
+                if (sel == adminDashboardPanel)      adminDashboardPanel.loadData();
                 else if (sel == userManagementPanel)  userManagementPanel.loadUsers();
-=======
-                if (sel == adminDashboardPanel)       adminDashboardPanel.loadData();
->>>>>>> dfc10d3a (Fix analytics backend logic and update Java GUI and analytics views)
                 else if (sel == warningRegistryPanel) warningRegistryPanel.loadAll();
                 else if (sel == blacklistLogPanel)    blacklistLogPanel.loadAll();
             });
@@ -140,28 +118,15 @@ public class MainWindow extends JFrame {
         } else if (user.isLecturer()) {
             LecturerAnalyticsPanel analyticsPanel = new LecturerAnalyticsPanel(api, user);
             LecturerGroupsPanel    groupsLecPanel = new LecturerGroupsPanel(api, user);
-<<<<<<< HEAD
-            // Tab titles mirror the Laravel sidebar exactly:
-            // fa-house Dashboard | fa-clipboard-list My Quizzes | fa-chart-bar Analytics
-            // fa-comments Topic Discussions | fa-people-group Groups | fa-chart-line Statistics | profile
-            tabs.addTab("\uD83C\uDFE0  Dashboard",          null); // placeholder, set after tabs built
-            tabs.addTab("\uD83D\uDCCB  My Quizzes",         quizPanel);
-            tabs.addTab("\uD83D\uDCCA  Analytics",          analyticsPanel);
-            tabs.addTab("\uD83D\uDCAC  Forum",              split);
-            tabs.addTab("\u2709\uFE0F  Messages",           messagesPanel);
-            tabs.addTab("\uD83D\uDC65  Groups",             groupsLecPanel);
-            tabs.addTab("\uD83D\uDCC8  Statistics",         statisticsPanel);
-            tabs.addTab("\uD83D\uDC64  Profile",            profilePanel);
-=======
-            tabs.addTab("🏠  Dashboard",  null); // placeholder — replaced below
-            tabs.addTab("🎯  Quizzes",    quizPanel);
-            tabs.addTab("📊  Analytics",  analyticsPanel);
-            tabs.addTab("📈  Statistics", statisticsPanel);
-            tabs.addTab("💬  Forum",      split);
-            tabs.addTab("👥  Groups",     groupsLecPanel);
-            tabs.addTab("📄  Export",     exportPanel);
-            tabs.addTab("👤  Profile",    profilePanel);
->>>>>>> dfc10d3a (Fix analytics backend logic and update Java GUI and analytics views)
+            tabs.addTab("\uD83C\uDFE0  Dashboard",  null);
+            tabs.addTab("\uD83D\uDCCB  My Quizzes",  quizPanel);
+            tabs.addTab("\uD83D\uDCCA  Analytics",   analyticsPanel);
+            tabs.addTab("\uD83D\uDCAC  Forum",        split);
+            tabs.addTab("\u2709\uFE0F  Messages",     messagesPanel);
+            tabs.addTab("\uD83D\uDC65  Groups",       groupsLecPanel);
+            tabs.addTab("\uD83D\uDCC8  Statistics",   statisticsPanel);
+            tabs.addTab("\uD83D\uDCC4  Export",       exportPanel);
+            tabs.addTab("\uD83D\uDC64  Profile",      profilePanel);
             LecturerDashboardPanel lecDashboard = new LecturerDashboardPanel(api, user, tabs);
             tabs.setComponentAt(0, lecDashboard);
             syncManager.setSyncListener(() -> {
@@ -180,26 +145,14 @@ public class MainWindow extends JFrame {
             });
 
         } else {
-<<<<<<< HEAD
-            // Student sidebar mirrors app.blade.php member section exactly:
-            // fa-house Dashboard | fa-file-pen My Quizzes | fa-chart-line Analytics
-            // fa-people-group Groups  (Forum is embedded inside Dashboard quick-link / separate tab)
             tabs.addTab("\uD83C\uDFE0  Dashboard",  dashboardPanel);
             tabs.addTab("\uD83D\uDCAC  Forum",       split);
             tabs.addTab("\u2709\uFE0F  Messages",    messagesPanel);
-            tabs.addTab("\uD83D\uDCDD  My Quizzes", quizPanel);
-            tabs.addTab("\uD83D\uDCC8  Analytics",  statisticsPanel);
-            tabs.addTab("\uD83D\uDC65  Groups",      groupsPanel);
-            tabs.addTab("\uD83D\uDC64  Profile",     profilePanel);
-=======
-            tabs.addTab("🏠  Dashboard",  dashboardPanel);
-            tabs.addTab("💬  Forum",      split);
-            tabs.addTab("🎯  Quizzes",    quizPanel);
-            tabs.addTab("📊  Statistics", statisticsPanel);
-            tabs.addTab("👥  Groups",     groupsPanel);
-            tabs.addTab("📄  Export",     exportPanel);
-            tabs.addTab("👤  Profile",    profilePanel);
->>>>>>> dfc10d3a (Fix analytics backend logic and update Java GUI and analytics views)
+            tabs.addTab("\uD83D\uDCDD  My Quizzes",  quizPanel);
+            tabs.addTab("\uD83D\uDCC8  Statistics",  statisticsPanel);
+            tabs.addTab("\uD83D\uDC65  Groups",       groupsPanel);
+            tabs.addTab("\uD83D\uDCC4  Export",       exportPanel);
+            tabs.addTab("\uD83D\uDC64  Profile",      profilePanel);
             syncManager.setSyncListener(() -> {
                 topicListPanel.refresh();
                 conversationPanel.refreshPosts();
@@ -351,14 +304,6 @@ public class MainWindow extends JFrame {
         connectionBadge.setForeground(Color.WHITE);
         updateBadge(api.isOnline());
 
-<<<<<<< HEAD
-        // Notifications bell
-=======
-        JLabel userInfo = new JLabel(user.getName() + "  [" + user.getRole().toUpperCase() + "]");
-        userInfo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        userInfo.setForeground(Color.WHITE);
-
->>>>>>> dfc10d3a (Fix analytics backend logic and update Java GUI and analytics views)
         JButton notifBtn = new JButton("🔔");
         notifBtn.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
         notifBtn.setForeground(Color.WHITE);

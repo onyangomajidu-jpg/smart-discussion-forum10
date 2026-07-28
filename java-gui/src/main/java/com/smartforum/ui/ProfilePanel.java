@@ -30,7 +30,57 @@ public class ProfilePanel extends JPanel {
     private final AuthUser  user;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private JTextField  tfName, tfBio;
+    private Image avatarImage; // current photo, painted clipped to circle
+
+    /** Fixed-size circular avatar panel — mirrors .profile-avatar { border-radius:50%; object-fit:cover } */
+    private JPanel buildAvatarPanel() {
+        return new JPanel() {
+            { setPreferredSize(new Dimension(88, 88));
+              setMinimumSize(new Dimension(88, 88));
+              setMaximumSize(new Dimension(88, 88));
+              setOpaque(false); }
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int w = getWidth(), h = getHeight();
+                // shadow
+                g2.setColor(new Color(99, 102, 241, 50));
+                g2.fillOval(3, 5, w - 2, h - 2);
+                // white border ring
+                g2.setColor(Color.WHITE);
+                g2.fillOval(0, 0, w, h);
+                // clip to inner circle (inset 4px = border width)
+                java.awt.geom.Ellipse2D clip = new java.awt.geom.Ellipse2D.Float(4, 4, w - 8, h - 8);
+                g2.setClip(clip);
+                if (avatarImage != null) {
+                    // cover: scale to fill then center-crop
+                    int iw = avatarImage.getWidth(null), ih = avatarImage.getHeight(null);
+                    if (iw > 0 && ih > 0) {
+                        int inner = w - 8;
+                        double scale = Math.max((double) inner / iw, (double) inner / ih);
+                        int sw = (int)(iw * scale), sh = (int)(ih * scale);
+                        int ox = 4 + (inner - sw) / 2, oy = 4 + (inner - sh) / 2;
+                        g2.drawImage(avatarImage, ox, oy, sw, sh, null);
+                    }
+                } else {
+                    // gradient fill + initial letter
+                    g2.setClip(null);
+                    g2.setPaint(new GradientPaint(4, 4, PRIMARY, w - 4, h - 4, new Color(0x8B, 0x5C, 0xF6)));
+                    g2.fillOval(4, 4, w - 8, h - 8);
+                    g2.setColor(Color.WHITE);
+                    g2.setFont(new Font("Segoe UI", Font.BOLD, 28));
+                    FontMetrics fm = g2.getFontMetrics();
+                    String init = user.getName().isEmpty() ? "?" : String.valueOf(user.getName().charAt(0)).toUpperCase();
+                    g2.drawString(init, 4 + (w - 8 - fm.stringWidth(init)) / 2, 4 + (h - 8 - fm.getHeight()) / 2 + fm.getAscent());
+                }
+                g2.dispose();
+            }
+        };
+    }
+    private JTextField  tfName;
+    private JTextArea   taBio;
+    private JPanel      avatarPanel;
+    private JLabel      avatarHintLbl;
     private JPasswordField pfCurrent, pfNew, pfConfirm;
     private JLabel statusLbl;
 
@@ -85,7 +135,27 @@ public class ProfilePanel extends JPanel {
     }
 
     private JPanel buildInfoCard() {
-        JPanel card = card("👤 Profile Information");
+        // Build without card() helper so the gradient banner occupies NORTH
+        // and the form body occupies CENTER — mirrors .profile-card structure.
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(SURFACE);
+        card.setAlignmentX(LEFT_ALIGNMENT);
+        card.setBorder(BorderFactory.createLineBorder(BORDER_C));
+
+        // Banner strip — mirrors .profile-card-banner { height:72px; background:var(--grad) }
+        JPanel banner = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setPaint(new GradientPaint(0, 0, new Color(0x66, 0x7E, 0xEA), getWidth(), getHeight(), new Color(0x76, 0x4B, 0xA2)));
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
+        banner.setPreferredSize(new Dimension(0, 72));
+        banner.setOpaque(false);
+        card.add(banner, BorderLayout.NORTH);
+
         JPanel form = new JPanel(new GridBagLayout());
         form.setBackground(SURFACE);
         form.setBorder(new EmptyBorder(16, 16, 16, 16));
@@ -93,46 +163,35 @@ public class ProfilePanel extends JPanel {
         gc.insets = new Insets(6, 4, 6, 4);
         gc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Avatar — mirrors topnav-avatar / sidebar-footer-avatar in app.blade.php
-        JLabel avatarLbl = new JLabel(String.valueOf(user.getName().charAt(0)).toUpperCase(), SwingConstants.CENTER) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setPaint(new GradientPaint(0, 0, PRIMARY, getWidth(), getHeight(), new Color(0x8B, 0x5C, 0xF6)));
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        avatarLbl.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        avatarLbl.setForeground(Color.WHITE);
-        avatarLbl.setOpaque(false);
-        avatarLbl.setPreferredSize(new Dimension(72, 72));
+        // Avatar — fixed-size circle panel, image clipped with object-fit:cover
+        avatarPanel = buildAvatarPanel();
         if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
-            new SwingWorker<ImageIcon, Void>() {
-                @Override protected ImageIcon doInBackground() throws Exception {
-                    java.net.URL url = new java.net.URL(
-                        com.smartforum.api.ApiClient.BASE_URL.replace("/api", "") + "/storage/" + user.getAvatar());
-                    Image img = new ImageIcon(url).getImage().getScaledInstance(72, 72, Image.SCALE_SMOOTH);
-                    return new ImageIcon(img);
+            new SwingWorker<Image, Void>() {
+                @Override protected Image doInBackground() throws Exception {
+                    String av = user.getAvatar();
+                    String rawUrl = av.startsWith("http") ? av
+                        : com.smartforum.api.ApiClient.BASE_URL.replace("/api", "") + "/storage/" + av;
+                    java.net.URL url = new java.net.URL(rawUrl);
+                    return new ImageIcon(url).getImage();
                 }
                 @Override protected void done() {
-                    try { avatarLbl.setIcon(get()); avatarLbl.setText(null); } catch (Exception ignored) {}
+                    try { avatarImage = get(); avatarPanel.repaint(); } catch (Exception ignored) {}
                 }
             }.execute();
         }
 
         gc.gridx = 0; gc.gridy = 0; gc.gridwidth = 2; gc.anchor = GridBagConstraints.CENTER;
-        form.add(avatarLbl, gc);
+        gc.fill = GridBagConstraints.NONE; // prevent horizontal stretch
+        form.add(avatarPanel, gc);
+        gc.fill = GridBagConstraints.HORIZONTAL;
         gc.gridwidth = 1; gc.anchor = GridBagConstraints.WEST;
 
         gc.gridx = 0; gc.gridy = 1; gc.weightx = 0;
         form.add(label("Email"), gc);
         gc.gridx = 1; gc.weightx = 1;
-        JLabel emailLbl = new JLabel(user.getEmail());
-        emailLbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        emailLbl.setForeground(MUTED);
-        form.add(emailLbl, gc);
+        JTextField tfEmail = new JTextField(user.getEmail());
+        tfEmail.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        form.add(tfEmail, gc);
 
         gc.gridx = 0; gc.gridy = 2; gc.weightx = 0;
         form.add(label("Role"), gc);
@@ -159,15 +218,27 @@ public class ProfilePanel extends JPanel {
         tfName.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         form.add(tfName, gc);
 
+        // "Member for" row — mirrors .profile-meta-row Member for in profile/edit.blade.php
         gc.gridx = 0; gc.gridy = 5; gc.weightx = 0;
-        form.add(label("Bio"), gc);
+        form.add(label("Member for"), gc);
         gc.gridx = 1; gc.weightx = 1;
-        tfBio = new JTextField();
-        tfBio.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        form.add(tfBio, gc);
+        JLabel memberForLbl = new JLabel("—");
+        memberForLbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        memberForLbl.setForeground(MUTED);
+        form.add(memberForLbl, gc);
 
-        // Avatar upload — mirrors "Change Photo" btn in profile/edit.blade.php
-        gc.gridx = 0; gc.gridy = 6; gc.weightx = 0;
+        gc.gridx = 0; gc.gridy = 6; gc.weightx = 0; gc.anchor = GridBagConstraints.NORTHWEST;
+        form.add(label("Bio"), gc);
+        gc.gridx = 1; gc.weightx = 1; gc.anchor = GridBagConstraints.WEST;
+        taBio = new JTextArea(3, 20);
+        taBio.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        taBio.setLineWrap(true);
+        taBio.setWrapStyleWord(true);
+        taBio.setBorder(BorderFactory.createLineBorder(BORDER_C));
+        form.add(new JScrollPane(taBio), gc);
+
+        // Avatar upload — mirrors "Change Photo" btn + instant preview in profile/edit.blade.php
+        gc.gridx = 0; gc.gridy = 7; gc.weightx = 0; gc.anchor = GridBagConstraints.WEST;
         form.add(label("Avatar"), gc);
         gc.gridx = 1; gc.weightx = 1;
         JButton avatarBtn = new JButton("📷 Change Photo");
@@ -183,9 +254,18 @@ public class ProfilePanel extends JPanel {
                 "Images", "jpg", "jpeg", "png", "gif", "webp"));
             if (fc.showOpenDialog(this) == javax.swing.JFileChooser.APPROVE_OPTION) {
                 java.io.File f = fc.getSelectedFile();
+                // Instant preview — mirrors the FileReader onload in edit.blade.php
+                try {
+                    java.awt.image.BufferedImage bi = javax.imageio.ImageIO.read(f);
+                    if (bi != null) { avatarImage = bi; avatarPanel.repaint(); }
+                } catch (Exception ignored) {}
+                // Hint text — mirrors avatarHint ✓ filename — click Save Changes to apply
+                avatarHintLbl.setText("✓ " + f.getName() + " — click Save Changes to apply");
+                avatarHintLbl.setForeground(new Color(0x10, 0xB9, 0x81));
+                // Upload in background
                 new SwingWorker<Void, Void>() {
                     @Override protected Void doInBackground() throws Exception {
-                        api.uploadAvatar("/profile/avatar", f);
+                        api.uploadAvatar(f, user.getName());
                         return null;
                     }
                     @Override protected void done() {
@@ -197,12 +277,19 @@ public class ProfilePanel extends JPanel {
         });
         form.add(avatarBtn, gc);
 
-        gc.gridx = 1; gc.gridy = 7; gc.weightx = 1;
+        // Hint label — mirrors #avatarHint in edit.blade.php
+        gc.gridx = 1; gc.gridy = 8; gc.weightx = 1;
+        avatarHintLbl = new JLabel(" ");
+        avatarHintLbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        avatarHintLbl.setForeground(MUTED);
+        form.add(avatarHintLbl, gc);
+
+        gc.gridx = 1; gc.gridy = 9; gc.weightx = 1;
         JButton saveBtn = primaryButton("Save Changes");
-        saveBtn.addActionListener(e -> saveProfile());
+        saveBtn.addActionListener(e -> saveProfile(tfEmail));
         form.add(saveBtn, gc);
 
-        // Populate joined date
+        // Populate joined + member-for from API
         new SwingWorker<JsonNode, Void>() {
             @Override protected JsonNode doInBackground() throws Exception {
                 return mapper.readTree(api.get("/profile"));
@@ -210,7 +297,19 @@ public class ProfilePanel extends JPanel {
             @Override protected void done() {
                 try {
                     String created = get().path("user").path("created_at").asText("");
-                    if (!created.isEmpty()) joinedLbl.setText(created.substring(0, 10));
+                    if (!created.isEmpty()) {
+                        // Format as "d M Y" — mirrors $user->created_at->format('d M Y')
+                        try {
+                            java.time.LocalDate d = java.time.LocalDate.parse(created.substring(0, 10));
+                            joinedLbl.setText(d.format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy")));
+                            // "Member for" — mirrors $user->created_at->diffForHumans()
+                            long days = java.time.temporal.ChronoUnit.DAYS.between(d, java.time.LocalDate.now());
+                            String ago = days < 30 ? days + " day" + (days == 1 ? "" : "s")
+                                : days < 365 ? (days / 30) + " month" + (days / 30 == 1 ? "" : "s")
+                                : (days / 365) + " year" + (days / 365 == 1 ? "" : "s");
+                            memberForLbl.setText(ago + " ago");
+                        } catch (Exception ignored) { joinedLbl.setText(created.substring(0, 10)); }
+                    }
                 } catch (Exception ignored) {}
             }
         }.execute();
@@ -228,21 +327,44 @@ public class ProfilePanel extends JPanel {
         gc.insets = new Insets(6, 4, 6, 4);
         gc.fill = GridBagConstraints.HORIZONTAL;
 
+        // Hint — mirrors "leave blank to keep current" in profile/edit.blade.php
+        gc.gridx = 0; gc.gridy = 0; gc.gridwidth = 2; gc.weightx = 1;
+        JLabel hint = new JLabel("— leave blank to keep current password");
+        hint.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        hint.setForeground(MUTED);
+        form.add(hint, gc);
+        gc.gridwidth = 1;
+
         pfCurrent = new JPasswordField();
         pfNew     = new JPasswordField();
         pfConfirm = new JPasswordField();
 
-        gc.gridx = 0; gc.gridy = 0; gc.weightx = 0; form.add(label("Current Password"), gc);
+        gc.gridx = 0; gc.gridy = 1; gc.weightx = 0; form.add(label("Current Password"), gc);
         gc.gridx = 1; gc.weightx = 1; form.add(pfCurrent, gc);
-        gc.gridx = 0; gc.gridy = 1; gc.weightx = 0; form.add(label("New Password"), gc);
+        gc.gridx = 0; gc.gridy = 2; gc.weightx = 0; form.add(label("New Password"), gc);
         gc.gridx = 1; gc.weightx = 1; form.add(pfNew, gc);
-        gc.gridx = 0; gc.gridy = 2; gc.weightx = 0; form.add(label("Confirm Password"), gc);
+        gc.gridx = 0; gc.gridy = 3; gc.weightx = 0; form.add(label("Confirm Password"), gc);
         gc.gridx = 1; gc.weightx = 1; form.add(pfConfirm, gc);
 
-        gc.gridx = 1; gc.gridy = 3;
+        // Buttons row — Change Password + Cancel (mirrors Save/Cancel row in edit.blade.php)
+        gc.gridx = 1; gc.gridy = 4;
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        btnRow.setOpaque(false);
         JButton changeBtn = primaryButton("Change Password");
         changeBtn.addActionListener(e -> changePassword());
-        form.add(changeBtn, gc);
+        JButton cancelBtn = new JButton("Cancel");
+        cancelBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        cancelBtn.setForeground(new Color(0x47, 0x55, 0x69));
+        cancelBtn.setBackground(new Color(0xF1, 0xF5, 0xF9));
+        cancelBtn.setBorderPainted(false);
+        cancelBtn.setFocusPainted(false);
+        cancelBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        cancelBtn.addActionListener(e -> {
+            pfCurrent.setText(""); pfNew.setText(""); pfConfirm.setText("");
+        });
+        btnRow.add(changeBtn);
+        btnRow.add(cancelBtn);
+        form.add(btnRow, gc);
 
         card.add(form, BorderLayout.CENTER);
         return card;
@@ -257,7 +379,7 @@ public class ProfilePanel extends JPanel {
                 try {
                     JsonNode u = get().path("user");
                     tfName.setText(u.path("name").asText(user.getName()));
-                    tfBio.setText(u.path("bio").asText(""));
+                    taBio.setText(u.path("bio").asText(""));
                     if (user.isMember()) {
                         JsonNode m = u.path("member");
                         tfStudentId.setText(m.path("student_id").asText(""));
@@ -274,12 +396,13 @@ public class ProfilePanel extends JPanel {
         }.execute();
     }
 
-    private void saveProfile() {
+    private void saveProfile(JTextField tfEmail) {
         String name = tfName.getText().trim();
         if (name.isEmpty()) { showStatus("Name cannot be empty.", DANGER); return; }
         Map<String, Object> body = new HashMap<>();
         body.put("name", name);
-        body.put("bio", tfBio.getText().trim());
+        body.put("email", tfEmail.getText().trim());
+        body.put("bio", taBio.getText().trim());
         new SwingWorker<Void, Void>() {
             @Override protected Void doInBackground() throws Exception {
                 api.put("/profile", body);
@@ -417,7 +540,7 @@ public class ProfilePanel extends JPanel {
     private void saveMemberProfile() {
         Map<String, Object> body = new HashMap<>();
         body.put("name", tfName.getText().trim());
-        body.put("bio",  tfBio != null ? tfBio.getText().trim() : "");
+        body.put("bio",  taBio != null ? taBio.getText().trim() : "");
         body.put("student_id",    tfStudentId.getText().trim());
         body.put("programme",     tfProgramme.getText().trim());
         body.put("year_of_study", tfYearOfStudy.getText().trim());
@@ -435,7 +558,7 @@ public class ProfilePanel extends JPanel {
     private void saveLecturerProfile() {
         Map<String, Object> body = new HashMap<>();
         body.put("name", tfName.getText().trim());
-        body.put("bio",  tfBio != null ? tfBio.getText().trim() : "");
+        body.put("bio",  taBio != null ? taBio.getText().trim() : "");
         body.put("staff_id",       tfStaffId.getText().trim());
         body.put("department",     tfDepartment.getText().trim());
         body.put("specialisation", tfSpecialisation.getText().trim());
@@ -459,7 +582,7 @@ public class ProfilePanel extends JPanel {
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(SURFACE);
         card.setAlignmentX(LEFT_ALIGNMENT);
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 400));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         card.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(3, 0, 0, 0, PRIMARY),
             BorderFactory.createLineBorder(BORDER_C)));

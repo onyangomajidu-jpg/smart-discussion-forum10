@@ -431,9 +431,6 @@
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <button onclick="clearDmChat({{ $other->id }})" title="Clear chat on this device only" style="padding:7px 14px;background:#f1f5f9;color:#64748b;border:1.5px solid #e2e8f0;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">&#128465; Clear Chat</button>
-                    <a href="{{ route('topics.index') }}" class="btn-back-group" title="Back to Group Chat">
-                        &#8592; Group Chat
-                    </a>
                 </div>
             </div>
 

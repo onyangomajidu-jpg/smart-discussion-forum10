@@ -123,7 +123,9 @@ public class LoginWindow extends JFrame {
         // ── Password + eye toggle — matches .password-wrapper ─────────────
         JLabel passLbl = fieldLabel("Password");
         passwordField = new JPasswordField();
-        styleField(passwordField);
+        passwordField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        passwordField.setOpaque(false);
+        passwordField.setBorder(new EmptyBorder(10, 12, 10, 8));
 
         JButton eyeBtn = new JButton("👁");
         eyeBtn.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 13));
@@ -132,15 +134,21 @@ public class LoginWindow extends JFrame {
         eyeBtn.setContentAreaFilled(false);
         eyeBtn.setFocusPainted(false);
         eyeBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        eyeBtn.setMargin(new Insets(0, 4, 0, 4));
+        eyeBtn.setMargin(new Insets(0, 4, 0, 6));
         eyeBtn.addActionListener(e -> {
             boolean hidden = passwordField.getEchoChar() != 0;
             passwordField.setEchoChar(hidden ? (char) 0 : '\u2022');
             eyeBtn.setForeground(hidden ? PRIMARY : TEXT_MUTE);
         });
 
-        JPanel passRow = new JPanel(new BorderLayout(4, 0));
+        // Wrapper draws the border; field + eye button sit inside it
+        JPanel passRow = new JPanel(new BorderLayout());
         passRow.setBackground(Color.WHITE);
+        passRow.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER_C, 2),
+            new EmptyBorder(0, 0, 0, 0)
+        ));
+        passRow.setPreferredSize(new Dimension(340, 44));
         passRow.add(passwordField, BorderLayout.CENTER);
         passRow.add(eyeBtn, BorderLayout.EAST);
 
