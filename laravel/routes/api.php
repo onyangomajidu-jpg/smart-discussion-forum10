@@ -117,6 +117,7 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     Route::get('/lecturer/analytics',              [\App\Http\Controllers\StatisticsController::class, 'apiLecturerAnalytics']);
     Route::get('/lecturer/quizzes',                  [QuizController::class, 'apiLecturerIndex']);
     Route::post('/lecturer/quizzes',                 [QuizController::class, 'apiStore']);
+    Route::put('/lecturer/quizzes/{quiz}',            [QuizController::class, 'apiUpdate']);
     Route::post('/lecturer/quizzes/{quiz}/publish',  [QuizController::class, 'apiPublish']);
     Route::post('/lecturer/quizzes/{quiz}/remind',   [QuizController::class, 'remind']);
     Route::get('/lecturer/quizzes/{quiz}/results',   [QuizController::class, 'apiResults']);

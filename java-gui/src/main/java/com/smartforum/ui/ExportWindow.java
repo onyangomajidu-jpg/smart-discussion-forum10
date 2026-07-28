@@ -21,7 +21,7 @@ import java.util.Map;
  *  • Export to PDF via GET /api/topics/{id}/export-pdf  (saves locally + opens)
  *  • Share a post to Twitter / LinkedIn / Facebook via POST /api/posts/{id}/share
  */
-public class ExportWindow extends JFrame {
+public class ExportWindow extends JPanel {
 
     // ── Brand colours (mirror MainWindow) ────────────────────────────────
     // Values now come from Theme (single source of truth shared with every
@@ -55,19 +55,10 @@ public class ExportWindow extends JFrame {
     public ExportWindow(ApiClient api) {
         this.api = api;
 
-        setTitle("SmartForum — Export & Share");
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        setSize(780, 600);
-        setMinimumSize(new Dimension(680, 520));
-        setLocationRelativeTo(null);
-        setResizable(true);
-
-        JPanel root = new JPanel(new BorderLayout());
-        root.setBackground(BG);
-        root.add(buildHeader(),  BorderLayout.NORTH);
-        root.add(buildBody(),    BorderLayout.CENTER);
-        setContentPane(root);
-
+        setLayout(new BorderLayout());
+        setBackground(BG);
+        add(buildHeader(), BorderLayout.NORTH);
+        add(buildBody(),   BorderLayout.CENTER);
         loadTopics();
     }
 
