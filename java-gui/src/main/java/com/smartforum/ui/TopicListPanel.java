@@ -44,7 +44,7 @@ public class TopicListPanel extends JPanel {
         this.user        = user;
         this.syncManager = syncManager;
         this.onSelect    = onSelect;
-        emptyLabel = new JLabel("<html><center>💭<br>No topics yet.</center></html>", SwingConstants.CENTER);
+        emptyLabel = new JLabel("<html><center>📭<br>No topics yet.</center></html>", SwingConstants.CENTER);
         emptyLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         emptyLabel.setForeground(new Color(0xA0, 0xAE, 0xC0));
         emptyLabel.setVisible(false);
@@ -339,7 +339,11 @@ public class TopicListPanel extends JPanel {
 
             JPanel row = new JPanel(new BorderLayout(10, 0));
             row.setBackground(isSelected ? SEL_BG : BG);
-            row.setBorder(new EmptyBorder(8, 10, 8, 10));
+            row.setBorder(isSelected
+                ? BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(0xC4, 0xB5, 0xFD), 1),
+                    new EmptyBorder(7, 9, 7, 9))
+                : new EmptyBorder(8, 10, 8, 10));
 
             String initials = t.title.length() >= 2
                 ? t.title.substring(0, 2).toUpperCase()
@@ -369,14 +373,19 @@ public class TopicListPanel extends JPanel {
             title.setFont(new Font("Segoe UI", Font.BOLD, 13));
             title.setForeground(isSelected ? new Color(0x4C, 0x1D, 0x95) : new Color(0x2D, 0x37, 0x48));
 
-            JLabel meta = new JLabel("by " + esc(t.authorName)
-                + "  💬 " + t.postsCount + "  👁 " + t.views);
-            meta.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-            meta.setForeground(new Color(0xA0, 0xAE, 0xC0));
+            JLabel author = new JLabel("by " + esc(t.authorName));
+            author.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+            author.setForeground(new Color(0xA0, 0xAE, 0xC0));
+
+            JLabel stats = new JLabel("💬 " + t.postsCount + "  👁 " + t.views);
+            stats.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+            stats.setForeground(new Color(0x71, 0x80, 0x96));
 
             text.add(title);
-            text.add(Box.createVerticalStrut(3));
-            text.add(meta);
+            text.add(Box.createVerticalStrut(2));
+            text.add(author);
+            text.add(Box.createVerticalStrut(2));
+            text.add(stats);
 
             row.add(avatar, BorderLayout.WEST);
             row.add(text,   BorderLayout.CENTER);

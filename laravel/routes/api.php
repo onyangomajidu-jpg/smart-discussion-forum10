@@ -90,6 +90,7 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     // Profile
     Route::get('/profile',  [ProfileController::class, 'apiShow']);
     Route::put('/profile',  [ProfileController::class, 'apiUpdate']);
+    Route::post('/profile/avatar', [ProfileController::class, 'apiUploadAvatar']);
 
     // AI Recommendations
     Route::get('/recommendations', [RecommendationController::class, 'index']);

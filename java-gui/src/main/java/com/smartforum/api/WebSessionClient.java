@@ -137,6 +137,20 @@ public class WebSessionClient {
 
     // ── Public request helpers ──────────────────────────────────────────
 
+    /** GET returning the raw response bytes — used for downloading audio/image files. */
+    public byte[] getBytes(String path) throws IOException {
+        Request req = new Request.Builder()
+            .url(rootUrl + path)
+            .header("Accept", "*/*")
+            .header("X-Requested-With", "XMLHttpRequest")
+            .build();
+        try (Response resp = http.newCall(req).execute()) {
+            if (!resp.isSuccessful()) throw new IOException("HTTP " + resp.code());
+            ResponseBody body = resp.body();
+            return body != null ? body.bytes() : new byte[0];
+        }
+    }
+
     /** GET returning the raw response body (HTML or JSON) as a String. */
     public String get(String path) throws IOException {
         Request req = new Request.Builder()
