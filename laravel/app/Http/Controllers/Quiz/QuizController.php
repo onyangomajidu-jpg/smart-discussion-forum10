@@ -409,8 +409,9 @@ class QuizController extends Controller
     {
         $request->validate(['answers' => 'required|array', 'answers.*' => 'integer|min:0']);
         try {
-            $attempt = $this->assessment->submitQuiz($quiz->id, auth()->id(), $request->input('answers'));
-            return response()->json(['score' => $attempt->score, 'submitted_at' => $attempt->submitted_at]);
+            $this->assessment->submitQuiz($quiz->id, auth()->id(), $request->input('answers'));
+            $record = $this->assessment->participationRecord($quiz->id, auth()->id());
+            return response()->json($record);
         } catch (ValidationException $e) {
             return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
         }
@@ -463,6 +464,51 @@ class QuizController extends Controller
         ]);
         $quiz = $this->assessment->createQuiz($data, $request->user()->id);
         return response()->json($quiz->load('questions'), 201);
+    }
+
+    public function apiUpdate(Request $request, Quiz $quiz)
+    {
+        if (!in_array($request->user()->role, ['lecturer', 'admin'])) abort(403);
+        if ($quiz->created_by !== $request->user()->id) abort(403);
+        if ($quiz->status !== 'draft') {
+            return response()->json(['message' => 'Only draft quizzes can be edited.'], 422);
+        }
+        $data = $request->validate([
+            'group_id'                   => 'required|exists:groups,id',
+            'title'                      => 'required|string|max:255',
+            'description'                => 'nullable|string',
+            'unlock_date'                => 'nullable|date',
+            'hard_deadline'              => 'nullable|date',
+            'duration_minutes'           => 'required|integer|min:1|max:180',
+            'auto_submit'                => 'boolean',
+            'enforce_focus'              => 'boolean',
+            'questions'                  => 'required|array|min:1',
+            'questions.*.question'       => 'required|string',
+            'questions.*.options'        => 'required|array|min:2',
+            'questions.*.correct_option' => 'required|integer|min:0',
+            'questions.*.marks'          => 'required|integer|min:1',
+        ]);
+        $quiz->update([
+            'group_id'         => $data['group_id'],
+            'title'            => $data['title'],
+            'description'      => $data['description'] ?? null,
+            'unlock_date'      => $data['unlock_date'] ?? null,
+            'hard_deadline'    => $data['hard_deadline'] ?? null,
+            'duration_minutes' => $data['duration_minutes'],
+            'auto_submit'      => $data['auto_submit'] ?? true,
+            'enforce_focus'    => $data['enforce_focus'] ?? false,
+        ]);
+        $quiz->questions()->delete();
+        foreach ($data['questions'] as $q) {
+            \App\Models\QuizQuestion::create([
+                'quiz_id'        => $quiz->id,
+                'question'       => $q['question'],
+                'options'        => $q['options'],
+                'correct_option' => $q['correct_option'],
+                'marks'          => $q['marks'] ?? 1,
+            ]);
+        }
+        return response()->json($quiz->fresh()->load('questions'));
     }
 
     public function apiPublish(Request $request, Quiz $quiz)

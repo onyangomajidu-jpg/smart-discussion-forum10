@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class ApiClient {
 
     public static final String BASE_URL =
-        System.getProperty("api.baseUrl", "http://localhost:8000/api");
+        System.getProperty("api.baseUrl", "http://discussionhub.onrender.com/api");
 
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
@@ -34,6 +34,10 @@ public class ApiClient {
         this.bearerToken = token;
     }
 
+    private static String bodyOrEmpty(Response r) throws IOException {
+        return r.body() != null ? r.body().string() : "";
+    }
+
     /** GET request — returns response body as String. */
     public String get(String endpoint) throws IOException {
         Request request = new Request.Builder()
@@ -42,8 +46,9 @@ public class ApiClient {
             .header("Authorization", bearerToken != null ? "Bearer " + bearerToken : "")
             .build();
         try (Response response = http.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
-            return response.body() != null ? response.body().string() : "";
+            String body = bodyOrEmpty(response);
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code() + ": " + body);
+            return body;
         }
     }
 
@@ -57,8 +62,9 @@ public class ApiClient {
             .post(RequestBody.create(json, JSON))
             .build();
         try (Response response = http.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
-            return response.body() != null ? response.body().string() : "";
+            String rb = bodyOrEmpty(response);
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code() + ": " + rb);
+            return rb;
         }
     }
 
@@ -72,8 +78,9 @@ public class ApiClient {
             .put(RequestBody.create(json, JSON))
             .build();
         try (Response response = http.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
-            return response.body() != null ? response.body().string() : "";
+            String rb = bodyOrEmpty(response);
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code() + ": " + rb);
+            return rb;
         }
     }
 
@@ -87,8 +94,9 @@ public class ApiClient {
             .patch(RequestBody.create(json, JSON))
             .build();
         try (Response response = http.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
-            return response.body() != null ? response.body().string() : "";
+            String rb = bodyOrEmpty(response);
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code() + ": " + rb);
+            return rb;
         }
     }
 
@@ -101,8 +109,9 @@ public class ApiClient {
             .delete()
             .build();
         try (Response response = http.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
-            return response.body() != null ? response.body().string() : "";
+            String rb = bodyOrEmpty(response);
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code() + ": " + rb);
+            return rb;
         }
     }
 
@@ -134,8 +143,9 @@ public class ApiClient {
             .post(body)
             .build();
         try (Response response = http.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
-            return response.body() != null ? response.body().string() : "";
+            String rb = bodyOrEmpty(response);
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code() + ": " + rb);
+            return rb;
         }
     }
 
@@ -159,8 +169,9 @@ public class ApiClient {
             .post(mb.build())
             .build();
         try (Response response = http.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
-            return response.body() != null ? response.body().string() : "";
+            String rb = bodyOrEmpty(response);
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code() + ": " + rb);
+            return rb;
         }
     }
 

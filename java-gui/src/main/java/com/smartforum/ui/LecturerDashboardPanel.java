@@ -128,11 +128,36 @@ public class LecturerDashboardPanel extends JPanel {
         row.setBackground(BG);
         row.setAlignmentX(LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 140));
-        // mirrors lecturer/dashboard.blade.php row-1 cards exactly
-        row.add(navCard("\uD83D\uDCCB", "My Quizzes",  "View and manage all your quizzes",   "\uD83D\uDCCB  My Quizzes"));
-        row.add(navCard("\u2795",       "Create Quiz", "Build a new assessment",             "\uD83D\uDCCB  My Quizzes"));
-        row.add(navCard("\uD83D\uDCCA", "Analytics",   "Evaluation roster & compliance",     "\uD83D\uDCCA  Analytics"));
+        row.add(navCard("\uD83D\uDCCB", "My Quizzes",  "View and manage all your quizzes",   "\uD83D\uDCCB  My Quizzes", null));
+        row.add(createQuizCard());
+        row.add(navCard("\uD83D\uDCCA", "Analytics",   "Evaluation roster & compliance",     "\uD83D\uDCCA  Analytics", null));
         return row;
+    }
+
+    private JPanel createQuizCard() {
+        JPanel card = navCard("\u2795", "Create Quiz", "Build a new assessment", "\uD83D\uDCCB  My Quizzes", null);
+        // Override click: navigate to quiz tab then open create dialog
+        for (MouseListener ml : card.getMouseListeners()) card.removeMouseListener(ml);
+        card.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) {
+                // Switch to quiz tab first
+                for (int i = 0; i < tabs.getTabCount(); i++) {
+                    if (tabs.getTitleAt(i).trim().equals("\uD83D\uDCCB  My Quizzes".trim())) {
+                        tabs.setSelectedIndex(i);
+                        break;
+                    }
+                }
+                // Then open the create dialog on the QuizPanel
+                Component quizComp = null;
+                for (int i = 0; i < tabs.getTabCount(); i++) {
+                    if (tabs.getComponentAt(i) instanceof QuizPanel qp) { quizComp = qp; break; }
+                }
+                if (quizComp instanceof QuizPanel qp) qp.openCreateDialog();
+            }
+            @Override public void mouseEntered(MouseEvent e) { card.setBackground(new Color(0xF0,0xF0,0xFF)); card.repaint(); }
+            @Override public void mouseExited(MouseEvent e)  { card.setBackground(Theme.SURFACE); card.repaint(); }
+        });
+        return card;
     }
 
     // ── Row 2: 👥 Manage Groups | 💬 Topic Discussions ───────────────────
@@ -141,13 +166,13 @@ public class LecturerDashboardPanel extends JPanel {
         row.setBackground(BG);
         row.setAlignmentX(LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 140));
-        row.add(navCard("\uD83D\uDC65", "Manage Groups",     "Create and manage class groups",             "\uD83D\uDC65  Groups"));
-        row.add(navCard("\uD83D\uDCAC", "Topic Discussions", "Create topics, chat & manage participation", "\uD83D\uDCAC  Forum"));
+        row.add(navCard("\uD83D\uDC65", "Manage Groups",     "Create and manage class groups",             "\uD83D\uDC65  Groups", null));
+        row.add(navCard("\uD83D\uDCAC", "Topic Discussions", "Create topics, chat & manage participation", "\uD83D\uDCAC  Forum", null));
         return row;
     }
 
     // ── Nav card — mirrors white .card with 36px emoji + hover lift shadow ─
-    private JPanel navCard(String icon, String title, String sub, String targetTab) {
+    private JPanel navCard(String icon, String title, String sub, String targetTab, Runnable onClick) {
         JPanel card = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -193,6 +218,7 @@ public class LecturerDashboardPanel extends JPanel {
         // hover: translateY(-3px) + indigo shadow — mirrors onmouseover in blade
         card.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
+                if (onClick != null) { onClick.run(); return; }
                 if (tabs == null) return;
                 for (int i = 0; i < tabs.getTabCount(); i++) {
                     if (tabs.getTitleAt(i).trim().equals(targetTab.trim())) {
