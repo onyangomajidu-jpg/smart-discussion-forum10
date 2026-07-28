@@ -391,17 +391,6 @@ public class TopicListPanel extends JPanel {
             row.add(avatar, BorderLayout.WEST);
             row.add(text,   BorderLayout.CENTER);
             return row;
-
-            JLabel lbl = (JLabel) super.getListCellRendererComponent(
-                    list, value, index, isSelected, cellHasFocus);
-            if (value instanceof Topic t) {
-                lbl.setText("<html><b>" + (t.pinned ? "📌 " : "") + esc(t.toString()) + "</b>" +
-                    "<br><font color='#6c757d' size='-2'>by " + esc(t.authorName) +
-                    "</font></html>");
-            }
-            lbl.setBorder(new EmptyBorder(8, 12, 8, 12));
-            return lbl;
- (Fix analytics backend logic and update Java GUI and analytics views)
         }
 
         private String esc(String s) {
