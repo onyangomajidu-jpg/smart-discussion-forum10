@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Blacklist;
+use App\Models\InactivitySetting;
 use App\Models\User;
 use App\Models\Warning;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Services\ModerationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 
 class ModerationController extends Controller
 {
@@ -152,4 +154,24 @@ class ModerationController extends Controller
         return back()->with('success', 'Blacklist entry removed.');
     }
 
+    // ── Inactivity Settings ───────────────────────────────────────────────
+
+    public function saveInactivitySettings(Request $request)
+    {
+        $data = $request->validate([
+            'inactivity_days'         => 'required|integer|min:1|max:365',
+            'second_warning_days'     => 'required|integer|min:1|max:365',
+            'blacklist_after_days'    => 'required|integer|min:1|max:365',
+            'blacklist_duration_days' => 'required|integer|min:1|max:365',
+        ]);
+
+        InactivitySetting::current()->update($data);
+        return back()->with('success', 'Inactivity settings saved.');
+    }
+
+    public function runInactivityCheck()
+    {
+        Artisan::call('moderation:check-inactivity');
+        return back()->with('success', 'Inactivity check completed. ' . trim(Artisan::output()));
+    }
 }

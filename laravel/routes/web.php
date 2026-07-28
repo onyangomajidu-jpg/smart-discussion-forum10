@@ -145,6 +145,10 @@ Route::middleware(['auth', App\Http\Middleware\AdministratorMiddleware::class])-
     Route::get('/admin/blacklists',              [ModerationController::class, 'blacklists'])->name('admin.blacklists.index');
     Route::post('/admin/blacklists',             [ModerationController::class, 'blacklistUser'])->name('admin.blacklists.store');
     Route::delete('/admin/blacklists/{id}',      [ModerationController::class, 'destroyBlacklist'])->name('admin.blacklists.destroy');
+
+    // Inactivity settings
+    Route::post('/admin/inactivity-settings',    [ModerationController::class, 'saveInactivitySettings'])->name('admin.inactivity.save');
+    Route::post('/admin/inactivity-run',         [ModerationController::class, 'runInactivityCheck'])->name('admin.inactivity.run');
 });
 
 // ── Public Routes ──────────────────────────────────────────────────
