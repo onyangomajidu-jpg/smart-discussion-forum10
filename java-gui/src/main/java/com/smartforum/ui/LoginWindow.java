@@ -38,11 +38,7 @@ public class LoginWindow extends JFrame {
     }
 
     private void buildUI() {
-<<<<<<< HEAD
         setTitle("Discussion Hub-Login");
-=======
-        setTitle("Discussion Hub — Login");
->>>>>>> 78dbd56889ed3049ff9bbcfcc353133ff82eacd0
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setResizable(true);
 

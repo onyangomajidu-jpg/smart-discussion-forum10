@@ -17,6 +17,7 @@ import java.awt.event.MouseEvent;
 public class SidebarLink extends JPanel {
 
     private boolean active = false;
+    private final JLabel iconLbl;
     private final JLabel textLbl;
     private final JLabel badgeLbl = new JLabel("", SwingConstants.CENTER) {
         @Override protected void paintComponent(Graphics g) {
@@ -38,8 +39,9 @@ public class SidebarLink extends JPanel {
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         setAlignmentX(Component.LEFT_ALIGNMENT);
+        setToolTipText(text);
 
-        JLabel iconLbl = new JLabel(icon);
+        iconLbl = new JLabel(icon, SwingConstants.CENTER);
         iconLbl.setFont(Theme.fontEmoji(14));
         iconLbl.setPreferredSize(new Dimension(20, 18));
 
@@ -65,6 +67,16 @@ public class SidebarLink extends JPanel {
             @Override public void mouseEntered(MouseEvent e) { if (!active) { setOpaque(true); setBackground(Theme.HOVER_BG); repaint(); } }
             @Override public void mouseExited(MouseEvent e)  { if (!active) { setOpaque(false); repaint(); } }
         });
+    }
+
+    /** Collapse to icon-only (no label, no badge) when sidebar is narrow. */
+    public void setCollapsed(boolean collapsed) {
+        textLbl.setVisible(!collapsed);
+        badgeLbl.setVisible(!collapsed && badgeLbl.getText() != null && !badgeLbl.getText().isEmpty());
+        setBorder(collapsed
+            ? new EmptyBorder(10, 8, 10, 8)
+            : new EmptyBorder(10, 12, 10, 12));
+        iconLbl.setPreferredSize(collapsed ? new Dimension(28, 18) : new Dimension(20, 18));
     }
 
     public SidebarLink withBadge(int count) {
