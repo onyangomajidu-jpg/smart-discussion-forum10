@@ -19,11 +19,14 @@ import java.util.function.Consumer;
  */
 public class TopicListPanel extends JPanel {
 
-    private static final Color PRIMARY  = new Color(0x66, 0x7E, 0xEA);
-    private static final Color SECONDARY= new Color(0x76, 0x4B, 0xA2);
+    // PRIMARY/SECONDARY were off-brand (#667EEA/#764BA2); now the exact
+    // Laravel gradient via Theme. BG/SEL_BG are distinct sidebar-list tints
+    // (not part of Laravel's root palette), so they stay local.
+    private static final Color PRIMARY  = Theme.PRIMARY;
+    private static final Color SECONDARY= Theme.SECONDARY;
     private static final Color BG       = new Color(0xF8, 0xF9, 0xFA);
     private static final Color SEL_BG   = new Color(0xE8, 0xEC, 0xFD);
-    private static final Color BORDER_C = new Color(0xE2, 0xE8, 0xF0);
+    private static final Color BORDER_C = Theme.BORDER;
 
     private final LocalCacheDatabase      cache;
     private final AuthUser                user;
@@ -32,7 +35,8 @@ public class TopicListPanel extends JPanel {
     private final DefaultListModel<Topic> model    = new DefaultListModel<>();
     private final JList<Topic>            list     = new JList<>(model);
     private final JTextField              searchField = new JTextField();
-    private String                        searchQuery = "";
+    private       String                  searchQuery = "";
+    private final JLabel                  emptyLabel;
 
     public TopicListPanel(LocalCacheDatabase cache, AuthUser user,
                           OfflineSyncManager syncManager, Consumer<Topic> onSelect) {
@@ -40,6 +44,10 @@ public class TopicListPanel extends JPanel {
         this.user        = user;
         this.syncManager = syncManager;
         this.onSelect    = onSelect;
+        emptyLabel = new JLabel("<html><center>📭<br>No topics yet.</center></html>", SwingConstants.CENTER);
+        emptyLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        emptyLabel.setForeground(new Color(0xA0, 0xAE, 0xC0));
+        emptyLabel.setVisible(false);
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(280, 0));
         setBackground(BG);
@@ -74,13 +82,15 @@ public class TopicListPanel extends JPanel {
             }
         });
 
-        JButton createBtn = new JButton("+ Create Topic");
+        JButton createBtn = new JButton("+ New Topic");
         createBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
         createBtn.setForeground(Color.WHITE);
         createBtn.setBackground(PRIMARY);
+        createBtn.setOpaque(true);
         createBtn.setBorderPainted(false);
         createBtn.setFocusPainted(false);
         createBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        createBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
         createBtn.addActionListener(e -> showCreateTopicDialog());
 
         topBar.add(searchField, BorderLayout.CENTER);
@@ -127,12 +137,35 @@ public class TopicListPanel extends JPanel {
         JScrollPane scroll = new JScrollPane(list);
         scroll.setBorder(null);
 
-        JPanel north = new JPanel(new BorderLayout());
-        north.add(header, BorderLayout.NORTH);
-        north.add(topBar, BorderLayout.CENTER);
+        JPanel listArea = new JPanel(new BorderLayout());
+        listArea.setBackground(BG);
+        listArea.add(scroll,     BorderLayout.CENTER);
+        listArea.add(emptyLabel, BorderLayout.SOUTH);
 
-        add(north,  BorderLayout.NORTH);
-        add(scroll, BorderLayout.CENTER);
+        // topics count label — mirrors .topics-count
+        JLabel countLbl = new JLabel("0 topics");
+        countLbl.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        countLbl.setForeground(new Color(0xA0, 0xAE, 0xC0));
+        countLbl.setBorder(new EmptyBorder(4, 16, 2, 16));
+
+        // update count whenever model changes
+        model.addListDataListener(new javax.swing.event.ListDataListener() {
+            private void update() {
+                int n = model.getSize();
+                countLbl.setText(n + " topic" + (n != 1 ? "s" : ""));
+            }
+            public void intervalAdded(javax.swing.event.ListDataEvent e)   { update(); }
+            public void intervalRemoved(javax.swing.event.ListDataEvent e) { update(); }
+            public void contentsChanged(javax.swing.event.ListDataEvent e) { update(); }
+        });
+
+        JPanel north = new JPanel(new BorderLayout());
+        north.add(header,   BorderLayout.NORTH);
+        north.add(topBar,   BorderLayout.CENTER);
+        north.add(countLbl, BorderLayout.SOUTH);
+
+        add(north,    BorderLayout.NORTH);
+        add(listArea, BorderLayout.CENTER);
     }
 
     // ── Create topic dialog ───────────────────────────────────────────────
@@ -250,10 +283,14 @@ public class TopicListPanel extends JPanel {
         List<Topic> topics = loadTopics();
         SwingUtilities.invokeLater(() -> {
             model.clear();
-            topics.stream()
+            List<Topic> filtered = topics.stream()
                 .filter(t -> searchQuery.isEmpty() ||
                              t.title.toLowerCase().contains(searchQuery))
-                .forEach(model::addElement);
+                .collect(java.util.stream.Collectors.toList());
+            filtered.forEach(model::addElement);
+            // 💭 empty state — mirrors @empty in topics.blade.php
+            list.setVisible(!filtered.isEmpty());
+            emptyLabel.setVisible(filtered.isEmpty());
         });
     }
 
@@ -266,7 +303,7 @@ public class TopicListPanel extends JPanel {
             while (rs.next()) userGroupIds.add(rs.getInt("group_id"));
         } catch (SQLException ignored) {}
 
-        String sql = "SELECT id, group_id, user_id, title, body, author_name, is_pinned, is_locked " +
+        String sql = "SELECT id, group_id, user_id, title, slug, body, author_name, is_pinned, is_locked, views, posts_count " +
                      "FROM cached_topics ORDER BY is_pinned DESC, id DESC";
         try (Connection conn = cache.connect();
              Statement  st   = conn.createStatement();
@@ -276,9 +313,10 @@ public class TopicListPanel extends JPanel {
                 boolean pinned = rs.getInt("is_pinned") == 1 && userGroupIds.contains(groupId);
                 result.add(new Topic(
                     rs.getInt("id"), groupId, rs.getInt("user_id"),
-                    rs.getString("title"), rs.getString("body"),
+                    rs.getString("title"), rs.getString("slug"), rs.getString("body"),
                     rs.getString("author_name"),
-                    pinned, rs.getInt("is_locked") == 1));
+                    pinned, rs.getInt("is_locked") == 1,
+                    rs.getInt("views"), rs.getInt("posts_count")));
             }
         } catch (SQLException e) {
             System.err.println("[TopicListPanel] load failed: " + e.getMessage());
@@ -288,21 +326,73 @@ public class TopicListPanel extends JPanel {
 
     // ── Cell renderer ─────────────────────────────────────────────────────
 
-    private static class TopicCellRenderer extends DefaultListCellRenderer {
+    private static class TopicCellRenderer implements ListCellRenderer<Topic> {
+        private static final Color PRIMARY   = Theme.PRIMARY;
+        private static final Color SECONDARY = Theme.SECONDARY;
+        private static final Color SEL_BG    = new Color(0xE8, 0xEC, 0xFD);
+        private static final Color BG        = new Color(0xF8, 0xF9, 0xFA);
+
         @Override
         public Component getListCellRendererComponent(
-                JList<?> list, Object value, int index,
+                JList<? extends Topic> list, Topic t, int index,
                 boolean isSelected, boolean cellHasFocus) {
-            JLabel lbl = (JLabel) super.getListCellRendererComponent(
-                    list, value, index, isSelected, cellHasFocus);
-            if (value instanceof Topic t) {
-                lbl.setText("<html><b>" + (t.isPinned ? "📌 " : "") + esc(t.toString()) + "</b>" +
-                    "<br><font color='#6c757d' size='-2'>by " + esc(t.authorName) +
-                    "</font></html>");
-            }
-            lbl.setBorder(new EmptyBorder(8, 12, 8, 12));
-            return lbl;
+
+
+            JPanel row = new JPanel(new BorderLayout(10, 0));
+            row.setBackground(isSelected ? SEL_BG : BG);
+            row.setBorder(isSelected
+                ? BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(0xC4, 0xB5, 0xFD), 1),
+                    new EmptyBorder(7, 9, 7, 9))
+                : new EmptyBorder(8, 10, 8, 10));
+
+            String initials = t.title.length() >= 2
+                ? t.title.substring(0, 2).toUpperCase()
+                : t.title.substring(0, 1).toUpperCase();
+            JLabel avatar = new JLabel(initials, SwingConstants.CENTER) {
+                @Override protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setPaint(new GradientPaint(0, 0, PRIMARY, getWidth(), getHeight(), SECONDARY));
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                    g2.dispose();
+                    super.paintComponent(g);
+                }
+            };
+            avatar.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            avatar.setForeground(Color.WHITE);
+            avatar.setOpaque(false);
+            avatar.setPreferredSize(new Dimension(38, 38));
+            avatar.setMinimumSize(new Dimension(38, 38));
+            avatar.setMaximumSize(new Dimension(38, 38));
+
+            JPanel text = new JPanel();
+            text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
+            text.setOpaque(false);
+
+            JLabel title = new JLabel((t.pinned ? "📌 " : "") + esc(t.title));
+            title.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            title.setForeground(isSelected ? new Color(0x4C, 0x1D, 0x95) : new Color(0x2D, 0x37, 0x48));
+
+            JLabel author = new JLabel("by " + esc(t.authorName));
+            author.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+            author.setForeground(new Color(0xA0, 0xAE, 0xC0));
+
+            JLabel stats = new JLabel("💬 " + t.postsCount + "  👁 " + t.views);
+            stats.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+            stats.setForeground(new Color(0x71, 0x80, 0x96));
+
+            text.add(title);
+            text.add(Box.createVerticalStrut(2));
+            text.add(author);
+            text.add(Box.createVerticalStrut(2));
+            text.add(stats);
+
+            row.add(avatar, BorderLayout.WEST);
+            row.add(text,   BorderLayout.CENTER);
+            return row;
         }
+
         private String esc(String s) {
             return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;");
         }

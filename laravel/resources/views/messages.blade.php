@@ -343,7 +343,7 @@
             @endif
         </button>
         <span class="d-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;">{{ auth()->user()->name }}</span>
-        <a href="{{ route('dashboard') }}" class="btn-logout" style="text-decoration:none;">&#8592; Dashboard</a>
+        <a href="{{ auth()->user()->isLecturer() ? route('lecturer.dashboard') : (auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard')) }}" class="btn-logout" style="text-decoration:none;">&#8592; Dashboard</a>
         <form action="{{ route('logout') }}" method="POST">
             @csrf
             <button type="submit" class="btn-logout">Logout</button>
@@ -431,9 +431,6 @@
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <button onclick="clearDmChat({{ $other->id }})" title="Clear chat on this device only" style="padding:7px 14px;background:#f1f5f9;color:#64748b;border:1.5px solid #e2e8f0;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">&#128465; Clear Chat</button>
-                    <a href="{{ route('topics.index') }}" class="btn-back-group" title="Back to Group Chat">
-                        &#8592; Group Chat
-                    </a>
                 </div>
             </div>
 
@@ -609,7 +606,7 @@
     </main>
 </div>
 
-{{-- Camera modal --}}
+{{-- Camera modal (must be in DOM before the JS below wires it up) --}}
 <div class="cam-modal" id="camModal">
     <video id="camVideo" autoplay playsinline></video>
     <canvas id="camCanvas" style="display:none"></canvas>

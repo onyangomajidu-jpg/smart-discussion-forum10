@@ -90,6 +90,7 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     // Profile
     Route::get('/profile',  [ProfileController::class, 'apiShow']);
     Route::put('/profile',  [ProfileController::class, 'apiUpdate']);
+    Route::post('/profile/avatar', [ProfileController::class, 'apiUploadAvatar']);
 
     // AI Recommendations
     Route::get('/recommendations', [RecommendationController::class, 'index']);
@@ -116,8 +117,12 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     Route::get('/lecturer/analytics',              [\App\Http\Controllers\StatisticsController::class, 'apiLecturerAnalytics']);
     Route::get('/lecturer/quizzes',                  [QuizController::class, 'apiLecturerIndex']);
     Route::post('/lecturer/quizzes',                 [QuizController::class, 'apiStore']);
+    Route::put('/lecturer/quizzes/{quiz}',            [QuizController::class, 'apiUpdate']);
     Route::post('/lecturer/quizzes/{quiz}/publish',  [QuizController::class, 'apiPublish']);
+    Route::post('/lecturer/quizzes/{quiz}/remind',   [QuizController::class, 'remind']);
     Route::get('/lecturer/quizzes/{quiz}/results',   [QuizController::class, 'apiResults']);
+    Route::delete('/lecturer/quizzes/{quiz}',        [QuizController::class, 'destroy']);
+    Route::get('/lecturer/my-groups',               [GroupController::class, 'apiMyGroups']);
     Route::post('/lecturer/groups',                  [GroupController::class, 'apiStore']);
     Route::delete('/lecturer/groups/{group}',        [GroupController::class, 'apiDestroy']);
     Route::get('/lecturer/analytics',                [StatisticsController::class, 'apiLecturerAnalytics']);

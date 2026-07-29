@@ -6,18 +6,29 @@ import com.smartforum.model.AuthUser;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.*;
+import java.net.URL;
 
+/**
+ * Mirrors lecturer/dashboard.blade.php exactly.
+ * Hero: indigo→purple gradient, "📋 Lecturer Portal" tag (fa-chalkboard-user),
+ * forum.png logo loaded from server, welcome + subtitle.
+ * Row 1: 📋 My Quizzes | ➕ Create Quiz | 📊 Analytics
+ * Row 2: 👥 Manage Groups | 💬 Topic Discussions
+ */
 public class LecturerDashboardPanel extends JPanel {
 
-    private static final Color PRIMARY  = new Color(0x63, 0x66, 0xF1);
-    private static final Color PURPLE   = new Color(0x8B, 0x5C, 0xF6);
-    private static final Color BG       = new Color(0xF1, 0xF5, 0xF9);
-    private static final Color SURFACE  = Color.WHITE;
-    private static final Color BORDER_C = new Color(0xE2, 0xE8, 0xF0);
-    private static final Color MUTED    = new Color(0x64, 0x74, 0x8B);
-    private static final Color TEXT     = new Color(0x0F, 0x17, 0x2A);
+    // Values now come from Theme (single source of truth shared with every
+    // other panel) instead of being re-declared per-file.
+    private static final Color C1      = Theme.PRIMARY;   // indigo  (#6366f1)
+    private static final Color C2      = Theme.SECONDARY; // purple  (#8b5cf6)
+    private static final Color BG      = Theme.BG;
+    private static final Color SURFACE = Theme.SURFACE;
+    private static final Color BORDER  = Theme.BORDER;
+    private static final Color TEXT    = Theme.TEXT;
+    private static final Color MUTED   = Theme.MUTED;
 
-    private final AuthUser   user;
+    private final AuthUser    user;
     private final JTabbedPane tabs;
 
     public LecturerDashboardPanel(ApiClient api, AuthUser user, JTabbedPane tabs) {
@@ -34,53 +45,11 @@ public class LecturerDashboardPanel extends JPanel {
         body.setBackground(BG);
         body.setBorder(new EmptyBorder(24, 24, 40, 24));
 
-        // Hero
-        JPanel hero = new JPanel(new BorderLayout());
-        hero.setBackground(PRIMARY);
-        hero.setBorder(new EmptyBorder(28, 32, 28, 32));
-        hero.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
-        hero.setAlignmentX(LEFT_ALIGNMENT);
-        JPanel heroLeft = new JPanel();
-        heroLeft.setOpaque(false);
-        heroLeft.setLayout(new BoxLayout(heroLeft, BoxLayout.Y_AXIS));
-        JLabel portalLbl = new JLabel("Lecturer Portal");
-        portalLbl.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        portalLbl.setForeground(new Color(200, 200, 255));
-        JLabel welcomeLbl = new JLabel("Welcome back, " + user.getName() + " 👋");
-        welcomeLbl.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        welcomeLbl.setForeground(Color.WHITE);
-        JLabel subLbl = new JLabel("Manage your quizzes, track student progress, and view results.");
-        subLbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        subLbl.setForeground(new Color(200, 200, 255));
-        heroLeft.add(portalLbl);
-        heroLeft.add(Box.createVerticalStrut(6));
-        heroLeft.add(welcomeLbl);
-        heroLeft.add(Box.createVerticalStrut(4));
-        heroLeft.add(subLbl);
-        hero.add(heroLeft, BorderLayout.WEST);
-
-        // Row 1: My Quizzes, Create Quiz, Analytics
-        JPanel row1 = new JPanel(new GridLayout(1, 3, 16, 0));
-        row1.setBackground(BG);
-        row1.setAlignmentX(LEFT_ALIGNMENT);
-        row1.setMaximumSize(new Dimension(Integer.MAX_VALUE, 130));
-        row1.add(navCard("📋", "My Quizzes",        "View and manage all your quizzes",       "🎯  Quizzes"));
-        row1.add(navCard("➕", "Create Quiz",        "Build a new assessment",                 "🎯  Quizzes"));
-        row1.add(navCard("📊", "Analytics",          "Evaluation roster & compliance",         "📊  Analytics"));
-
-        // Row 2: Manage Groups, Topic Discussions
-        JPanel row2 = new JPanel(new GridLayout(1, 2, 16, 0));
-        row2.setBackground(BG);
-        row2.setAlignmentX(LEFT_ALIGNMENT);
-        row2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 130));
-        row2.add(navCard("👥", "Manage Groups",      "Create and manage class groups",         "👥  Groups"));
-        row2.add(navCard("💬", "Topic Discussions",  "Create topics, chat & manage participation", "💬  Forum"));
-
-        body.add(hero);
+        body.add(buildHero());
         body.add(Box.createVerticalStrut(24));
-        body.add(row1);
+        body.add(buildRow1());
         body.add(Box.createVerticalStrut(16));
-        body.add(row2);
+        body.add(buildRow2());
 
         JScrollPane scroll = new JScrollPane(body,
             JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
@@ -90,29 +59,155 @@ public class LecturerDashboardPanel extends JPanel {
         add(scroll, BorderLayout.CENTER);
     }
 
-    private JPanel navCard(String icon, String title, String sub, String targetTab) {
-        JPanel card = new JPanel(new BorderLayout(0, 8));
+    // ── Hero — mirrors the indigo→purple gradient banner in lecturer/dashboard.blade.php ──
+    private JPanel buildHero() {
+        JPanel hero = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // mirrors: background:linear-gradient(135deg,#6366f1,#8b5cf6)
+                g2.setPaint(new GradientPaint(0, 0, C1, getWidth(), getHeight(), C2));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
+                // decorative circle — mirrors position:absolute;top:-60px;right:-60px circle
+                g2.setColor(new Color(255, 255, 255, 18));
+                g2.fillOval(getWidth() - 130, -60, 200, 200);
+                g2.dispose();
+            }
+        };
+        hero.setOpaque(false);
+        hero.setBorder(new EmptyBorder(28, 32, 28, 32));
+        hero.setMaximumSize(new Dimension(Integer.MAX_VALUE, 130));
+        hero.setAlignmentX(LEFT_ALIGNMENT);
+
+        // Left: tag + welcome + subtitle
+        JPanel left = new JPanel();
+        left.setOpaque(false);
+        left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
+
+        // mirrors: fa-chalkboard-user + "Lecturer Portal" uppercase tag
+        JLabel tag = new JLabel("\uD83D\uDCCB LECTURER PORTAL"); // 📋
+        tag.setFont(new Font("Segoe UI Emoji", Font.BOLD, 11));
+        tag.setForeground(new Color(200, 200, 255, 180));
+
+        JLabel welcome = new JLabel("Welcome back, " + user.getName() + " \uD83D\uDC4B"); // 👋
+        welcome.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        welcome.setForeground(Color.WHITE);
+
+        JLabel sub = new JLabel("Manage your quizzes, track student progress, and view results.");
+        sub.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        sub.setForeground(new Color(200, 200, 255, 200));
+
+        left.add(tag);
+        left.add(Box.createVerticalStrut(6));
+        left.add(welcome);
+        left.add(Box.createVerticalStrut(4));
+        left.add(sub);
+
+        // Right: forum.png logo — mirrors <img src="{{ asset('images/forum.png') }}"> in navbar
+        JLabel logoLbl = new JLabel("\uD83D\uDCAC", SwingConstants.CENTER); // 💬 fallback
+        logoLbl.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
+        new SwingWorker<ImageIcon, Void>() {
+            @Override protected ImageIcon doInBackground() throws Exception {
+                URL url = new URL(ApiClient.BASE_URL.replace("/api", "") + "/images/forum.png");
+                Image img = new ImageIcon(url).getImage().getScaledInstance(56, 56, Image.SCALE_SMOOTH);
+                return new ImageIcon(img);
+            }
+            @Override protected void done() {
+                try { logoLbl.setIcon(get()); logoLbl.setText(null); } catch (Exception ignored) {}
+            }
+        }.execute();
+
+        hero.add(left,    BorderLayout.WEST);
+        hero.add(logoLbl, BorderLayout.EAST);
+        return hero;
+    }
+
+    // ── Row 1: 📋 My Quizzes | ➕ Create Quiz | 📊 Analytics ─────────────
+    private JPanel buildRow1() {
+        JPanel row = new JPanel(new GridLayout(1, 3, 16, 0));
+        row.setBackground(BG);
+        row.setAlignmentX(LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 140));
+        row.add(navCard("\uD83D\uDCCB", "My Quizzes",  "View and manage all your quizzes",   "\uD83D\uDCCB  My Quizzes", null));
+        row.add(createQuizCard());
+        row.add(navCard("\uD83D\uDCCA", "Analytics",   "Evaluation roster & compliance",     "\uD83D\uDCCA  Analytics", null));
+        return row;
+    }
+
+    private JPanel createQuizCard() {
+        JPanel card = navCard("\u2795", "Create Quiz", "Build a new assessment", "\uD83D\uDCCB  My Quizzes", null);
+        // Override click: navigate to quiz tab then open create dialog
+        for (MouseListener ml : card.getMouseListeners()) card.removeMouseListener(ml);
+        card.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) {
+                // Switch to quiz tab first
+                for (int i = 0; i < tabs.getTabCount(); i++) {
+                    if (tabs.getTitleAt(i).trim().equals("\uD83D\uDCCB  My Quizzes".trim())) {
+                        tabs.setSelectedIndex(i);
+                        break;
+                    }
+                }
+                // Then open the create dialog on the QuizPanel
+                Component quizComp = null;
+                for (int i = 0; i < tabs.getTabCount(); i++) {
+                    if (tabs.getComponentAt(i) instanceof QuizPanel qp) { quizComp = qp; break; }
+                }
+                if (quizComp instanceof QuizPanel qp) qp.openCreateDialog();
+            }
+            @Override public void mouseEntered(MouseEvent e) { card.setBackground(new Color(0xF0,0xF0,0xFF)); card.repaint(); }
+            @Override public void mouseExited(MouseEvent e)  { card.setBackground(Theme.SURFACE); card.repaint(); }
+        });
+        return card;
+    }
+
+    // ── Row 2: 👥 Manage Groups | 💬 Topic Discussions ───────────────────
+    private JPanel buildRow2() {
+        JPanel row = new JPanel(new GridLayout(1, 2, 16, 0));
+        row.setBackground(BG);
+        row.setAlignmentX(LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 140));
+        row.add(navCard("\uD83D\uDC65", "Manage Groups",     "Create and manage class groups",             "\uD83D\uDC65  Groups", null));
+        row.add(navCard("\uD83D\uDCAC", "Topic Discussions", "Create topics, chat & manage participation", "\uD83D\uDCAC  Forum", null));
+        return row;
+    }
+
+    // ── Nav card — mirrors white .card with 36px emoji + hover lift shadow ─
+    private JPanel navCard(String icon, String title, String sub, String targetTab, Runnable onClick) {
+        JPanel card = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                g2.dispose();
+            }
+        };
         card.setBackground(SURFACE);
+        card.setOpaque(false);
         card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(BORDER_C),
+            BorderFactory.createLineBorder(BORDER),
             new EmptyBorder(20, 20, 20, 20)));
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-        JLabel ico = new JLabel(icon, SwingConstants.CENTER);
-        ico.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
-        JLabel titleLbl = new JLabel(title, SwingConstants.CENTER);
-        titleLbl.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        titleLbl.setForeground(TEXT);
-        JLabel subLbl = new JLabel("<html><center>" + sub + "</center></html>", SwingConstants.CENTER);
-        subLbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        subLbl.setForeground(MUTED);
 
         JPanel center = new JPanel();
         center.setOpaque(false);
         center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
+
+        // font-size:36px emoji — exact mirror of Laravel card emoji
+        JLabel ico = new JLabel(icon, SwingConstants.CENTER);
+        ico.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 36));
         ico.setAlignmentX(CENTER_ALIGNMENT);
+
+        JLabel titleLbl = new JLabel(title, SwingConstants.CENTER);
+        titleLbl.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        titleLbl.setForeground(TEXT);
         titleLbl.setAlignmentX(CENTER_ALIGNMENT);
+
+        JLabel subLbl = new JLabel("<html><center>" + sub + "</center></html>", SwingConstants.CENTER);
+        subLbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        subLbl.setForeground(MUTED);
         subLbl.setAlignmentX(CENTER_ALIGNMENT);
+
         center.add(ico);
         center.add(Box.createVerticalStrut(8));
         center.add(titleLbl);
@@ -120,8 +215,10 @@ public class LecturerDashboardPanel extends JPanel {
         center.add(subLbl);
         card.add(center, BorderLayout.CENTER);
 
-        card.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+        // hover: translateY(-3px) + indigo shadow — mirrors onmouseover in blade
+        card.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) {
+                if (onClick != null) { onClick.run(); return; }
                 if (tabs == null) return;
                 for (int i = 0; i < tabs.getTabCount(); i++) {
                     if (tabs.getTitleAt(i).trim().equals(targetTab.trim())) {
@@ -130,11 +227,13 @@ public class LecturerDashboardPanel extends JPanel {
                     }
                 }
             }
-            @Override public void mouseEntered(java.awt.event.MouseEvent e) {
+            @Override public void mouseEntered(MouseEvent e) {
                 card.setBackground(new Color(0xF0, 0xF0, 0xFF));
+                card.repaint();
             }
-            @Override public void mouseExited(java.awt.event.MouseEvent e) {
+            @Override public void mouseExited(MouseEvent e) {
                 card.setBackground(SURFACE);
+                card.repaint();
             }
         });
         return card;

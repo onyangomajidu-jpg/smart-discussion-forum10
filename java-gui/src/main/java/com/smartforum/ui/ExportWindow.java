@@ -21,19 +21,21 @@ import java.util.Map;
  *  • Export to PDF via GET /api/topics/{id}/export-pdf  (saves locally + opens)
  *  • Share a post to Twitter / LinkedIn / Facebook via POST /api/posts/{id}/share
  */
-public class ExportWindow extends JFrame {
+public class ExportWindow extends JPanel {
 
     // ── Brand colours (mirror MainWindow) ────────────────────────────────
-    private static final Color PRIMARY   = new Color(0x63, 0x66, 0xF1);
-    private static final Color SECONDARY = new Color(0x8B, 0x5C, 0xF6);
-    private static final Color SUCCESS   = new Color(0x10, 0xB9, 0x81);
-    private static final Color WARNING   = new Color(0xF5, 0x9E, 0x0B);
-    private static final Color DANGER    = new Color(0xEF, 0x44, 0x44);
-    private static final Color BG        = new Color(0xF1, 0xF5, 0xF9);
-    private static final Color SURFACE   = Color.WHITE;
-    private static final Color BORDER_C  = new Color(0xE2, 0xE8, 0xF0);
-    private static final Color TEXT      = new Color(0x0F, 0x17, 0x2A);
-    private static final Color MUTED     = new Color(0x64, 0x74, 0x8B);
+    // Values now come from Theme (single source of truth shared with every
+    // other panel) instead of being re-declared per-file.
+    private static final Color PRIMARY   = Theme.PRIMARY;
+    private static final Color SECONDARY = Theme.SECONDARY;
+    private static final Color SUCCESS   = Theme.SUCCESS;
+    private static final Color WARNING   = Theme.WARNING;
+    private static final Color DANGER    = Theme.DANGER;
+    private static final Color BG        = Theme.BG;
+    private static final Color SURFACE   = Theme.SURFACE;
+    private static final Color BORDER_C  = Theme.BORDER;
+    private static final Color TEXT      = Theme.TEXT;
+    private static final Color MUTED     = Theme.MUTED;
 
     private final ApiClient    api;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -53,19 +55,10 @@ public class ExportWindow extends JFrame {
     public ExportWindow(ApiClient api) {
         this.api = api;
 
-        setTitle("SmartForum — Export & Share");
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        setSize(780, 600);
-        setMinimumSize(new Dimension(680, 520));
-        setLocationRelativeTo(null);
-        setResizable(true);
-
-        JPanel root = new JPanel(new BorderLayout());
-        root.setBackground(BG);
-        root.add(buildHeader(),  BorderLayout.NORTH);
-        root.add(buildBody(),    BorderLayout.CENTER);
-        setContentPane(root);
-
+        setLayout(new BorderLayout());
+        setBackground(BG);
+        add(buildHeader(), BorderLayout.NORTH);
+        add(buildBody(),   BorderLayout.CENTER);
         loadTopics();
     }
 

@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class ApiClient {
 
     public static final String BASE_URL =
-        System.getProperty("api.baseUrl", "http://localhost:8000/api");
+        System.getProperty("api.baseUrl", "http://discussionhub.onrender.com/api");
 
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
@@ -34,6 +34,10 @@ public class ApiClient {
         this.bearerToken = token;
     }
 
+    private static String bodyOrEmpty(Response r) throws IOException {
+        return r.body() != null ? r.body().string() : "";
+    }
+
     /** GET request — returns response body as String. */
     public String get(String endpoint) throws IOException {
         Request request = new Request.Builder()
@@ -42,8 +46,9 @@ public class ApiClient {
             .header("Authorization", bearerToken != null ? "Bearer " + bearerToken : "")
             .build();
         try (Response response = http.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
-            return response.body() != null ? response.body().string() : "";
+            String body = bodyOrEmpty(response);
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code() + ": " + body);
+            return body;
         }
     }
 
@@ -57,8 +62,9 @@ public class ApiClient {
             .post(RequestBody.create(json, JSON))
             .build();
         try (Response response = http.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
-            return response.body() != null ? response.body().string() : "";
+            String rb = bodyOrEmpty(response);
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code() + ": " + rb);
+            return rb;
         }
     }
 
@@ -72,8 +78,9 @@ public class ApiClient {
             .put(RequestBody.create(json, JSON))
             .build();
         try (Response response = http.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
-            return response.body() != null ? response.body().string() : "";
+            String rb = bodyOrEmpty(response);
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code() + ": " + rb);
+            return rb;
         }
     }
 
@@ -87,8 +94,9 @@ public class ApiClient {
             .patch(RequestBody.create(json, JSON))
             .build();
         try (Response response = http.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
-            return response.body() != null ? response.body().string() : "";
+            String rb = bodyOrEmpty(response);
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code() + ": " + rb);
+            return rb;
         }
     }
 
@@ -101,8 +109,9 @@ public class ApiClient {
             .delete()
             .build();
         try (Response response = http.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
-            return response.body() != null ? response.body().string() : "";
+            String rb = bodyOrEmpty(response);
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code() + ": " + rb);
+            return rb;
         }
     }
 
@@ -116,6 +125,56 @@ public class ApiClient {
         try (Response response = http.newCall(request).execute()) {
             if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
             return response.body() != null ? response.body().bytes() : new byte[0];
+        }
+    }
+
+    /** Multipart avatar upload to POST /api/profile/avatar. */
+    public String uploadAvatar(java.io.File file, String name) throws IOException {
+        String mime = file.getName().toLowerCase().endsWith(".png") ? "image/png"
+                    : file.getName().toLowerCase().endsWith(".gif") ? "image/gif"
+                    : file.getName().toLowerCase().endsWith(".webp") ? "image/webp"
+                    : "image/jpeg";
+        RequestBody body = new MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("avatar", file.getName(),
+                RequestBody.create(file, MediaType.parse(mime)))
+            .build();
+        Request request = new Request.Builder()
+            .url(BASE_URL + "/profile/avatar")
+            .header("Accept", "application/json")
+            .header("Authorization", bearerToken != null ? "Bearer " + bearerToken : "")
+            .post(body)
+            .build();
+        try (Response response = http.newCall(request).execute()) {
+            String rb = bodyOrEmpty(response);
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code() + ": " + rb);
+            return rb;
+        }
+    }
+
+    /**
+     * Multipart POST for attachments (image, file, audio).
+     * fieldName  — form field name expected by the API ("image", "file", "audio")
+     * mimeType   — e.g. "image/jpeg", "audio/wav", "application/octet-stream"
+     * extraFields — additional string fields (e.g. topic_id, body)
+     */
+    public String postMultipart(String endpoint, String fieldName, java.io.File file,
+                                String mimeType, Map<String, Object> extraFields) throws IOException {
+        MultipartBody.Builder mb = new MultipartBody.Builder().setType(MultipartBody.FORM);
+        mb.addFormDataPart(fieldName, file.getName(),
+            RequestBody.create(file, MediaType.parse(mimeType)));
+        for (Map.Entry<String, Object> e : extraFields.entrySet())
+            mb.addFormDataPart(e.getKey(), String.valueOf(e.getValue()));
+        Request request = new Request.Builder()
+            .url(BASE_URL + endpoint)
+            .header("Accept", "application/json")
+            .header("Authorization", bearerToken != null ? "Bearer " + bearerToken : "")
+            .post(mb.build())
+            .build();
+        try (Response response = http.newCall(request).execute()) {
+            String rb = bodyOrEmpty(response);
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code() + ": " + rb);
+            return rb;
         }
     }
 

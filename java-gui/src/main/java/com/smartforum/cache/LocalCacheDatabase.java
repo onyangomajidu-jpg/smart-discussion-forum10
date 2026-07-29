@@ -47,6 +47,39 @@ public class LocalCacheDatabase {
                 System.out.println("[LocalCache] Migrated: added user_id to cached_topics.");
             }
         }
+        // Add slug to cached_topics if missing
+        try (ResultSet rs = conn.getMetaData().getColumns(null, null, "cached_topics", "slug")) {
+            if (!rs.next()) {
+                conn.createStatement().execute(
+                    "ALTER TABLE cached_topics ADD COLUMN slug TEXT NOT NULL DEFAULT ''");
+                System.out.println("[LocalCache] Migrated: added slug to cached_topics.");
+            }
+        }
+        // Add posts_count to cached_topics if missing
+        try (ResultSet rs = conn.getMetaData().getColumns(null, null, "cached_topics", "posts_count")) {
+            if (!rs.next()) {
+                conn.createStatement().execute(
+                    "ALTER TABLE cached_topics ADD COLUMN posts_count INTEGER NOT NULL DEFAULT 0");
+                System.out.println("[LocalCache] Migrated: added posts_count to cached_topics.");
+            }
+        }
+        // Add attachment columns to cached_posts if missing
+        String[][] postCols = {
+            {"image_path", "TEXT"},
+            {"audio_path", "TEXT"},
+            {"file_path",  "TEXT"},
+            {"file_name",  "TEXT"},
+            {"file_size",  "INTEGER NOT NULL DEFAULT 0"}
+        };
+        for (String[] col : postCols) {
+            try (ResultSet rs = conn.getMetaData().getColumns(null, null, "cached_posts", col[0])) {
+                if (!rs.next()) {
+                    conn.createStatement().execute(
+                        "ALTER TABLE cached_posts ADD COLUMN " + col[0] + " " + col[1]);
+                    System.out.println("[LocalCache] Migrated: added " + col[0] + " to cached_posts.");
+                }
+            }
+        }
         // Add role-specific profile columns to session_cache if missing
         String[][] newCols = {
             {"avatar",        "TEXT"},
@@ -91,11 +124,13 @@ public class LocalCacheDatabase {
                 group_id     INTEGER NOT NULL,
                 user_id      INTEGER NOT NULL DEFAULT 0,
                 title        TEXT    NOT NULL,
+                slug         TEXT    NOT NULL DEFAULT '',
                 body         TEXT    NOT NULL,
                 author_name  TEXT    NOT NULL,
                 is_pinned    INTEGER NOT NULL DEFAULT 0,
                 is_locked    INTEGER NOT NULL DEFAULT 0,
                 views        INTEGER NOT NULL DEFAULT 0,
+                posts_count  INTEGER NOT NULL DEFAULT 0,
                 cached_at    TEXT    NOT NULL DEFAULT (datetime('now'))
             )
             """);

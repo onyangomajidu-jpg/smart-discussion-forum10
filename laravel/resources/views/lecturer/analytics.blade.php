@@ -23,7 +23,7 @@
 }
 
 /* ── KPI Cards ────────────────────────────────────────────────────── */
-.lec-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+.lec-kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:16px; margin-bottom:24px; }
 .lec-kpi {
     background:#fff; border-radius:14px; padding:20px;
     border:1px solid #e2e8f0; box-shadow:0 2px 10px rgba(0,0,0,.04);
@@ -178,7 +178,7 @@
 .btn-csv  { background:linear-gradient(135deg,#10b981,#059669); color:#fff; }
 
 @media(max-width:1024px) {
-    .lec-kpi-grid { grid-template-columns:repeat(2,1fr); }
+    .lec-kpi-grid { grid-template-columns:repeat(3,1fr); }
     .lec-grid     { grid-template-columns:1fr; }
 }
 @media(max-width:768px) {
@@ -264,6 +264,11 @@
         <div class="lec-kpi-icon"><i class="fa-solid fa-percent"></i></div>
         <div class="lec-kpi-val">{{ round($avgScore, 1) }}%</div>
         <div class="lec-kpi-lbl">Avg Score</div>
+    </div>
+    <div class="lec-kpi" style="--c:#ef4444">
+        <div class="lec-kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="lec-kpi-val">{{ $totalSubmissions > 0 ? round(($roster->where('percentage', '>=', 50)->count() / $totalSubmissions) * 100) : 0 }}%</div>
+        <div class="lec-kpi-lbl">Pass Rate</div>
     </div>
 </div>
 
@@ -404,6 +409,39 @@
             </div>
         </div>
 
+        {{-- Score Distribution Bar Chart --}}
+        <div class="quiz-summary-card">
+            <div class="quiz-summary-header">
+                <i class="fa-solid fa-chart-bar"></i> Score Distribution
+            </div>
+            <div style="padding:16px">
+                @php
+                    $bands = [
+                        'A (90-100%)' => $roster->where('percentage','>=',90)->count(),
+                        'B (75-89%)'  => $roster->whereBetween('percentage',[75,89])->count(),
+                        'C (60-74%)'  => $roster->whereBetween('percentage',[60,74])->count(),
+                        'D (50-59%)'  => $roster->whereBetween('percentage',[50,59])->count(),
+                        'F (<50%)'    => $roster->where('percentage','<',50)->count(),
+                    ];
+                    $bandColors = ['#10b981','#6366f1','#f59e0b','#f97316','#ef4444'];
+                    $maxBand = max(array_values($bands)) ?: 1;
+                @endphp
+                @php $bi = 0; @endphp
+                @foreach($bands as $label => $count)
+                <div style="margin-bottom:10px">
+                    <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:4px">
+                        <span style="color:#374151">{{ $label }}</span>
+                        <span style="color:#64748b">{{ $count }}</span>
+                    </div>
+                    <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+                        <div style="height:100%;width:{{ $maxBand > 0 ? round(($count/$maxBand)*100) : 0 }}%;background:{{ $bandColors[$bi] }};border-radius:4px;transition:width .8s"></div>
+                    </div>
+                </div>
+                @php $bi++; @endphp
+                @endforeach
+            </div>
+        </div>
+
         {{-- Quiz Summary --}}
         <div class="quiz-summary-card">
             <div class="quiz-summary-header">
@@ -473,7 +511,8 @@ function filterRoster(query) {
     let   shown = 0;
     rows.forEach(row => {
         const name  = row.querySelector('td:first-child')?.textContent.toLowerCase() ?? '';
-        const match = !q || name.includes(q);
+        const email = row.querySelector('td:first-child .text-muted, td:first-child div:last-child')?.textContent.toLowerCase() ?? '';
+        const match = !q || name.includes(q) || email.includes(q);
         row.style.display = match ? '' : 'none';
         if (match) shown++;
     });

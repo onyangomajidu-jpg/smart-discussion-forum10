@@ -967,6 +967,16 @@
     </div>
 </div>
 
+{{-- Camera modal (must be in DOM before the JS below wires it up) --}}
+<div class="cam-modal" id="camModal">
+    <video id="camVideo" autoplay playsinline></video>
+    <canvas id="camCanvas" style="display:none"></canvas>
+    <div class="cam-actions">
+        <button class="btn-cam-close" id="camCloseBtn">&#10005; Cancel</button>
+        <button class="btn-cam-snap" id="camSnapBtn" title="Capture"></button>
+    </div>
+</div>
+
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     let editingPostId = null;
@@ -1588,15 +1598,6 @@
     })();
 </script>
 
-{{-- Camera modal --}}
-<div class="cam-modal" id="camModal">
-    <video id="camVideo" autoplay playsinline></video>
-    <canvas id="camCanvas" style="display:none"></canvas>
-    <div class="cam-actions">
-        <button class="btn-cam-close" id="camCloseBtn">&#10005; Cancel</button>
-        <button class="btn-cam-snap" id="camSnapBtn" title="Capture"></button>
-    </div>
-</div>
 @auth
 @if(auth()->user()->isMember())
 <style>

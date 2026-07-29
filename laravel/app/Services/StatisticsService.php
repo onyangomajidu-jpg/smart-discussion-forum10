@@ -67,8 +67,13 @@ class StatisticsService
 
         $forum = DB::table('posts')
             ->where('user_id', $userId)
-            ->selectRaw('COUNT(*) as total_posts, COUNT(DISTINCT topic_id) as topics_joined')
+            ->selectRaw('COUNT(*) as total_posts, COUNT(DISTINCT topic_id) as topics_joined, MAX(created_at) as last_post_at')
             ->first();
+
+        $totalReplies = DB::table('posts')
+            ->where('user_id', $userId)
+            ->whereNotNull('parent_id')
+            ->count();
 
         $totalQuizzes     = Quiz::whereHas('group.members', fn($q) => $q->where('user_id', $userId))->count();
         $completedQuizzes = DB::table('participation_records')->where('user_id', $userId)->count();
@@ -106,6 +111,10 @@ class StatisticsService
             'forum' => [
                 'total_posts'   => $forum->total_posts ?? 0,
                 'topics_joined' => $forum->topics_joined ?? 0,
+                'total_replies' => $totalReplies,
+                'last_active'   => $forum->last_post_at
+                    ? \Carbon\Carbon::parse($forum->last_post_at)->diffForHumans()
+                    : 'Never',
             ],
             'weekly_performance' => $weekly,
             'subject_allocation' => $subjects,

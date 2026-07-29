@@ -178,7 +178,7 @@
         <div class="kpi-icon purple"><i class="fa-solid fa-calculator"></i></div>
         <div>
             <div class="kpi-value">{{ $stats['quiz']['total_attempts'] }}</div>
-            <div class="kpi-label">Total Quizzes Taken</div>
+            <div class="kpi-label">Total Quizzes  taken</div>
         </div>
     </div>
     <div class="kpi-card">
@@ -411,6 +411,14 @@
         <div class="qs-row">
             <span class="qs-label"><i class="fa-solid fa-layer-group" style="color:#f59e0b;width:14px"></i> Subjects Covered</span>
             <span class="qs-val">{{ count($stats['subject_allocation']) }}</span>
+        </div>
+        <div class="qs-row">
+            <span class="qs-label"><i class="fa-solid fa-reply" style="color:#ec4899;width:14px"></i> Total Replies</span>
+            <span class="qs-val">{{ $stats['forum']['total_replies'] ?? 0 }}</span>
+        </div>
+        <div class="qs-row">
+            <span class="qs-label"><i class="fa-solid fa-clock" style="color:#64748b;width:14px"></i> Last Active</span>
+            <span class="qs-val" style="font-size:11px">{{ $stats['forum']['last_active'] ?? 'Never' }}</span>
         </div>
     </div>
 
