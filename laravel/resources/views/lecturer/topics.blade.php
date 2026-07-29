@@ -137,7 +137,7 @@
         .chat-row.mine .chat-avatar { background: linear-gradient(135deg,#25d366,#128c7e); }
         .chat-row.topic-origin .chat-avatar { background: linear-gradient(135deg,#f59e0b,#d97706); }
 
-        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 68%; min-width: 0; overflow: hidden; }
+        .chat-bubble-wrap { display: flex; flex-direction: column; max-width: 68%; min-width: 0; }
         .chat-row.mine .chat-bubble-wrap { align-items: flex-end; }
 
         .bubble-author {
@@ -326,7 +326,7 @@
         .chat-row.mine .btn-file-dl { background: linear-gradient(135deg,#667eea,#764ba2); box-shadow: 0 2px 8px rgba(102,126,234,.4); }
         .chat-row.mine .btn-file-dl:hover { box-shadow: 0 4px 14px rgba(102,126,234,.55); }
         /* Image bubble */
-        .img-msg-bubble { border-radius: 8px 8px 8px 2px; overflow: hidden; max-width: 280px; box-shadow: 0 1px 4px rgba(0,0,0,.15); cursor: pointer; position: relative; display: inline-block; }
+        .img-msg-bubble { border-radius: 8px 8px 8px 2px; overflow: hidden; max-width: 280px; box-shadow: 0 1px 4px rgba(0,0,0,.15); cursor: pointer; position: relative; display: block; }
         .img-msg-bubble img { width: 100%; display: block; }
         .chat-row.mine .img-msg-bubble { border-radius: 8px 8px 2px 8px; }
         .img-time-badge {

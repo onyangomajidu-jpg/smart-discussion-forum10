@@ -70,9 +70,8 @@ class StatisticsService
             ->selectRaw('COUNT(*) as total_posts, COUNT(DISTINCT topic_id) as topics_joined, MAX(created_at) as last_post_at')
             ->first();
 
-        $totalReplies = DB::table('posts')
+        $totalReplies = DB::table('replies')
             ->where('user_id', $userId)
-            ->whereNotNull('parent_id')
             ->count();
 
         $totalQuizzes     = Quiz::whereHas('group.members', fn($q) => $q->where('user_id', $userId))->count();
