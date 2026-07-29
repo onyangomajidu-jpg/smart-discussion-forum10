@@ -51,7 +51,7 @@ public LoginWindow(AuthService authService, ApiClient api, LocalCacheDatabase ca
     // ── UI construction ───────────────────────────────────────────────────
 
     private void buildUI() {
-        setTitle("Smart Discussion Forum — Login");
+        setTitle("Discussion Hub-Login");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setResizable(false);
 

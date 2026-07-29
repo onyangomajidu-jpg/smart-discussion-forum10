@@ -52,7 +52,7 @@ class QuizModuleSeeder extends Seeder
         Lecturer::create([
             'user_id'        => $lecturer->id,
             'staff_id'       => 'STAFF-001',
-            'department'     => 'Computer Science',
+            'department'     => 'Computer Networks',
             'specialisation' => 'Software Engineering',
         ]);
 

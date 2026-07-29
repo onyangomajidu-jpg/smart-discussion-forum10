@@ -107,7 +107,7 @@ class RegisterController extends Controller
                     $rules['student_id'] = ['nullable', 'string', 'unique:members'];
                     $rules['programme'] = ['nullable', 'string'];
                     $rules['year_of_study'] = ['nullable', 'integer', 'min:1', 'max:5'];
-                    $rules['group_id'] = ['nullable', 'exists:groups,id'];
+                    // $rules['group_id'] = ['nullable', 'exists:groups,id'];
                     break;
                     
                 case 'lecturer':

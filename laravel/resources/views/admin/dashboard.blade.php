@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Admin Dashboard — SmartForum')
+@section('title', 'Admin Dashboard-Discussion Hub')
 
 @push('styles')
 <style>
