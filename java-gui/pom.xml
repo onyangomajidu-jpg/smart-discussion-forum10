@@ -10,7 +10,7 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>Smart Discussion Forum – Java GUI</name>
+    <name>Discussion Hub – Java GUI</name>
     <description>Desktop GUI client with offline SQLite local cache (SDD Ch.3)</description>
 
     <properties>

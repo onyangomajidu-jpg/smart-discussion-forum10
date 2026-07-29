@@ -10,7 +10,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * Entry point for the Smart Discussion Forum desktop client.
+ * Entry point for the Discussion Hub desktop client.
  *
  * Boot sequence (SDD §3.1):
  *   1. Load app.properties

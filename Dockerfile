@@ -24,8 +24,9 @@ WORKDIR /var/www/html
 COPY laravel/ ./
 
 # --- PHP deps ---------------------------------------------------------
-RUN composer require league/flysystem-aws-s3-v3 --no-interaction --no-update
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+ARG CACHE_BUST=1
+RUN composer require league/flysystem-aws-s3-v3 --no-interaction \
+    && composer install --no-dev --optimize-autoloader --no-interaction
 
 # --- Front-end build (Vite/Tailwind) ------------------------------------
 RUN npm install && npm run build
