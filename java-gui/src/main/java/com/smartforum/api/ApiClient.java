@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class ApiClient {
 
     public static final String BASE_URL =
-        System.getProperty("api.baseUrl", "http://discussionhub.onrender.com/api");
+        System.getProperty("api.baseUrl", "https://discussionhub.onrender.com/api");
 
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 

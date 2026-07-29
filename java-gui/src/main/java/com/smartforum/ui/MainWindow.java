@@ -83,12 +83,13 @@ public class MainWindow extends JFrame {
         setTitle("Discussion Hub — " + user.getName());
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(1200, 720);
-        setMinimumSize(new Dimension(960, 600));
+        setMinimumSize(new Dimension(700, 500));
         setLocationRelativeTo(null);
 
         JSplitPane split = new JSplitPane(
             JSplitPane.HORIZONTAL_SPLIT, topicListPanel, conversationPanel);
-        split.setDividerLocation(280);
+        split.setDividerLocation(0.3);
+        split.setResizeWeight(0.3);
         split.setDividerSize(4);
         split.setBorder(null);
 
@@ -235,12 +236,36 @@ public class MainWindow extends JFrame {
             String icon  = sp > 0 ? raw.substring(0, sp).trim()  : "\u2022";
             String label = sp > 0 ? raw.substring(sp).trim()     : raw.trim();
             SidebarLink row = new SidebarLink(icon, label);
-            row.setPreferredSize(new Dimension(210, 42));
             final int idx = i;
             row.onClick(() -> tabs.setSelectedIndex(idx));
             tabs.setTabComponentAt(i, row);
             rows.add(row);
         }
+
+        // Dynamically resize sidebar tabs based on window width
+        Runnable syncSizes = () -> {
+            int w = tabs.getWidth();
+            boolean collapsed = w > 0 && w < 800;
+            for (SidebarLink row : rows) {
+                if (collapsed) {
+                    row.setPreferredSize(new Dimension(52, 42));
+                    row.setCollapsed(true);
+                } else {
+                    row.setPreferredSize(new Dimension(190, 42));
+                    row.setCollapsed(false);
+                }
+            }
+            tabs.revalidate();
+        };
+
+        tabs.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override public void componentResized(java.awt.event.ComponentEvent e) {
+                syncSizes.run();
+            }
+        });
+        // initial size
+        for (SidebarLink row : rows) row.setPreferredSize(new Dimension(190, 42));
+
         Runnable syncActive = () -> {
             int sel = tabs.getSelectedIndex();
             for (int i = 0; i < rows.size(); i++) rows.get(i).setActive(i == sel);

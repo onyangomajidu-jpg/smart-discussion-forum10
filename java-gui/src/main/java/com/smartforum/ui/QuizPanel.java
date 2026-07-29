@@ -226,13 +226,26 @@ public class QuizPanel extends JPanel {
     }
 
     private JPanel buildQuizCard(JsonNode q) {
-        boolean attempted = q.path("attempted").asBoolean(false);
-        boolean isOpen    = q.path("is_open").asBoolean(false);
-        boolean isUpcoming= q.path("is_upcoming").asBoolean(false);
-        boolean isClosed  = !isOpen && !isUpcoming && !attempted;
+        boolean attempted  = q.path("attempted").asBoolean(false);
+        boolean isOpen     = q.path("is_open").asBoolean(false);
+        boolean isUpcoming = q.path("is_upcoming").asBoolean(false);
+        // Derive isPastDeadline from hard_deadline — mirrors Quiz::isPastDeadline()
+        boolean isClosed;
+        String hardDeadlineStr = extractDateString(q.path("hard_deadline"));
+        if (!hardDeadlineStr.isEmpty()) {
+            try {
+                String s = hardDeadlineStr.replace(" ", "T");
+                if (!s.endsWith("Z") && !s.contains("+")) s += "Z";
+                isClosed = java.time.Instant.parse(s).isBefore(java.time.Instant.now());
+            } catch (Exception ex) { isClosed = false; }
+        } else {
+            isClosed = !isOpen && !isUpcoming && !attempted;
+        }
         // Lecturer uses status field: published/draft/closed
         String lecturerStatus = q.path("status").asText("");
 
+        // State priority mirrors web exactly:
+        // $done ? 'done' : ($closed ? 'closed' : ($isOpen ? 'open' : ($upcoming ? 'upcoming' : 'closed')))
         String state;
         Color accentColor;
         String iconText;
@@ -241,13 +254,27 @@ public class QuizPanel extends JPanel {
 
         if (user.isLecturer() || user.isAdmin()) {
             // Mirrors .icon-published/.icon-draft/.icon-closed in quiz/lecturer/index.blade.php
+            // Also check hard_deadline to show closed if past deadline
+            boolean isPastDeadline = false;
+            if (!hardDeadlineStr.isEmpty()) {
+                try {
+                    String s = hardDeadlineStr;
+                    if (!s.endsWith("Z") && !s.contains("+")) s += "Z";
+                    isPastDeadline = java.time.Instant.parse(s).isBefore(java.time.Instant.now());
+                } catch (Exception ignored) {}
+            }
             switch (lecturerStatus) {
                 case "published" -> {
-                    state = "open"; accentColor = GREEN;
-                    iconText = "▶"; iconBg = new Color(0xD1,0xFA,0xE5); iconFg = new Color(0x06,0x5F,0x46);
+                    if (isPastDeadline) {
+                        state = "closed"; accentColor = DANGER;
+                        iconText = "🔒"; iconBg = new Color(0xFE,0xE2,0xE2); iconFg = new Color(0x99,0x1B,0x1B);
+                    } else {
+                        state = "open"; accentColor = GREEN;
+                        iconText = "▶"; iconBg = new Color(0xD1,0xFA,0xE5); iconFg = new Color(0x06,0x5F,0x46);
+                    }
                 }
                 case "draft" -> {
-                    state = "upcoming"; accentColor = AMBER;
+                    state = "draft"; accentColor = AMBER;
                     iconText = "✏"; iconBg = new Color(0xFE,0xF3,0xC7); iconFg = new Color(0x92,0x40,0x0E);
                 }
                 default -> {
@@ -258,6 +285,9 @@ public class QuizPanel extends JPanel {
         } else if (attempted) {
             state = "done"; accentColor = PURPLE;
             iconText = "✓"; iconBg = new Color(0xED, 0xE9, 0xFE); iconFg = new Color(0x5B, 0x21, 0xB6);
+        } else if (isClosed) {
+            state = "closed"; accentColor = DANGER;
+            iconText = "🔒"; iconBg = new Color(0xFE, 0xE2, 0xE2); iconFg = new Color(0x99, 0x1B, 0x1B);
         } else if (isOpen) {
             state = "open"; accentColor = GREEN;
             iconText = "▶"; iconBg = new Color(0xD1, 0xFA, 0xE5); iconFg = new Color(0x06, 0x5F, 0x46);
@@ -272,7 +302,7 @@ public class QuizPanel extends JPanel {
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(SURFACE);
         card.setAlignmentX(LEFT_ALIGNMENT);
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         card.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(0, 6, 0, 0, accentColor),
             BorderFactory.createCompoundBorder(
@@ -320,18 +350,18 @@ public class QuizPanel extends JPanel {
         if (user.isLecturer() || user.isAdmin()) {
             metaRow.add(metaItem("👥", GREEN, q.path("attempts_count").asInt(0) + " submissions"));
         }
-        String unlockDate = q.path("unlock_date").asText("");
-        String deadline   = q.path("hard_deadline").asText("");
-        if (!unlockDate.isEmpty() && !unlockDate.equals("null"))
+        String unlockDate = extractDateString(q.path("unlock_date"));
+        String deadline   = extractDateString(q.path("hard_deadline"));
+        if (!unlockDate.isEmpty())
             metaRow.add(metaItem("🔓", GREEN,  "Opens " + formatApiDate(unlockDate)));
-        if (!deadline.isEmpty() && !deadline.equals("null"))
+        if (!deadline.isEmpty())
             metaRow.add(metaItem("🏁", DANGER, "Due " + formatApiDate(deadline)));
 
         // Countdown label for upcoming quizzes — mirrors .quiz-countdown in student/index.blade.php
         JLabel countdownLbl = new JLabel("");
         countdownLbl.setFont(new Font("Segoe UI", Font.BOLD, 11));
         countdownLbl.setForeground(AMBER);
-        if ("upcoming".equals(state) && !unlockDate.isEmpty() && !unlockDate.equals("null")) {
+        if ("upcoming".equals(state) && !unlockDate.isEmpty()) {
             startCountdown(quizId, unlockDate, countdownLbl, card, q);
         }
 
@@ -342,52 +372,55 @@ public class QuizPanel extends JPanel {
             info.add(countdownLbl);
 
         // Action button
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        JPanel actionPanel = new JPanel();
+        actionPanel.setLayout(new BoxLayout(actionPanel, BoxLayout.Y_AXIS));
         actionPanel.setOpaque(false);
 
         if (user.isLecturer() || user.isAdmin()) {
             String status = q.path("status").asText("draft");
             JButton viewBtn = new JButton("👁 View");
             styleBtn(viewBtn, PURPLE);
+            viewBtn.setAlignmentX(RIGHT_ALIGNMENT);
             viewBtn.addActionListener(e -> showQuizDetailDialog(quizId, q));
             actionPanel.add(viewBtn);
             if ("draft".equals(status)) {
-                JButton editBtn = new JButton("✏ Edit");
+                actionPanel.add(Box.createVerticalStrut(4));
+                JButton editBtn = new JButton("✏ Edit Draft");
                 styleBtn(editBtn, AMBER);
+                editBtn.setAlignmentX(RIGHT_ALIGNMENT);
                 editBtn.addActionListener(e -> showEditQuizDialog(quizId, q));
                 actionPanel.add(editBtn);
-                JButton publishBtn = new JButton("📤 Publish");
-                styleBtn(publishBtn, GREEN);
-                publishBtn.addActionListener(e -> publishQuiz(quizId));
-                actionPanel.add(publishBtn);
-            } else {
-                JButton remindBtn = new JButton("🔔 Remind");
-                styleBtn(remindBtn, AMBER);
-                remindBtn.addActionListener(e -> sendReminder(quizId, q.path("title").asText()));
-                actionPanel.add(remindBtn);
             }
-            JButton resultsBtn = new JButton("📊 Results");
-            styleBtn(resultsBtn, CYAN);
-            resultsBtn.addActionListener(e -> showLecturerResults(quizId, q.path("title").asText()));
-            actionPanel.add(resultsBtn);
-            JButton deleteBtn = new JButton("🗑");
+            actionPanel.add(Box.createVerticalStrut(4));
+            JButton deleteBtn = new JButton("🗑 Delete");
             styleBtn(deleteBtn, DANGER);
-            deleteBtn.setToolTipText("Delete Quiz");
+            deleteBtn.setAlignmentX(RIGHT_ALIGNMENT);
             deleteBtn.addActionListener(e -> deleteQuiz(quizId, q.path("title").asText()));
             actionPanel.add(deleteBtn);
         } else if (attempted) {
             JButton resultBtn = new JButton("📋 View Result");
             styleBtn(resultBtn, PURPLE);
-            resultBtn.addActionListener(e -> showResult(quizId));
+            resultBtn.setAlignmentX(RIGHT_ALIGNMENT);
+            resultBtn.addActionListener(e -> {
+                resultBtn.setEnabled(false);
+                resultBtn.setText("Loading…");
+                showResult(quizId, resultBtn, "📋 View Result");
+            });
             actionPanel.add(resultBtn);
         } else if (isOpen) {
             JButton startBtn = new JButton("▶ Start Quiz");
             styleBtn(startBtn, GREEN);
-            startBtn.addActionListener(e -> takeQuiz(quizId));
+            startBtn.setAlignmentX(RIGHT_ALIGNMENT);
+            startBtn.addActionListener(e -> {
+                startBtn.setEnabled(false);
+                startBtn.setText("Loading…");
+                takeQuiz(quizId, startBtn, "▶ Start Quiz");
+            });
             actionPanel.add(startBtn);
         } else {
             JButton unavailBtn = new JButton("🚫 Unavailable");
             styleBtn(unavailBtn, MUTED);
+            unavailBtn.setAlignmentX(RIGHT_ALIGNMENT);
             unavailBtn.setEnabled(false);
             actionPanel.add(unavailBtn);
         }
@@ -405,7 +438,6 @@ public class QuizPanel extends JPanel {
 
     private String formatApiDate(String iso) {
         try {
-            // ISO string from API: "2025-08-01T10:00:00.000000Z" or "2025-08-01 10:00:00"
             String s = iso.replace(" ", "T");
             if (!s.endsWith("Z") && !s.contains("+")) s += "Z";
             java.time.ZonedDateTime zdt = java.time.ZonedDateTime.parse(s)
@@ -414,6 +446,21 @@ public class QuizPanel extends JPanel {
         } catch (Exception e) {
             return iso.length() > 16 ? iso.substring(0, 16) : iso;
         }
+    }
+
+    /** Extract an ISO string from either a plain string or a Carbon object node. */
+    private String extractDateString(JsonNode node) {
+        if (node == null || node.isNull() || node.isMissingNode()) return "";
+        if (node.isObject()) {
+            // Carbon object: {"date":"2025-08-01 10:00:00.000000","timezone":"UTC"}
+            String date = node.path("date").asText("");
+            String tz   = node.path("timezone").asText("UTC");
+            if (date.isEmpty()) return "";
+            String s = date.replace(" ", "T");
+            if (!s.contains("+") && !s.endsWith("Z")) s += "Z";
+            return s;
+        }
+        return node.asText("");
     }
 
     private void startCountdown(int quizId, String unlockIso, JLabel lbl, JPanel card, JsonNode q) {
@@ -430,8 +477,39 @@ public class QuizPanel extends JPanel {
             if (diff <= 0) {
                 t.stop();
                 countdownTimers.remove(quizId);
-                // Flip card to open state — reload quizzes to get fresh data
-                loadQuizzes();
+                // Mirror web openQuiz(): flip card to open state in-place
+                card.putClientProperty("state", "open");
+                card.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 6, 0, 0, GREEN),
+                    BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(Theme.BORDER),
+                        new EmptyBorder(16, 16, 16, 16))));
+                lbl.setText("");
+                // Swap action button to Start Quiz
+                for (Component c : card.getComponents()) {
+                    if (c instanceof JPanel ap && ap.getLayout() instanceof BoxLayout) {
+                        ap.removeAll();
+                        JButton startBtn = new JButton("▶ Start Quiz");
+                        startBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                        startBtn.setForeground(Color.WHITE);
+                        startBtn.setBackground(GREEN);
+                        startBtn.setBorderPainted(false);
+                        startBtn.setFocusPainted(false);
+                        startBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                        startBtn.setAlignmentX(RIGHT_ALIGNMENT);
+                        startBtn.addActionListener(e2 -> {
+                            startBtn.setEnabled(false);
+                            startBtn.setText("Loading…");
+                            takeQuiz(quizId, startBtn, "▶ Start Quiz");
+                        });
+                        ap.add(startBtn);
+                        ap.revalidate();
+                        ap.repaint();
+                        break;
+                    }
+                }
+                card.revalidate();
+                card.repaint();
                 return;
             }
             long h = diff / 3600000, m = (diff % 3600000) / 60000, s2 = (diff % 60000) / 1000;
@@ -456,6 +534,8 @@ public class QuizPanel extends JPanel {
             case "done"     -> { badge.setText("✓ Submitted");  badge.setBackground(new Color(0xED,0xE9,0xFE)); badge.setForeground(new Color(0x5B,0x21,0xB6)); }
             case "open"     -> { badge.setText("● Live Now");   badge.setBackground(new Color(0xD1,0xFA,0xE5)); badge.setForeground(new Color(0x06,0x5F,0x46)); }
             case "upcoming" -> { badge.setText("⏳ Upcoming");  badge.setBackground(new Color(0xFE,0xF3,0xC7)); badge.setForeground(new Color(0x92,0x40,0x0E)); }
+            case "draft"    -> { badge.setText("✏ Draft");      badge.setBackground(new Color(0xFE,0xF3,0xC7)); badge.setForeground(new Color(0x92,0x40,0x0E)); }
+            case "closed"   -> { badge.setText("🔒 Closed");    badge.setBackground(new Color(0xFE,0xE2,0xE2)); badge.setForeground(new Color(0x99,0x1B,0x1B)); }
             default         -> { badge.setText("🔒 Closed");    badge.setBackground(new Color(0xFE,0xE2,0xE2)); badge.setForeground(new Color(0x99,0x1B,0x1B)); }
         }
         return badge;
@@ -1102,8 +1182,10 @@ public class QuizPanel extends JPanel {
         // Info grid
         JPanel infoGrid = new JPanel(new GridLayout(2, 2, 10, 10));
         infoGrid.setBackground(BG);
-        String unlockVal   = q.path("unlock_date").isNull()   || q.path("unlock_date").asText().isEmpty()   ? "Immediate on publish" : formatApiDate(q.path("unlock_date").asText());
-        String deadlineVal = q.path("hard_deadline").isNull() || q.path("hard_deadline").asText().isEmpty() ? "No deadline set"      : formatApiDate(q.path("hard_deadline").asText());
+        String unlockVal   = extractDateString(q.path("unlock_date"));
+        String deadlineVal = extractDateString(q.path("hard_deadline"));
+        unlockVal   = unlockVal.isEmpty()   ? "Immediate on publish" : formatApiDate(unlockVal);
+        deadlineVal = deadlineVal.isEmpty() ? "No deadline set"      : formatApiDate(deadlineVal);
         for (String[] item : new String[][]{
                 {"🔓 Unlock Date",  unlockVal},
                 {"🏁 Hard Deadline", deadlineVal},
@@ -1157,11 +1239,29 @@ public class QuizPanel extends JPanel {
         // Lifecycle
         JPanel lifecyclePanel = new JPanel(); lifecyclePanel.setLayout(new BoxLayout(lifecyclePanel, BoxLayout.Y_AXIS)); lifecyclePanel.setBackground(SURFACE);
         boolean published = "published".equals(status) || "closed".equals(status);
+        String deadlineStrLC = extractDateString(q.path("hard_deadline"));
+        String unlockStrLC   = extractDateString(q.path("unlock_date"));
+        boolean isPastDeadlineLC = false;
+        boolean isUnlocked = true; // no unlock_date means immediately open on publish
+        try {
+            if (!deadlineStrLC.isEmpty()) {
+                String s = deadlineStrLC;
+                if (!s.endsWith("Z") && !s.contains("+")) s += "Z";
+                isPastDeadlineLC = java.time.Instant.parse(s).isBefore(java.time.Instant.now());
+            }
+            if (!unlockStrLC.isEmpty()) {
+                String s = unlockStrLC;
+                if (!s.endsWith("Z") && !s.contains("+")) s += "Z";
+                isUnlocked = java.time.Instant.parse(s).isBefore(java.time.Instant.now());
+            }
+        } catch (Exception ignored) {}
+        boolean isClosed2 = "closed".equals(status) || ("published".equals(status) && isPastDeadlineLC);
+        boolean isAccepting = "published".equals(status) && isUnlocked && !isPastDeadlineLC;
         for (String[] step : new String[][]{
                 {"Draft Created",     "done",    "✅"},
-                {"Published",         published ? "done" : "pending",                    published ? "✅" : "⏳"},
-                {"Accepting Answers", "published".equals(status) ? "active" : "pending", "published".equals(status) ? "▶" : "⏳"},
-                {"Closed",            "closed".equals(status) ? "done" : "pending",      "closed".equals(status) ? "🔒" : "⏳"}}) {
+                {"Published",         published ? "done" : "pending",   published ? "✅" : "⏳"},
+                {"Accepting Answers", isAccepting ? "active" : "pending", isAccepting ? "▶" : "⏳"},
+                {"Closed",            isClosed2 ? "done" : "pending",    isClosed2 ? "🔒" : "⏳"}}) {
             JPanel row = new JPanel(new BorderLayout(10,0)); row.setBackground(SURFACE);
             row.setBorder(BorderFactory.createMatteBorder(0,0,1,0, new Color(0xF1,0xF5,0xF9)));
             row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
@@ -1193,7 +1293,58 @@ public class QuizPanel extends JPanel {
 
         JButton closeBtn = new JButton("Close"); styleBtn(closeBtn, PRIMARY); closeBtn.addActionListener(ev -> d.dispose());
         JPanel foot = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8)); foot.setBackground(SURFACE);
-        foot.setBorder(BorderFactory.createMatteBorder(1,0,0,0,BORDER_C)); foot.add(closeBtn);
+        foot.setBorder(BorderFactory.createMatteBorder(1,0,0,0,BORDER_C));
+
+        // Actions — mirrors right-column Actions card in show.blade.php
+        JPanel actionsCard = createCard("⚡ Actions");
+        if ("draft".equals(status)) {
+            JButton editBtn = new JButton("✏ Edit Draft");
+            styleBtn(editBtn, AMBER);
+            editBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+            editBtn.setAlignmentX(LEFT_ALIGNMENT);
+            editBtn.addActionListener(ev -> { d.dispose(); showEditQuizDialog(quizId, q); });
+            JButton publishBtn = new JButton("🚀 Publish Quiz");
+            styleBtn(publishBtn, GREEN);
+            publishBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+            publishBtn.setAlignmentX(LEFT_ALIGNMENT);
+            publishBtn.addActionListener(ev -> { d.dispose(); publishQuiz(quizId); });
+            actionsCard.add(editBtn);
+            actionsCard.add(Box.createVerticalStrut(8));
+            actionsCard.add(publishBtn);
+            actionsCard.add(Box.createVerticalStrut(4));
+            JLabel hint = new JLabel("Publishing makes this quiz visible to students.");
+            hint.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+            hint.setForeground(MUTED);
+            hint.setAlignmentX(LEFT_ALIGNMENT);
+            actionsCard.add(hint);
+        } else if ("published".equals(status)) {
+            JButton remindBtn = new JButton("🔔 Send Reminder");
+            styleBtn(remindBtn, AMBER);
+            remindBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+            remindBtn.setAlignmentX(LEFT_ALIGNMENT);
+            remindBtn.addActionListener(ev -> { d.dispose(); sendReminder(quizId, q.path("title").asText()); });
+            JButton resultsBtn = new JButton("📊 View Full Results");
+            styleBtn(resultsBtn, CYAN);
+            resultsBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+            resultsBtn.setAlignmentX(LEFT_ALIGNMENT);
+            resultsBtn.addActionListener(ev -> { d.dispose(); showLecturerResults(quizId, q.path("title").asText()); });
+            actionsCard.add(remindBtn);
+            actionsCard.add(Box.createVerticalStrut(8));
+            actionsCard.add(resultsBtn);
+        }
+        actionsCard.add(Box.createVerticalStrut(8));
+        JButton deleteBtn2 = new JButton("🗑 Delete Quiz");
+        styleBtn(deleteBtn2, DANGER);
+        deleteBtn2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        deleteBtn2.setAlignmentX(LEFT_ALIGNMENT);
+        deleteBtn2.addActionListener(ev -> { d.dispose(); deleteQuiz(quizId, q.path("title").asText()); });
+        actionsCard.add(deleteBtn2);
+
+        rightCol.add(actionsCard);
+        rightCol.add(Box.createVerticalStrut(14));
+        rightCol.add(lcCard);
+
+        foot.add(closeBtn);
 
         d.setLayout(new BorderLayout());
         d.add(heroWrapper, BorderLayout.NORTH);
@@ -1545,7 +1696,6 @@ public class QuizPanel extends JPanel {
             BorderFactory.createLineBorder(BORDER_C, 2),
             new EmptyBorder(12, 14, 12, 14)));
         card.setAlignmentX(LEFT_ALIGNMENT);
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         chk.setOpaque(false);
@@ -1560,15 +1710,19 @@ public class QuizPanel extends JPanel {
         JLabel titleLbl = new JLabel(title);
         titleLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
         titleLbl.setForeground(TEXT);
-        JLabel descLbl = new JLabel("<html><p style='width:180px'>" + desc + "</p></html>");
+        JLabel descLbl = new JLabel("<html><p>" + desc + "</p></html>");
         descLbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         descLbl.setForeground(MUTED);
         info.add(titleLbl);
         info.add(descLbl);
 
-        card.add(chk,     BorderLayout.WEST);
-        card.add(iconLbl, BorderLayout.CENTER);
-        card.add(info,    BorderLayout.EAST);
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        left.setOpaque(false);
+        left.add(chk);
+        left.add(iconLbl);
+
+        card.add(left, BorderLayout.WEST);
+        card.add(info, BorderLayout.CENTER);
         card.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override public void mouseClicked(java.awt.event.MouseEvent e) { chk.setSelected(!chk.isSelected()); }
         });
@@ -1595,24 +1749,23 @@ public class QuizPanel extends JPanel {
 
     // ── Take quiz ─────────────────────────────────────────────────────────
 
-    private void takeQuiz(int quizId) {
-        statusLbl.setText("Loading quiz…");
+    private void takeQuiz(int quizId, JButton btn, String originalText) {
         new SwingWorker<JsonNode, Void>() {
             @Override protected JsonNode doInBackground() throws Exception {
                 return mapper.readTree(api.get("/quizzes/" + quizId));
             }
             @Override protected void done() {
+                btn.setEnabled(true);
+                btn.setText(originalText);
                 try {
                     JsonNode quiz = get();
                     if (quiz.has("message")) {
                         JOptionPane.showMessageDialog(QuizPanel.this,
                             quiz.path("message").asText(), "Cannot Take Quiz",
                             JOptionPane.WARNING_MESSAGE);
-                        statusLbl.setText(" ");
                         return;
                     }
                     showQuizDialog(quiz);
-                    statusLbl.setText(" ");
                 } catch (Exception e) {
                     statusLbl.setText("Error: " + e.getMessage());
                     statusLbl.setForeground(DANGER);
@@ -1997,12 +2150,14 @@ public class QuizPanel extends JPanel {
 
     // ── View result ───────────────────────────────────────────────────────
 
-    private void showResult(int quizId) {
+    private void showResult(int quizId, JButton btn, String originalText) {
         new SwingWorker<JsonNode, Void>() {
             @Override protected JsonNode doInBackground() throws Exception {
                 return mapper.readTree(api.get("/quizzes/" + quizId + "/result"));
             }
             @Override protected void done() {
+                btn.setEnabled(true);
+                btn.setText(originalText);
                 try {
                     JsonNode r = get();
                     if (r.has("message")) {
