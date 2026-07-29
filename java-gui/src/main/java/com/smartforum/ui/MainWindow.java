@@ -70,23 +70,14 @@ public class MainWindow extends JFrame {
         this.topicListPanel = topicListPanel;
 
         // ── Extra panels ──────────────────────────────────────────────────
+
         StatisticsPanel  statisticsPanel  = new StatisticsPanel(api, cache);
         DashboardPanel   dashboardPanel   = new DashboardPanel(api, user);
         GroupsPanel      groupsPanel      = new GroupsPanel(api, user);
         ProfilePanel     profilePanel     = new ProfilePanel(api, user);
         QuizPanel        quizPanel        = new QuizPanel(api, user);
         MessagesPanel    messagesPanel    = new MessagesPanel(user, authService.getWebSession());
-        LecturerAnalyticsPanel lecturerAnalyticsPanel =
-            (user.isLecturer() || user.isAdmin()) ? new LecturerAnalyticsPanel(api) : null;
-
-        // ── Sync listener ─────────────────────────────────────────────────
-        syncManager.setSyncListener(() -> {
-            topicListPanel.refresh();
-            conversationPanel.refreshPosts();
-            conversationPanel.setStatus("✅ Sync complete");
-            statisticsPanel.loadData();
-            dashboardPanel.loadData();
-        });
+        ExportWindow     exportPanel      = new ExportWindow(api);
 
         // ── Layout ────────────────────────────────────────────────────────
         setTitle("Discussion Hub — " + user.getName());
@@ -103,6 +94,7 @@ public class MainWindow extends JFrame {
         split.setBorder(null);
 
         JTabbedPane tabs = new JTabbedPane();
+
         if (user.isAdmin()) {
             AdminDashboardPanel  adminDashboardPanel  = new AdminDashboardPanel(api, user);
             WarningRegistryPanel warningRegistryPanel = new WarningRegistryPanel(api, user);
@@ -118,25 +110,24 @@ public class MainWindow extends JFrame {
             syncManager.setSyncListener(() -> adminDashboardPanel.loadData());
             tabs.addChangeListener(e -> {
                 Component sel = tabs.getSelectedComponent();
-                if (sel == adminDashboardPanel)   adminDashboardPanel.loadData();
+                if (sel == adminDashboardPanel)      adminDashboardPanel.loadData();
                 else if (sel == userManagementPanel)  userManagementPanel.loadUsers();
                 else if (sel == warningRegistryPanel) warningRegistryPanel.loadAll();
                 else if (sel == blacklistLogPanel)    blacklistLogPanel.loadAll();
             });
+
         } else if (user.isLecturer()) {
             LecturerAnalyticsPanel analyticsPanel = new LecturerAnalyticsPanel(api, user);
             LecturerGroupsPanel    groupsLecPanel = new LecturerGroupsPanel(api, user);
-            // Tab titles mirror the Laravel sidebar exactly:
-            // fa-house Dashboard | fa-clipboard-list My Quizzes | fa-chart-bar Analytics
-            // fa-comments Topic Discussions | fa-people-group Groups | fa-chart-line Statistics | profile
-            tabs.addTab("\uD83C\uDFE0  Dashboard",          null); // placeholder, set after tabs built
-            tabs.addTab("\uD83D\uDCCB  My Quizzes",         quizPanel);
-            tabs.addTab("\uD83D\uDCCA  Analytics",          analyticsPanel);
-            tabs.addTab("\uD83D\uDCAC  Forum",              split);
-            tabs.addTab("\u2709\uFE0F  Messages",           messagesPanel);
-            tabs.addTab("\uD83D\uDC65  Groups",             groupsLecPanel);
-            tabs.addTab("\uD83D\uDCC8  Statistics",         statisticsPanel);
-            tabs.addTab("\uD83D\uDC64  Profile",            profilePanel);
+            tabs.addTab("\uD83C\uDFE0  Dashboard",  null);
+            tabs.addTab("\uD83D\uDCCB  My Quizzes",  quizPanel);
+            tabs.addTab("\uD83D\uDCCA  Analytics",   analyticsPanel);
+            tabs.addTab("\uD83D\uDCAC  Forum",        split);
+            tabs.addTab("\u2709\uFE0F  Messages",     messagesPanel);
+            tabs.addTab("\uD83D\uDC65  Groups",       groupsLecPanel);
+            tabs.addTab("\uD83D\uDCC8  Statistics",   statisticsPanel);
+            tabs.addTab("\uD83D\uDCC4  Export",       exportPanel);
+            tabs.addTab("\uD83D\uDC64  Profile",      profilePanel);
             LecturerDashboardPanel lecDashboard = new LecturerDashboardPanel(api, user, tabs);
             tabs.setComponentAt(0, lecDashboard);
             syncManager.setSyncListener(() -> {
@@ -148,22 +139,21 @@ public class MainWindow extends JFrame {
             });
             tabs.addChangeListener(e -> {
                 Component sel = tabs.getSelectedComponent();
-                if (sel == analyticsPanel) analyticsPanel.loadData();
+                if (sel == analyticsPanel)      analyticsPanel.loadData();
                 else if (sel == statisticsPanel) statisticsPanel.loadData();
-                else if (sel == groupsLecPanel) groupsLecPanel.loadGroups();
-                else if (sel == quizPanel) quizPanel.loadQuizzes();
+                else if (sel == groupsLecPanel)  groupsLecPanel.loadGroups();
+                else if (sel == quizPanel)       quizPanel.loadQuizzes();
             });
+
         } else {
-            // Student sidebar mirrors app.blade.php member section exactly:
-            // fa-house Dashboard | fa-file-pen My Quizzes | fa-chart-line Analytics
-            // fa-people-group Groups  (Forum is embedded inside Dashboard quick-link / separate tab)
             tabs.addTab("\uD83C\uDFE0  Dashboard",  dashboardPanel);
             tabs.addTab("\uD83D\uDCAC  Forum",       split);
             tabs.addTab("\u2709\uFE0F  Messages",    messagesPanel);
-            tabs.addTab("\uD83D\uDCDD  My Quizzes", quizPanel);
-            tabs.addTab("\uD83D\uDCC8  Analytics",  statisticsPanel);
-            tabs.addTab("\uD83D\uDC65  Groups",      groupsPanel);
-            tabs.addTab("\uD83D\uDC64  Profile",     profilePanel);
+            tabs.addTab("\uD83D\uDCDD  My Quizzes",  quizPanel);
+            tabs.addTab("\uD83D\uDCC8  Statistics",  statisticsPanel);
+            tabs.addTab("\uD83D\uDC65  Groups",       groupsPanel);
+            tabs.addTab("\uD83D\uDCC4  Export",       exportPanel);
+            tabs.addTab("\uD83D\uDC64  Profile",      profilePanel);
             syncManager.setSyncListener(() -> {
                 topicListPanel.refresh();
                 conversationPanel.refreshPosts();
@@ -173,10 +163,10 @@ public class MainWindow extends JFrame {
             });
             tabs.addChangeListener(e -> {
                 Component sel = tabs.getSelectedComponent();
-                if (sel == statisticsPanel) statisticsPanel.loadData();
-                else if (sel == dashboardPanel) dashboardPanel.loadData();
-                else if (sel == groupsPanel) groupsPanel.loadGroups();
-                else if (sel == quizPanel) quizPanel.loadQuizzes();
+                if (sel == statisticsPanel)      statisticsPanel.loadData();
+                else if (sel == dashboardPanel)  dashboardPanel.loadData();
+                else if (sel == groupsPanel)     groupsPanel.loadGroups();
+                else if (sel == quizPanel)       quizPanel.loadQuizzes();
             });
         }
 
@@ -186,7 +176,7 @@ public class MainWindow extends JFrame {
         getContentPane().add(buildTopBar(), BorderLayout.NORTH);
         getContentPane().add(tabs,          BorderLayout.CENTER);
 
-        // ── Reconnect poller ──────────────────────────────────────────────
+        // ── Reconnect poller (every 10s) ──────────────────────────────────
         reconnectPoller.scheduleAtFixedRate(this::checkConnectivity,
             5, 10, TimeUnit.SECONDS);
 
@@ -339,7 +329,6 @@ public class MainWindow extends JFrame {
         connectionBadge.setForeground(Color.WHITE);
         updateBadge(api.isOnline());
 
-        // Notifications bell
         JButton notifBtn = new JButton("🔔");
         notifBtn.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
         notifBtn.setForeground(Color.WHITE);
@@ -501,16 +490,11 @@ public class MainWindow extends JFrame {
         } catch (Exception ignored) {}
     }
 
-    private void refresh() {
-        if (topicListPanel != null) SwingUtilities.invokeLater(topicListPanel::refresh);
-    }
-
     // ── Reconnect logic ───────────────────────────────────────────────────
 
     private void checkConnectivity() {
         boolean online = api.isOnline();
         SwingUtilities.invokeLater(() -> updateBadge(online));
-
         if (online && !wasOnline) {
             System.out.println("[MainWindow] Reconnected — running synchronizeOfflineData()");
             syncManager.synchronizeOfflineData();

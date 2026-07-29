@@ -28,7 +28,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('student_id')->unique()->nullable();
-            $table->string('programme')->nullable();   // e.g. BSc Computer Science
+            $table->string('programme')->nullable();   // e.g. BSSE Software Engineering
             $table->integer('year_of_study')->nullable();
             $table->integer('reputation')->default(0);
             $table->timestamps();

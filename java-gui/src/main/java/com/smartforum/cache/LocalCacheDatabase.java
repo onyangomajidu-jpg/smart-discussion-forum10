@@ -63,6 +63,23 @@ public class LocalCacheDatabase {
                 System.out.println("[LocalCache] Migrated: added posts_count to cached_topics.");
             }
         }
+        // Add attachment columns to cached_posts if missing
+        String[][] postCols = {
+            {"image_path", "TEXT"},
+            {"audio_path", "TEXT"},
+            {"file_path",  "TEXT"},
+            {"file_name",  "TEXT"},
+            {"file_size",  "INTEGER NOT NULL DEFAULT 0"}
+        };
+        for (String[] col : postCols) {
+            try (ResultSet rs = conn.getMetaData().getColumns(null, null, "cached_posts", col[0])) {
+                if (!rs.next()) {
+                    conn.createStatement().execute(
+                        "ALTER TABLE cached_posts ADD COLUMN " + col[0] + " " + col[1]);
+                    System.out.println("[LocalCache] Migrated: added " + col[0] + " to cached_posts.");
+                }
+            }
+        }
         // Add role-specific profile columns to session_cache if missing
         String[][] newCols = {
             {"avatar",        "TEXT"},

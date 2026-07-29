@@ -19,6 +19,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.net.URL;
 
 /**
  * Right panel — conversation view with posts, compose box, typing indicator,
@@ -37,6 +38,25 @@ public class ConversationPanel extends JPanel {
     private static final Color BEST_BG    = new Color(0xD4, 0xED, 0xDA);
     private static final Color BORDER_C   = Theme.BORDER;
     private static final Color BG_BODY    = new Color(0xF0, 0xF2, 0xF5);
+
+    // Author name palette — mirrors $palette in topics.blade.php
+    private static final Color[] NAME_PALETTE = {
+        new Color(0xE9, 0x1E, 0x8C), new Color(0x00, 0xBC, 0xD4),
+        new Color(0x4C, 0xAF, 0x50), new Color(0xFF, 0x98, 0x00),
+        new Color(0x9C, 0x27, 0xB0), new Color(0xF4, 0x43, 0x36),
+        new Color(0x21, 0x96, 0xF3), new Color(0x00, 0x96, 0x88)
+    };
+
+    private static Color nameColor(String name) {
+        int hash = 0;
+        for (char c : name.toCharArray()) hash += c;
+        return NAME_PALETTE[Math.abs(hash) % NAME_PALETTE.length];
+    }
+
+    private static String nowHHmm() {
+        java.time.LocalTime t = java.time.LocalTime.now();
+        return String.format("%02d:%02d", t.getHour(), t.getMinute());
+    }
 
     private final LocalCacheDatabase cache;
     private final AuthUser           user;
@@ -85,6 +105,14 @@ public class ConversationPanel extends JPanel {
     private File            pendingAttachment;
     private String          pendingAttachmentType; // "image" | "file"
     private JLabel          attachPreviewLbl;
+
+    // ── Active audio playback (one at a time, mirrors MessagesPanel) ──────
+    private SourceDataLine  activeLine    = null;
+    private boolean         audioPaused   = false;
+    private JButton         activePlayBtn = null;
+
+    private final String storageBase =
+        com.smartforum.api.ApiClient.BASE_URL.replace("/api", "") + "/storage/";
 
     public ConversationPanel(LocalCacheDatabase cache, AuthUser user,
                              OfflineSyncManager syncManager) {
@@ -456,75 +484,116 @@ public class ConversationPanel extends JPanel {
 
     public void refreshPosts() {
         if (currentTopic == null) return;
-        List<Post> posts = loadPosts(currentTopic.id);
-        SwingUtilities.invokeLater(() -> {
-            postsPanel.removeAll();
-
-            // 🔒 Locked banner
-            if (currentTopic.locked) {
-                JLabel lockedBanner = new JLabel("🔒 This topic is locked.", SwingConstants.CENTER);
-                lockedBanner.setFont(new Font("Segoe UI", Font.BOLD, 13));
-                lockedBanner.setForeground(new Color(0x85, 0x64, 0x04));
-                lockedBanner.setOpaque(true);
-                lockedBanner.setBackground(new Color(0xFF, 0xF3, 0xCD));
-                lockedBanner.setBorder(new EmptyBorder(10, 16, 10, 16));
-                lockedBanner.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-                postsPanel.add(lockedBanner);
-                postsPanel.add(Box.createVerticalStrut(8));
+        final Topic topic = currentTopic;
+        new SwingWorker<Object[], Void>() {
+            @Override protected Object[] doInBackground() {
+                List<Post> posts = loadPosts(topic.id);
+                // Fetch replies in parallel — one thread per post with a server-side id
+                java.util.Map<Integer, List<com.smartforum.model.Reply>> repliesMap =
+                    new java.util.concurrent.ConcurrentHashMap<>();
+                List<Post> serverPosts = posts.stream()
+                    .filter(p -> p.id > 0).collect(java.util.stream.Collectors.toList());
+                if (!serverPosts.isEmpty()) {
+                    java.util.concurrent.ExecutorService pool =
+                        java.util.concurrent.Executors.newFixedThreadPool(
+                            Math.min(serverPosts.size(), 6));
+                    java.util.List<java.util.concurrent.Future<?>> futures = new java.util.ArrayList<>();
+                    for (Post p : serverPosts) {
+                        futures.add(pool.submit(() -> {
+                            try { repliesMap.put(p.id, syncManager.getReplies(p.id)); }
+                            catch (Exception ignored) { repliesMap.put(p.id, java.util.Collections.emptyList()); }
+                        }));
+                    }
+                    pool.shutdown();
+                    for (java.util.concurrent.Future<?> f : futures) {
+                        try { f.get(); } catch (Exception ignored) {}
+                    }
+                }
+                boolean removed = isCurrentUserRemoved();
+                return new Object[]{posts, repliesMap, removed};
             }
+            @Override @SuppressWarnings("unchecked")
+            protected void done() {
+                if (topic != currentTopic) return; // topic switched while loading
+                List<Post> posts;
+                java.util.Map<Integer, List<com.smartforum.model.Reply>> repliesMap;
+                boolean removed;
+                try {
+                    Object[] result = get();
+                    posts      = (List<Post>) result[0];
+                    repliesMap = (java.util.Map<Integer, List<com.smartforum.model.Reply>>) result[1];
+                    removed    = (boolean) result[2];
+                } catch (Exception ex) {
+                    setStatus("⚠ Could not load posts: " + ex.getMessage());
+                    return;
+                }
 
-            // 🚫 Removed-user banner (mirrors $isRemoved in topics.blade.php)
-            if (isCurrentUserRemoved()) {
-                JPanel banner = new JPanel(new BorderLayout());
-                banner.setBackground(new Color(0xFF, 0xF5, 0xF5));
-                banner.setBorder(new EmptyBorder(40, 20, 40, 20));
-                JLabel lbl = new JLabel(
-                    "<html><center><font size='5'>🚫</font><br><br>" +
-                    "<b>You have been removed from this discussion.</b><br>" +
-                    "<font color='#718096'>You cannot view or post messages until restored by the topic creator.</font>" +
-                    "</center></html>", SwingConstants.CENTER);
-                lbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-                banner.add(lbl, BorderLayout.CENTER);
-                postsPanel.add(banner);
-                composeBox.setEnabled(false);
-                sendBtn.setEnabled(false);
-                postsPanel.revalidate();
-                postsPanel.repaint();
-                return;
-            }
+                postsPanel.removeAll();
 
-            // 💬 Topic origin bubble (mirrors .chat-row.topic-origin)
-            if (currentTopic.body != null && !currentTopic.body.isEmpty()) {
-                postsPanel.add(buildOriginBubble());
-                postsPanel.add(Box.createVerticalStrut(4));
-            }
+                // 🔒 Locked banner
+                if (topic.locked) {
+                    JLabel lockedBanner = new JLabel("🔒 This topic is locked.", SwingConstants.CENTER);
+                    lockedBanner.setFont(new Font("Segoe UI", Font.BOLD, 13));
+                    lockedBanner.setForeground(new Color(0x85, 0x64, 0x04));
+                    lockedBanner.setOpaque(true);
+                    lockedBanner.setBackground(new Color(0xFF, 0xF3, 0xCD));
+                    lockedBanner.setBorder(new EmptyBorder(10, 16, 10, 16));
+                    lockedBanner.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+                    postsPanel.add(lockedBanner);
+                    postsPanel.add(Box.createVerticalStrut(8));
+                }
 
-            if (posts.isEmpty()) {
-                JLabel empty = new JLabel("💬 No messages yet. Be the first to post!", SwingConstants.CENTER);
-                empty.setFont(new Font("Segoe UI", Font.ITALIC, 13));
-                empty.setForeground(new Color(0xA0, 0xAE, 0xC0));
-                empty.setAlignmentX(CENTER_ALIGNMENT);
-                postsPanel.add(Box.createVerticalGlue());
-                postsPanel.add(empty);
-            } else {
-                // Chronological stream: posts + replies interleaved
-                Long clearTs = clearTimestamps.get(currentTopic.id);
-                for (Post p : posts) {
-                    if (clearTs != null && p.id > 0 && p.id <= clearTs) continue;
-                    postsPanel.add(buildPostCard(p));
-                    postsPanel.add(Box.createVerticalStrut(2));
-                    try {
-                        for (com.smartforum.model.Reply r : syncManager.getReplies(p.id)) {
+                // 🚫 Removed-user banner
+                if (removed) {
+                    JPanel banner = new JPanel(new BorderLayout());
+                    banner.setBackground(new Color(0xFF, 0xF5, 0xF5));
+                    banner.setBorder(new EmptyBorder(40, 20, 40, 20));
+                    JLabel lbl = new JLabel(
+                        "<html><center><font size='5'>🚫</font><br><br>" +
+                        "<b>You have been removed from this discussion.</b><br>" +
+                        "<font color='#718096'>You cannot view or post messages until restored by the topic creator.</font>" +
+                        "</center></html>", SwingConstants.CENTER);
+                    lbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+                    banner.add(lbl, BorderLayout.CENTER);
+                    postsPanel.add(banner);
+                    composeBox.setEnabled(false);
+                    sendBtn.setEnabled(false);
+                    postsPanel.revalidate();
+                    postsPanel.repaint();
+                    return;
+                }
+
+                // 💬 Topic origin bubble
+                if (topic.body != null && !topic.body.isEmpty()) {
+                    postsPanel.add(buildOriginBubble());
+                    postsPanel.add(Box.createVerticalStrut(4));
+                }
+
+                if (posts.isEmpty()) {
+                    JLabel empty = new JLabel("💬 No messages yet. Be the first to post!", SwingConstants.CENTER);
+                    empty.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+                    empty.setForeground(new Color(0xA0, 0xAE, 0xC0));
+                    empty.setAlignmentX(CENTER_ALIGNMENT);
+                    postsPanel.add(Box.createVerticalGlue());
+                    postsPanel.add(empty);
+                } else {
+                    Long clearTs = clearTimestamps.get(topic.id);
+                    for (Post p : posts) {
+                        if (clearTs != null && p.id > 0 && p.id <= clearTs) continue;
+                        postsPanel.add(buildPostCard(p));
+                        postsPanel.add(Box.createVerticalStrut(2));
+                        List<com.smartforum.model.Reply> replies = repliesMap.getOrDefault(p.id, java.util.Collections.emptyList());
+                        for (com.smartforum.model.Reply r : replies) {
                             postsPanel.add(buildReplyCard(r, p));
                             postsPanel.add(Box.createVerticalStrut(2));
                         }
-                    } catch (Exception ignored) {}
+                    }
                 }
+                postsPanel.revalidate();
+                postsPanel.repaint();
+                scrollToBottom();
             }
-            postsPanel.revalidate();
-            postsPanel.repaint();
-            scrollToBottom();
-        });
+        }.execute();
     }
 
     public void setStatus(String msg) {
@@ -563,6 +632,16 @@ public class ConversationPanel extends JPanel {
         if (replyToPostId != -1) {
             final int pid = replyToPostId;
             final String body = text;
+            // Optimistic bubble
+            Post optimistic = new Post(-1, currentTopic.id, user.getUserId(),
+                user.getName(), text, false, false);
+            postsPanel.add(buildPostCard(optimistic));
+            postsPanel.add(Box.createVerticalStrut(2));
+            postsPanel.revalidate();
+            postsPanel.repaint();
+            scrollToBottom();
+            composeBox.setText("");
+            cancelReply();
             sendBtn.setEnabled(false);
             new SwingWorker<Void, Void>() {
                 @Override protected Void doInBackground() throws Exception {
@@ -572,13 +651,22 @@ public class ConversationPanel extends JPanel {
                 }
                 @Override protected void done() {
                     sendBtn.setEnabled(true);
-                    composeBox.setText("");
-                    cancelReply();
                     refreshPosts();
                 }
             }.execute();
             return;
         }
+
+        // Optimistic bubble — show immediately before the network round-trip
+        Post optimistic = new Post(-1, currentTopic.id, user.getUserId(),
+            user.getName(), text, false, false);
+        postsPanel.add(buildPostCard(optimistic));
+        postsPanel.add(Box.createVerticalStrut(2));
+        postsPanel.revalidate();
+        postsPanel.repaint();
+        scrollToBottom();
+        composeBox.setText("");
+        typingLbl.setText(" ");
 
         sendBtn.setEnabled(false);
         new SwingWorker<Boolean, Void>() {
@@ -589,14 +677,12 @@ public class ConversationPanel extends JPanel {
                 sendBtn.setEnabled(true);
                 try {
                     boolean online = get();
-                    composeBox.setText("");
-                    typingLbl.setText(" ");
                     if (!online) setStatus("⏳ Message queued — will sync when online");
                     else setStatus(" ");
-                    refreshPosts();
                 } catch (Exception ex) {
                     setStatus("Error: " + ex.getMessage());
                 }
+                refreshPosts(); // replace optimistic bubble with confirmed server data
             }
         }.execute();
     }
@@ -777,6 +863,169 @@ public class ConversationPanel extends JPanel {
         }
     }
 
+    // ── Audio playback (mirrors MessagesPanel) ───────────────────────────
+
+    private String resolveUrl(String path) {
+        if (path == null) return "";
+        if (path.startsWith("http://") || path.startsWith("https://")) return path;
+        return storageBase + path;
+    }
+
+    private String fileEmoji(String ext) {
+        return switch (ext.toLowerCase()) {
+            case "pdf"               -> "📕";
+            case "doc", "docx"       -> "📘";
+            case "xls", "xlsx", "csv" -> "📗";
+            case "ppt", "pptx"       -> "📙";
+            case "zip", "rar", "7z"  -> "🗜";
+            case "mp3", "wav", "ogg" -> "🎵";
+            case "mp4", "mov", "avi" -> "🎬";
+            default                  -> "📄";
+        };
+    }
+
+    private void playAudio(String url, JButton playBtn) {
+        if (playBtn == activePlayBtn && activeLine != null) {
+            if (audioPaused) {
+                activeLine.start();
+                audioPaused = false;
+                playBtn.setText("⏸");
+            } else {
+                activeLine.stop();
+                audioPaused = true;
+                playBtn.setText("▶");
+            }
+            return;
+        }
+        stopActiveAudio();
+        activePlayBtn = playBtn;
+        playBtn.setEnabled(false);
+        playBtn.setText("⏳");
+        new SwingWorker<File, Void>() {
+            @Override protected File doInBackground() throws Exception {
+                String ext = url.contains(".") ? url.substring(url.lastIndexOf('.')) : ".wav";
+                File tmp = File.createTempFile("topic_play_", ext);
+                tmp.deleteOnExit();
+                try (java.io.InputStream in = new URL(url).openStream();
+                     java.io.FileOutputStream out = new java.io.FileOutputStream(tmp)) {
+                    byte[] buf = new byte[8192]; int n;
+                    while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+                }
+                return tmp;
+            }
+            @Override protected void done() {
+                playBtn.setEnabled(true);
+                try {
+                    File tmp = get();
+                    if (tmp.getName().toLowerCase().endsWith(".wav")) {
+                        playWav(tmp, playBtn);
+                    } else {
+                        Desktop.getDesktop().open(tmp);
+                        playBtn.setText("▶");
+                        activePlayBtn = null;
+                    }
+                } catch (Exception ex) {
+                    playBtn.setText("▶");
+                    activePlayBtn = null;
+                    setStatus("⚠ Could not play audio: " + ex.getMessage());
+                }
+            }
+        }.execute();
+    }
+
+    private void stopActiveAudio() {
+        if (activeLine != null) { activeLine.stop(); activeLine.close(); activeLine = null; }
+        audioPaused = false;
+        if (activePlayBtn != null) {
+            JButton btn = activePlayBtn;
+            SwingUtilities.invokeLater(() -> btn.setText("▶"));
+            activePlayBtn = null;
+        }
+    }
+
+    private void playWav(File file, JButton playBtn) {
+        new Thread(() -> {
+            try (AudioInputStream ais = AudioSystem.getAudioInputStream(file)) {
+                AudioFormat fmt = ais.getFormat();
+                DataLine.Info info = new DataLine.Info(SourceDataLine.class, fmt);
+                if (!AudioSystem.isLineSupported(info)) {
+                    SwingUtilities.invokeLater(() -> {
+                        try { Desktop.getDesktop().open(file); } catch (Exception ignored) {}
+                        playBtn.setText("▶"); activePlayBtn = null;
+                    });
+                    return;
+                }
+                SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info);
+                line.open(fmt); line.start();
+                activeLine = line; audioPaused = false;
+                SwingUtilities.invokeLater(() -> playBtn.setText("⏸"));
+                byte[] buf = new byte[4096]; int n;
+                while ((n = ais.read(buf)) != -1) {
+                    while (audioPaused && activeLine == line) Thread.sleep(50);
+                    if (activeLine != line) break;
+                    line.write(buf, 0, n);
+                }
+                line.drain(); line.close();
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> setStatus("⚠ Playback error: " + ex.getMessage()));
+            } finally {
+                SwingUtilities.invokeLater(() -> {
+                    playBtn.setText("▶");
+                    if (activePlayBtn == playBtn) { activeLine = null; activePlayBtn = null; audioPaused = false; }
+                });
+            }
+        }, "topic-audio-play").start();
+    }
+
+    // ── Audio bubble (mirrors .audio-msg-bubble in topics.blade.php) ───────────
+
+    private JPanel buildAudioBubble(String url) {
+        int[] heights = {8,14,20,28,22,16,26,18,10,24,20,14,22,8,18,26,12,20,30,14};
+        JPanel bubble = new JPanel(new BorderLayout(8, 0));
+        bubble.setOpaque(false);
+
+        JButton playBtn = new JButton("▶");
+        playBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        playBtn.setForeground(Color.WHITE);
+        playBtn.setBackground(new Color(0x00, 0xA8, 0x84));
+        playBtn.setBorderPainted(false);
+        playBtn.setFocusPainted(false);
+        playBtn.setPreferredSize(new Dimension(38, 38));
+        playBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        if (url != null) playBtn.addActionListener(e -> playAudio(url, playBtn));
+
+        // Waveform bars
+        JPanel wavePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0)) {
+            @Override public Dimension getPreferredSize() { return new Dimension(super.getPreferredSize().width, 32); }
+        };
+        wavePanel.setOpaque(false);
+        for (int h : heights) {
+            JPanel bar = new JPanel();
+            bar.setBackground(new Color(0xC8, 0xD8, 0xD0));
+            bar.setPreferredSize(new Dimension(3, h));
+            wavePanel.add(bar);
+        }
+
+        JLabel label = new JLabel("Voice message");
+        label.setFont(new Font("Segoe UI", Font.BOLD, 10));
+        label.setForeground(new Color(0xA0, 0xAE, 0xC0));
+
+        JLabel durLbl = new JLabel("0:00");
+        durLbl.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        durLbl.setForeground(new Color(0x86, 0x96, 0xA0));
+
+        JPanel center = new JPanel();
+        center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
+        center.setOpaque(false);
+        center.add(label);
+        center.add(wavePanel);
+
+        bubble.add(playBtn, BorderLayout.WEST);
+        bubble.add(center,  BorderLayout.CENTER);
+        bubble.add(durLbl,  BorderLayout.EAST);
+        return bubble;
+    }
+
     private JButton attachBtn(String icon, String tip) {
         JButton btn = new JButton(icon);
         btn.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 15));
@@ -851,7 +1100,8 @@ public class ConversationPanel extends JPanel {
 
     private List<Post> loadPosts(int topicId) {
         List<Post> result = new ArrayList<>();
-        String sql = "SELECT id, topic_id, user_id, author_name, body, is_best_answer, upvotes, downvotes " +
+        String sql = "SELECT id, topic_id, user_id, author_name, body, is_best_answer, upvotes, downvotes, " +
+                     "image_path, audio_path, file_path, file_name, file_size " +
                      "FROM cached_posts WHERE topic_id = ? ORDER BY id ASC";
         try (Connection conn = cache.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -862,10 +1112,29 @@ public class ConversationPanel extends JPanel {
                     rs.getInt("id"), rs.getInt("topic_id"), rs.getInt("user_id"),
                     rs.getString("author_name"), rs.getString("body"),
                     rs.getInt("is_best_answer") == 1,
-                    rs.getInt("upvotes"), rs.getInt("downvotes"), false));
+                    rs.getInt("upvotes"), rs.getInt("downvotes"), false,
+                    rs.getString("image_path"), rs.getString("audio_path"),
+                    rs.getString("file_path"),  rs.getString("file_name"),
+                    rs.getLong("file_size")));
             }
         } catch (SQLException e) {
-            System.err.println("[ConversationPanel] loadPosts: " + e.getMessage());
+            // Columns may not exist yet on first run before migration — fall back gracefully
+            String fallback = "SELECT id, topic_id, user_id, author_name, body, is_best_answer, upvotes, downvotes " +
+                              "FROM cached_posts WHERE topic_id = ? ORDER BY id ASC";
+            try (Connection conn = cache.connect();
+                 PreparedStatement ps = conn.prepareStatement(fallback)) {
+                ps.setInt(1, topicId);
+                ResultSet rs = ps.executeQuery();
+                while (rs.next()) {
+                    result.add(new Post(
+                        rs.getInt("id"), rs.getInt("topic_id"), rs.getInt("user_id"),
+                        rs.getString("author_name"), rs.getString("body"),
+                        rs.getInt("is_best_answer") == 1,
+                        rs.getInt("upvotes"), rs.getInt("downvotes"), false));
+                }
+            } catch (SQLException e2) {
+                System.err.println("[ConversationPanel] loadPosts: " + e2.getMessage());
+            }
         }
 
         String pendingSql = "SELECT id, user_id, body FROM pending_messages " +
@@ -889,62 +1158,107 @@ public class ConversationPanel extends JPanel {
     // ── Post card builder ─────────────────────────────────────────────────
 
     private JPanel buildPostCard(Post post) {
-        JPanel card = new JPanel(new BorderLayout(0, 6));
-        card.setBackground(post.syncPending ? PENDING_BG
-                         : post.bestAnswer  ? BEST_BG
-                         : Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_C),
-                BorderFactory.createMatteBorder(0, 4, 0, 0, new Color(0xE2, 0xE8, 0xF0))),
-            new EmptyBorder(12, 14, 10, 14)));
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        boolean isMe = post.userId == user.getUserId();
+        Color bubbleBg = isMe ? new Color(0xD9, 0xFD, 0xD3)
+                       : post.syncPending ? PENDING_BG
+                       : post.bestAnswer  ? BEST_BG
+                       : Color.WHITE;
 
-        // Avatar
-        String initial = post.authorName.isEmpty() ? "?" : String.valueOf(post.authorName.charAt(0)).toUpperCase();
-        JLabel avatarLbl = new JLabel(initial, SwingConstants.CENTER) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setPaint(new GradientPaint(0, 0, PRIMARY, getWidth(), getHeight(), SECONDARY));
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 9, 9);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        avatarLbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        avatarLbl.setForeground(Color.WHITE);
-        avatarLbl.setOpaque(false);
-        avatarLbl.setPreferredSize(new Dimension(32, 32));
-        avatarLbl.setMinimumSize(new Dimension(32, 32));
-        avatarLbl.setMaximumSize(new Dimension(32, 32));
+        // ── Bubble content panel ──────────────────────────────────────────
+        JPanel bubble = new JPanel(new BorderLayout(0, 4));
+        bubble.setBackground(bubbleBg);
+        bubble.setBorder(new EmptyBorder(7, 10, 7, 10));
+        bubble.setOpaque(true);
 
-        // Author + badges row
-        JPanel authorRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        authorRow.setOpaque(false);
-        authorRow.add(avatarLbl);
-        JLabel authorLbl = new JLabel(post.authorName);
-        authorLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        authorLbl.setForeground(new Color(0x4A, 0x55, 0x68));
-        authorRow.add(authorLbl);
+        // Author name (hidden for own messages, mirrors .chat-row.mine .bubble-author { display:none })
+        if (!isMe) {
+            JLabel authorLbl = new JLabel(post.authorName);
+            authorLbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            authorLbl.setForeground(nameColor(post.authorName));
+            bubble.add(authorLbl, BorderLayout.NORTH);
+        }
         if (post.bestAnswer) {
             JLabel badge = new JLabel("✅ Best Answer");
             badge.setFont(new Font("Segoe UI", Font.BOLD, 11));
             badge.setForeground(new Color(0x15, 0x52, 0x24));
-            authorRow.add(badge);
+            bubble.add(badge, BorderLayout.NORTH);
         }
         if (post.syncPending) {
             JLabel badge = new JLabel("⏳ Sync pending");
             badge.setFont(new Font("Segoe UI", Font.ITALIC, 11));
             badge.setForeground(PENDING_FG);
-            authorRow.add(badge);
+            bubble.add(badge, BorderLayout.NORTH);
         }
 
-        // Body — detect special attachment/voice prefixes
+        // Body — rich rendering matching MessagesPanel bubbles
         JComponent bodyComp;
         String body = post.body;
-        if (body != null && body.startsWith("[image:")) {
-            // Image bubble: [image:url]
+        if (post.imagePath != null) {
+            String url = resolveUrl(post.imagePath);
+            JLabel imgLbl = new JLabel("🖼 Loading…");
+            imgLbl.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+            imgLbl.setForeground(PRIMARY);
+            imgLbl.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            imgLbl.setMaximumSize(new Dimension(260, 200));
+            imgLbl.addMouseListener(new MouseAdapter() {
+                @Override public void mouseClicked(MouseEvent e) {
+                    try { Desktop.getDesktop().browse(new java.net.URI(url)); } catch (Exception ignored) {}
+                }
+            });
+            new SwingWorker<ImageIcon, Void>() {
+                @Override protected ImageIcon doInBackground() throws Exception {
+                    Image img = new ImageIcon(new URL(url)).getImage()
+                        .getScaledInstance(240, -1, Image.SCALE_SMOOTH);
+                    return new ImageIcon(img);
+                }
+                @Override protected void done() {
+                    try { imgLbl.setIcon(get()); imgLbl.setText(null);
+                        imgLbl.getParent().revalidate(); } catch (Exception ignored) {}
+                }
+            }.execute();
+            bodyComp = imgLbl;
+        } else if (post.audioPath != null) {
+            String url = resolveUrl(post.audioPath);
+            JPanel audioBubble = buildAudioBubble(url);
+            bodyComp = audioBubble;
+        } else if (post.filePath != null) {
+            String url  = resolveUrl(post.filePath);
+            String name = post.fileName != null ? post.fileName : "file";
+            String ext  = name.contains(".") ? name.substring(name.lastIndexOf('.') + 1).toUpperCase() : "FILE";
+            String size = post.fileSize >= 1_048_576
+                ? String.format("%.1f MB", post.fileSize / 1_048_576.0)
+                : post.fileSize > 0 ? (post.fileSize / 1024) + " KB" : ext;
+            JPanel fileBubble = new JPanel(new BorderLayout(10, 0));
+            fileBubble.setOpaque(true);
+            fileBubble.setBackground(new Color(0xEE, 0xF2, 0xFF));
+            fileBubble.setBorder(new EmptyBorder(8, 10, 8, 10));
+            fileBubble.setMaximumSize(new Dimension(280, 60));
+            JLabel iconLbl = new JLabel(fileEmoji(ext));
+            iconLbl.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 22));
+            JPanel info = new JPanel(); info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS)); info.setOpaque(false);
+            JLabel nameLbl = new JLabel(name.length() > 28 ? name.substring(0, 28) + "…" : name);
+            nameLbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            nameLbl.setForeground(new Color(0x1E, 0x29, 0x3B));
+            JLabel metaLbl = new JLabel(ext + "  ·  " + size);
+            metaLbl.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+            metaLbl.setForeground(new Color(0x94, 0xA3, 0xB8));
+            info.add(nameLbl); info.add(metaLbl);
+            JButton dlBtn = new JButton("⬇");
+            dlBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            dlBtn.setForeground(Color.WHITE);
+            dlBtn.setBackground(PRIMARY);
+            dlBtn.setBorderPainted(false);
+            dlBtn.setFocusPainted(false);
+            dlBtn.setPreferredSize(new Dimension(30, 30));
+            dlBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            dlBtn.addActionListener(e -> {
+                try { Desktop.getDesktop().browse(new java.net.URI(url)); } catch (Exception ignored) {}
+            });
+            fileBubble.add(iconLbl, BorderLayout.WEST);
+            fileBubble.add(info,    BorderLayout.CENTER);
+            fileBubble.add(dlBtn,   BorderLayout.EAST);
+            bodyComp = fileBubble;
+        } else if (body != null && body.startsWith("[image:")) {
             String url = body.substring(7, body.length() - 1);
             JLabel imgLbl = new JLabel("🖼 " + url);
             imgLbl.setFont(new Font("Segoe UI", Font.ITALIC, 13));
@@ -955,10 +1269,9 @@ public class ConversationPanel extends JPanel {
                     try { Desktop.getDesktop().browse(new java.net.URI(url)); } catch (Exception ignored) {}
                 }
             });
-            // Try to load thumbnail
             new SwingWorker<ImageIcon, Void>() {
                 @Override protected ImageIcon doInBackground() throws Exception {
-                    Image img = new ImageIcon(new java.net.URL(url)).getImage()
+                    Image img = new ImageIcon(new URL(url)).getImage()
                         .getScaledInstance(200, -1, Image.SCALE_SMOOTH);
                     return new ImageIcon(img);
                 }
@@ -968,7 +1281,6 @@ public class ConversationPanel extends JPanel {
             }.execute();
             bodyComp = imgLbl;
         } else if (body != null && body.startsWith("[file:")) {
-            // File bubble: [file:url|name]
             String inner = body.substring(6, body.length() - 1);
             String[] parts = inner.split("\\|", 2);
             String fileUrl  = parts[0];
@@ -985,27 +1297,8 @@ public class ConversationPanel extends JPanel {
             });
             bodyComp = dlBtn;
         } else if (body != null && (body.equals("[voice]") || body.equals("[voice message]") || body.startsWith("[audio:"))) {
-            // Audio bubble
             String audioUrl = body.startsWith("[audio:") ? body.substring(7, body.length() - 1) : null;
-            JPanel audioBubble = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-            audioBubble.setOpaque(false);
-            JLabel waveLbl = new JLabel("🎤 ▶ Voice message");
-            waveLbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-            waveLbl.setForeground(new Color(0x38, 0xA1, 0x69));
-            audioBubble.add(waveLbl);
-            if (audioUrl != null) {
-                JButton playBtn = new JButton("▶ Play");
-                playBtn.setFont(new Font("Segoe UI", Font.BOLD, 11));
-                playBtn.setForeground(Color.WHITE);
-                playBtn.setBackground(new Color(0x38, 0xA1, 0x69));
-                playBtn.setBorderPainted(false);
-                playBtn.setFocusPainted(false);
-                playBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                playBtn.addActionListener(e -> {
-                    try { Desktop.getDesktop().browse(new java.net.URI(audioUrl)); } catch (Exception ignored) {}
-                });
-                audioBubble.add(playBtn);
-            }
+            JPanel audioBubble = buildAudioBubble(audioUrl);
             bodyComp = audioBubble;
         } else {
             JTextArea bodyArea = new JTextArea(body);
@@ -1018,8 +1311,13 @@ public class ConversationPanel extends JPanel {
             bodyComp = bodyArea;
         }
 
+        // Timestamp (mirrors .bubble-time)
+        JLabel timeLbl = new JLabel(nowHHmm());
+        timeLbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        timeLbl.setForeground(isMe ? new Color(0x6A, 0x9F, 0x7A) : new Color(0x86, 0x96, 0xA0));
+
         // Actions row — ↩ Reply always shown; ✏ Edit / 🗑 Delete for own/admin
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        JPanel actions = new JPanel(new FlowLayout(isMe ? FlowLayout.RIGHT : FlowLayout.LEFT, 6, 0));
         actions.setOpaque(false);
 
         if (!post.syncPending) {
@@ -1050,9 +1348,69 @@ public class ConversationPanel extends JPanel {
             }
         }
 
-        card.add(authorRow, BorderLayout.NORTH);
-        card.add(bodyComp,  BorderLayout.CENTER);
-        card.add(actions,   BorderLayout.SOUTH);
+        JPanel bottomRow = new JPanel(new BorderLayout());
+        bottomRow.setOpaque(false);
+        bottomRow.add(actions, BorderLayout.CENTER);
+        bottomRow.add(timeLbl, isMe ? BorderLayout.WEST : BorderLayout.EAST);
+
+        bubble.add(bodyComp,   BorderLayout.CENTER);
+        bubble.add(bottomRow,  BorderLayout.SOUTH);
+
+        // ── Circular avatar ───────────────────────────────────────────────
+        String initial = post.authorName.isEmpty() ? "?" : String.valueOf(post.authorName.charAt(0)).toUpperCase();
+        Color avatarFrom = isMe ? new Color(0x25, 0xD3, 0x66) : PRIMARY;
+        Color avatarTo   = isMe ? new Color(0x12, 0x8C, 0x7E) : SECONDARY;
+        JLabel avatarLbl = new JLabel(initial, SwingConstants.CENTER) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setPaint(new GradientPaint(0, 0, avatarFrom, getWidth(), getHeight(), avatarTo));
+                g2.fillOval(0, 0, getWidth(), getHeight());
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        avatarLbl.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        avatarLbl.setForeground(Color.WHITE);
+        avatarLbl.setOpaque(false);
+        avatarLbl.setPreferredSize(new Dimension(28, 28));
+        avatarLbl.setMinimumSize(new Dimension(28, 28));
+        avatarLbl.setMaximumSize(new Dimension(28, 28));
+
+        // ── Bubble wrap (max 68% width, aligned left or right) ────────────
+        JPanel bubbleWrap = new JPanel();
+        bubbleWrap.setLayout(new BoxLayout(bubbleWrap, BoxLayout.X_AXIS));
+        bubbleWrap.setOpaque(false);
+        if (isMe) {
+            bubbleWrap.add(Box.createHorizontalGlue());
+            bubbleWrap.add(bubble);
+            bubbleWrap.add(Box.createHorizontalStrut(6));
+            bubbleWrap.add(avatarLbl);
+        } else {
+            bubbleWrap.add(avatarLbl);
+            bubbleWrap.add(Box.createHorizontalStrut(6));
+            bubbleWrap.add(bubble);
+            bubbleWrap.add(Box.createHorizontalGlue());
+        }
+
+        // Rounded bubble corners (mine: sharp bottom-right, others: sharp bottom-left)
+        bubble.setBorder(BorderFactory.createCompoundBorder(
+            new javax.swing.border.AbstractBorder() {
+                @Override public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(bubbleBg);
+                    g2.fillRoundRect(x, y, w - 1, h - 1, 8, 8);
+                    g2.dispose();
+                }
+                @Override public Insets getBorderInsets(Component c) { return new Insets(0, 0, 0, 0); }
+            },
+            new EmptyBorder(7, 10, 7, 10)));
+
+        JPanel card = new JPanel(new BorderLayout());
+        card.setOpaque(false);
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        card.add(bubbleWrap, BorderLayout.CENTER);
         return card;
     }
 
@@ -1115,9 +1473,16 @@ public class ConversationPanel extends JPanel {
         bodyArea.setWrapStyleWord(true);
         bodyArea.setEditable(false);
         bodyArea.setOpaque(false);
-        bodyArea.setBorder(new EmptyBorder(4, 0, 0, 0));
+        bodyArea.setBorder(new EmptyBorder(4, 0, 4, 0));
+        JLabel timeLbl = new JLabel(nowHHmm());
+        timeLbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        timeLbl.setForeground(new Color(0xA1, 0x62, 0x07));
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        footer.setOpaque(false);
+        footer.add(timeLbl);
         card.add(authorLbl, BorderLayout.NORTH);
         card.add(bodyArea,  BorderLayout.CENTER);
+        card.add(footer,    BorderLayout.SOUTH);
         return card;
     }
 

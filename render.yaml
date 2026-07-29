@@ -33,7 +33,17 @@ services:
       - key: BROADCAST_CONNECTION
         value: log
       - key: FILESYSTEM_DISK
-        value: local
+        value: s3
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_DEFAULT_REGION
+        sync: false
+      - key: AWS_BUCKET
+        sync: false
+      - key: AWS_URL
+        sync: false
       - key: DB_CONNECTION
         value: pgsql
       - key: DB_HOST

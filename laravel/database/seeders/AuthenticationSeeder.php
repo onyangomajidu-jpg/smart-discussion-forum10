@@ -55,7 +55,7 @@ class AuthenticationSeeder extends Seeder
         Member::create([
             'user_id' => $user->id,
             'student_id' => 'STU001',
-            'programme' => 'BSc Computer Science',
+            'programme' => 'BSSE -Software Engineering',
             'year_of_study' => 2,
             'reputation' => 100,
         ]);
@@ -83,7 +83,7 @@ class AuthenticationSeeder extends Seeder
         Lecturer::create([
             'user_id' => $user->id,
             'staff_id' => 'LEC001',
-            'department' => 'Computer Science',
+            'department' => 'Computer Networks',
             'specialisation' => 'Software Engineering',
         ]);
 

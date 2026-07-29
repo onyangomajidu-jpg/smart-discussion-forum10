@@ -32,12 +32,27 @@ class ProfileController extends Controller
         ]]);
     }
 
+    public function apiUploadAvatar(Request $request)
+    {
+        $request->validate([
+            'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
+        ]);
+        $user = $request->user();
+        if ($user->avatar && !str_starts_with($user->avatar, 'http')) {
+            Storage::disk('public')->delete($user->avatar);
+        }
+        $user->avatar = (new \App\Services\CloudinaryUploader)->upload($request->file('avatar'), 'avatars');
+        $user->save();
+        return response()->json(['message' => 'Avatar updated.', 'avatar' => $user->avatar]);
+    }
+
     public function apiUpdate(Request $request)
     {
         $user = $request->user();
         $data = $request->validate([
             'name'             => ['required', 'string', 'max:255'],
             'bio'              => ['nullable', 'string', 'max:500'],
+            'avatar'           => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
             'current_password' => ['nullable', 'string'],
             'password'         => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
@@ -51,10 +66,16 @@ class ProfileController extends Controller
         if ($request->filled('password')) {
             $user->password = \Illuminate\Support\Facades\Hash::make($data['password']);
         }
+        if ($request->hasFile('avatar') && $request->file('avatar')->isValid()) {
+            if ($user->avatar && !str_starts_with($user->avatar, 'http')) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $user->avatar = (new \App\Services\CloudinaryUploader)->upload($request->file('avatar'), 'avatars');
+        }
         $user->save();
         return response()->json(['message' => 'Profile updated.', 'user' => [
             'id' => $user->id, 'name' => $user->name, 'email' => $user->email,
-            'bio' => $user->bio, 'role' => $user->role,
+            'bio' => $user->bio, 'avatar' => $user->avatar, 'role' => $user->role,
         ]]);
     }
 

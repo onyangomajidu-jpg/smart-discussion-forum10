@@ -128,16 +128,19 @@ public class ApiClient {
         }
     }
 
-    /** Multipart POST to upload an avatar image file — mirrors profile/edit.blade.php avatar upload. */
-    public String uploadAvatar(String endpoint, java.io.File file) throws IOException {
+    /** Multipart avatar upload to POST /api/profile/avatar. */
+    public String uploadAvatar(java.io.File file, String name) throws IOException {
+        String mime = file.getName().toLowerCase().endsWith(".png") ? "image/png"
+                    : file.getName().toLowerCase().endsWith(".gif") ? "image/gif"
+                    : file.getName().toLowerCase().endsWith(".webp") ? "image/webp"
+                    : "image/jpeg";
         RequestBody body = new MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart("avatar", file.getName(),
-                RequestBody.create(file, MediaType.parse("image/*")))
-            .addFormDataPart("_method", "POST")
+                RequestBody.create(file, MediaType.parse(mime)))
             .build();
         Request request = new Request.Builder()
-            .url(BASE_URL + endpoint)
+            .url(BASE_URL + "/profile/avatar")
             .header("Accept", "application/json")
             .header("Authorization", bearerToken != null ? "Bearer " + bearerToken : "")
             .post(body)

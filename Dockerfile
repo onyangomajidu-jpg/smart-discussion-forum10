@@ -11,6 +11,10 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
+# Increase PHP upload limits
+RUN echo "upload_max_filesize=10M" > /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "post_max_size=12M" >> /usr/local/etc/php/conf.d/uploads.ini
+
 # --- Composer -------------------------------------------------------------
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
@@ -20,6 +24,7 @@ WORKDIR /var/www/html
 COPY laravel/ ./
 
 # --- PHP deps ---------------------------------------------------------
+RUN composer require league/flysystem-aws-s3-v3 --no-interaction --no-update
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # --- Front-end build (Vite/Tailwind) ------------------------------------

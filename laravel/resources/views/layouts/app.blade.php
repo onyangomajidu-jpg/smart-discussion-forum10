@@ -241,7 +241,7 @@
         .sidebar-badge { margin-left:auto; background:var(--primary); color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; }
 
         /* ── Main Content ───────────────────────────────────────────── */
-        .main { flex:1; padding:32px; overflow-x:hidden; }
+        .main { flex:1; padding:32px; overflow-x:auto; min-width:0; }
         .page-header { margin-bottom:28px; }
         .page-header h1 { font-size:24px; font-weight:800; color:var(--text); display:flex; align-items:center; gap:10px; }
         .page-header p  { font-size:13px; color:var(--muted); margin-top:5px; }

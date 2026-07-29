@@ -63,11 +63,23 @@ public class MessagesPanel extends JPanel {
     // ── Thread state ─────────────────────────────────────────────────────
     private int    currentOtherId   = -1;
     private String currentOtherName = "";
+    private String currentOtherRole = "";
     private String lastFetchIso     = "1970-01-01T00:00:00.000Z";
     private final Set<Integer> shownIds = new LinkedHashSet<>();
 
     private final JLabel    threadHeader  = new JLabel("  💬 Select a conversation");
     private final JLabel    threadMeta    = new JLabel(" ");
+    private final JLabel    threadAvatar  = new JLabel("", SwingConstants.CENTER) {
+        @Override protected void paintComponent(Graphics g) {
+            if (getText().isEmpty()) return;
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setPaint(new GradientPaint(0, 0, PRIMARY, getWidth(), getHeight(), SECONDARY));
+            g2.fillOval(0, 0, getWidth(), getHeight());
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    };
     private final JPanel    messagesPanel = new JPanel();
     private final JTextArea composeBox    = new JTextArea(3, 40);
     private final JButton   sendBtn       = new JButton("Send");
@@ -87,7 +99,11 @@ public class MessagesPanel extends JPanel {
     private TargetDataLine micLine;
     private Thread         recordThread;
     private File           pendingAudio;
-    private boolean        recording = false;
+    private boolean        recording  = false;
+    private Timer          recTimer;
+    private int            recSeconds = 0;
+    private JLabel         recTimerLbl;
+    private JPanel         audioPreviewBar;
 
     // ── Pending attachment (image or file chosen before send) ─────────────
     private File   pendingAttachment;
@@ -118,6 +134,21 @@ public class MessagesPanel extends JPanel {
         split.setDividerSize(4);
         split.setBorder(null);
         add(split, BorderLayout.CENTER);
+        showNoSelectionState();
+    }
+
+    private void showNoSelectionState() {
+        messagesPanel.removeAll();
+        JLabel lbl = new JLabel(
+            "<html><body style='width:260px;text-align:center'>✉️<br><br>Select a conversation on the left,<br>or search for someone to start a private chat.</body></html>",
+            SwingConstants.CENTER);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lbl.setForeground(Theme.MUTED);
+        lbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lbl.setBorder(new EmptyBorder(60, 20, 0, 20));
+        messagesPanel.add(lbl);
+        messagesPanel.revalidate();
+        messagesPanel.repaint();
     }
 
     private JComponent buildSidebar() {
@@ -160,7 +191,7 @@ public class MessagesPanel extends JPanel {
         convList.addListSelectionListener(e -> {
             if (e.getValueIsAdjusting()) return;
             Conversation c = convList.getSelectedValue();
-            if (c != null) openThread(c.userId, c.name);
+            if (c != null) openThread(c.userId, c.name, c.isSearchResult ? c.roleOrPreview : "");
         });
 
         JScrollPane scroll = new JScrollPane(convList);
@@ -183,11 +214,24 @@ public class MessagesPanel extends JPanel {
         threadMeta.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         threadMeta.setForeground(new Color(0x71, 0x80, 0x96));
 
+        threadAvatar.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        threadAvatar.setForeground(Color.WHITE);
+        threadAvatar.setOpaque(false);
+        threadAvatar.setPreferredSize(new Dimension(38, 38));
+        threadAvatar.setMinimumSize(new Dimension(38, 38));
+        threadAvatar.setMaximumSize(new Dimension(38, 38));
+        threadAvatar.setHorizontalAlignment(SwingConstants.CENTER);
+
         JPanel titleBlock = new JPanel();
         titleBlock.setLayout(new BoxLayout(titleBlock, BoxLayout.Y_AXIS));
         titleBlock.setOpaque(false);
         titleBlock.add(threadHeader);
         titleBlock.add(threadMeta);
+
+        JPanel headerLeft = new JPanel(new BorderLayout(10, 0));
+        headerLeft.setOpaque(false);
+        headerLeft.add(threadAvatar, BorderLayout.WEST);
+        headerLeft.add(titleBlock,   BorderLayout.CENTER);
 
         clearChatBtn = new JButton("🧹 Clear Chat");
         clearChatBtn.setFont(new Font("Segoe UI", Font.BOLD, 11));
@@ -204,22 +248,13 @@ public class MessagesPanel extends JPanel {
         headerPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_C),
             new EmptyBorder(12, 16, 12, 16)));
-        headerPanel.add(titleBlock,  BorderLayout.CENTER);
+        headerPanel.add(headerLeft,   BorderLayout.CENTER);
         headerPanel.add(clearChatBtn, BorderLayout.EAST);
 
         // ── Message list ─────────────────────────────────────────────────
         messagesPanel.setLayout(new BoxLayout(messagesPanel, BoxLayout.Y_AXIS));
         messagesPanel.setBackground(BG_BODY);
-        messagesPanel.setBorder(new EmptyBorder(8, 0, 8, 0));
-
-        JLabel emptyState = new JLabel(
-            "<html><body style='width:260px;text-align:center'>Select a conversation on the left, "
-            + "or search for someone to start a new one.</body></html>", SwingConstants.CENTER);
-        emptyState.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        emptyState.setForeground(Theme.MUTED);
-        emptyState.setAlignmentX(Component.CENTER_ALIGNMENT);
-        emptyState.setBorder(new EmptyBorder(40, 20, 0, 20));
-        messagesPanel.add(emptyState);
+        messagesPanel.setBorder(new EmptyBorder(12, 0, 12, 0));
 
         JScrollPane scroll = new JScrollPane(messagesPanel);
         scroll.setBorder(null);
@@ -319,6 +354,64 @@ public class MessagesPanel extends JPanel {
         micBtn.setToolTipText("Record a voice message");
         micBtn.addActionListener(e -> toggleRecording(micBtn));
 
+        // ── Audio preview bar (mirrors .audio-preview in messages.blade.php) ──
+        recTimerLbl = new JLabel("0:00");
+        recTimerLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        recTimerLbl.setForeground(new Color(0xEF, 0x44, 0x44));
+        JButton discardBtn = new JButton("✕");
+        discardBtn.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        discardBtn.setForeground(new Color(0xDC, 0x26, 0x26));
+        discardBtn.setBackground(new Color(0xFE, 0xE2, 0xE2));
+        discardBtn.setBorderPainted(false);
+        discardBtn.setFocusPainted(false);
+        discardBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        discardBtn.setToolTipText("Discard recording");
+        discardBtn.addActionListener(e -> discardRecording(micBtn));
+        int[] recBarHeights = {10,16,22,28,20,14,24,18,12,26,20,16,22,10,18,24,14,20,28,16};
+        JPanel recWavePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
+        recWavePanel.setOpaque(false);
+        for (int bh : recBarHeights) {
+            final int barH = bh;
+            JPanel bar = new JPanel() {
+                @Override public Dimension getPreferredSize() { return new Dimension(3, barH); }
+                @Override protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(new Color(0xC7, 0xD2, 0xFE));
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 3, 3);
+                    g2.dispose();
+                }
+            };
+            bar.setOpaque(false);
+            recWavePanel.add(bar);
+        }
+        JButton sendAudioBtn = new JButton("▶");
+        sendAudioBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        sendAudioBtn.setForeground(Color.WHITE);
+        sendAudioBtn.setBackground(new Color(0x00, 0xA8, 0x84));
+        sendAudioBtn.setBorderPainted(false);
+        sendAudioBtn.setFocusPainted(false);
+        sendAudioBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        sendAudioBtn.setToolTipText("Send voice message");
+        sendAudioBtn.addActionListener(e -> stopRecording(micBtn));
+        audioPreviewBar = new JPanel(new BorderLayout(8, 0));
+        audioPreviewBar.setBackground(Color.WHITE);
+        audioPreviewBar.setBorder(new EmptyBorder(6, 12, 6, 12));
+        audioPreviewBar.add(discardBtn,   BorderLayout.WEST);
+        audioPreviewBar.add(recTimerLbl,  BorderLayout.EAST);
+        audioPreviewBar.add(recWavePanel, BorderLayout.CENTER);
+        audioPreviewBar.add(sendAudioBtn, BorderLayout.EAST);
+        // Re-layout: discard | timer | wave | send
+        audioPreviewBar.removeAll();
+        JPanel recLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        recLeft.setOpaque(false);
+        recLeft.add(discardBtn);
+        recLeft.add(recTimerLbl);
+        audioPreviewBar.add(recLeft,      BorderLayout.WEST);
+        audioPreviewBar.add(recWavePanel, BorderLayout.CENTER);
+        audioPreviewBar.add(sendAudioBtn, BorderLayout.EAST);
+        audioPreviewBar.setVisible(false);
+
         JPanel composeRow = new JPanel(new BorderLayout(8, 0));
         composeRow.setBackground(Color.WHITE);
         composeRow.setBorder(new EmptyBorder(4, 12, 4, 12));
@@ -334,11 +427,12 @@ public class MessagesPanel extends JPanel {
         bottom.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER_C));
         JPanel topInputArea = new JPanel(new BorderLayout(0, 4));
         topInputArea.setOpaque(false);
-        topInputArea.add(statusLbl, BorderLayout.NORTH);
-        topInputArea.add(replyBar,  BorderLayout.CENTER);
-        topInputArea.add(attachRow, BorderLayout.SOUTH);
-        bottom.add(topInputArea, BorderLayout.NORTH);
-        bottom.add(composeRow,   BorderLayout.CENTER);
+        topInputArea.add(statusLbl,       BorderLayout.NORTH);
+        topInputArea.add(replyBar,        BorderLayout.CENTER);
+        topInputArea.add(attachRow,       BorderLayout.SOUTH);
+        bottom.add(topInputArea,    BorderLayout.NORTH);
+        bottom.add(audioPreviewBar, BorderLayout.CENTER);
+        bottom.add(composeRow,      BorderLayout.SOUTH);
 
         panel.add(headerPanel, BorderLayout.NORTH);
         panel.add(scroll,      BorderLayout.CENTER);
@@ -413,17 +507,43 @@ public class MessagesPanel extends JPanel {
      */
     private List<Conversation> parseConversationList(String html, boolean isSearch) {
         List<Conversation> result = new ArrayList<>();
+
+        // The blade renders both the search-results block (@if filled('search'))
+        // and the conversations block (@else) in the same page. Slice to the
+        // correct one using the unique sentinel text each block contains.
+        String section;
+        if (isSearch) {
+            // Search block starts after the results-count div and ends at the
+            // @else block opener, which always contains the conversations list.
+            // The @else block is identified by the "topics-count" span that
+            // shows "N conversation(s)" — but that word is too common.
+            // Instead, split on the literal @else boundary: the blade emits
+            // the conversations list inside a second <div class="topic-list">
+            // that follows the search block's own <div class="topic-list">.
+            int firstList  = html.indexOf("class=\"topic-list\"");
+            int secondList = firstList >= 0 ? html.indexOf("class=\"topic-list\"", firstList + 1) : -1;
+            int start = firstList >= 0 ? firstList : 0;
+            int end   = secondList >= 0 ? secondList : html.length();
+            section = html.substring(start, end);
+        } else {
+            // Conversations block is the second <div class="topic-list"> in the page.
+            int firstList  = html.indexOf("class=\"topic-list\"");
+            int secondList = firstList >= 0 ? html.indexOf("class=\"topic-list\"", firstList + 1) : -1;
+            int start = secondList >= 0 ? secondList : (firstList >= 0 ? firstList : 0);
+            section = html.substring(start);
+        }
+
         java.util.regex.Pattern rowStart = java.util.regex.Pattern.compile(
-            "class=\"topic-item[^\"]*\"[^>]*onclick=\"window\\.location='/messages/(\\d+)'\"");
-        java.util.regex.Matcher m = rowStart.matcher(html);
+            "onclick=\"window\\.location='[^']*/messages/(\\d+)'\"");
+        java.util.regex.Matcher m = rowStart.matcher(section);
         List<int[]> starts = new ArrayList<>();
         while (m.find()) {
             starts.add(new int[]{m.start(), Integer.parseInt(m.group(1))});
         }
         for (int i = 0; i < starts.size(); i++) {
             int begin = starts.get(i)[0];
-            int end   = (i + 1 < starts.size()) ? starts.get(i + 1)[0] : Math.min(html.length(), begin + 2000);
-            String chunk  = html.substring(begin, end);
+            int end   = (i + 1 < starts.size()) ? starts.get(i + 1)[0] : Math.min(section.length(), begin + 2000);
+            String chunk  = section.substring(begin, end);
             int    userId = starts.get(i)[1];
             String name   = unescapeHtml(extractTag(chunk, "<h4>", "</h4>"));
             String sub    = unescapeHtml(extractTag(chunk, "class=\"topic-author\">", "</div>"));
@@ -456,16 +576,30 @@ public class MessagesPanel extends JPanel {
 
     // ── Thread ────────────────────────────────────────────────────────────
 
-    private void openThread(int otherId, String otherName) {
+    private void openThread(int otherId, String otherName, String otherRole) {
+        stopActiveAudio();
         currentOtherId   = otherId;
         currentOtherName = otherName;
+        currentOtherRole = otherRole;
         lastFetchIso      = clearTimestamps.getOrDefault(otherId, "1970-01-01T00:00:00.000Z");
         shownIds.clear();
         messagesPanel.removeAll();
+        JLabel sayHi = new JLabel(
+            "<html><body style='width:260px;text-align:center'>\uD83D\uDC4B<br><br>Say hi to "
+            + escapeHtml(otherName) + " \u2014 this is the start of your private conversation.</body></html>",
+            SwingConstants.CENTER);
+        sayHi.setName("sayHi");
+        sayHi.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        sayHi.setForeground(Theme.MUTED);
+        sayHi.setAlignmentX(Component.CENTER_ALIGNMENT);
+        sayHi.setBorder(new EmptyBorder(60, 20, 0, 20));
+        messagesPanel.add(sayHi);
         messagesPanel.revalidate();
         messagesPanel.repaint();
         threadHeader.setText("  " + otherName);
-        threadMeta.setText(" ");
+        String meta = otherRole.isEmpty() ? "Private Message" : otherRole + " · Private Message";
+        threadMeta.setText(" " + meta);
+        threadAvatar.setText(otherName.isEmpty() ? "?" : String.valueOf(otherName.charAt(0)).toUpperCase());
         clearChatBtn.setVisible(true);
         cancelReply();
         pollThread();
@@ -494,6 +628,11 @@ public class MessagesPanel extends JPanel {
                     boolean any = false;
                     for (PrivateMessage msg : msgs) {
                         if (shownIds.add(msg.id)) {
+                            // Remove the "Say hi" placeholder on first real message
+                            for (int i = messagesPanel.getComponentCount() - 1; i >= 0; i--) {
+                                java.awt.Component c = messagesPanel.getComponent(i);
+                                if ("sayHi".equals(c.getName())) { messagesPanel.remove(i); break; }
+                            }
                             messagesPanel.add(buildMessageCard(msg));
                             any = true;
                         }
@@ -542,80 +681,93 @@ public class MessagesPanel extends JPanel {
         return result;
     }
 
+    // ── WhatsApp-style bubble colours (mirrors messages.blade.php) ──────
+    private static final Color BUBBLE_MINE   = new Color(0xD9, 0xFD, 0xD3); // #d9fdd3
+    private static final Color BUBBLE_THEIRS = Color.WHITE;
+    private static final Color BUBBLE_AUDIO  = new Color(0xF0, 0xF2, 0xF5);
+    private static final Color FILE_BG_MINE  = new Color(0xD9, 0xFD, 0xD3);
+    private static final Color FILE_BG       = Color.WHITE;
+
     private JPanel buildMessageCard(PrivateMessage msg) {
         boolean mine = msg.senderId == user.getUserId();
-        JPanel card = new JPanel(new BorderLayout(0, 6));
-        card.setBackground(mine ? new Color(0xEE, 0xF2, 0xFF) : Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_C),
-                BorderFactory.createMatteBorder(0, 4, 0, 0, mine ? PRIMARY : new Color(0xE2, 0xE8, 0xF0))),
-            new EmptyBorder(12, 14, 10, 14)));
-        card.setAlignmentX(Component.LEFT_ALIGNMENT);
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
-        String authorName = mine ? "You" : currentOtherName;
-        String initial = authorName.isEmpty() ? "?" : String.valueOf(authorName.charAt(0)).toUpperCase();
-        JLabel avatarLbl = new JLabel(initial, SwingConstants.CENTER) {
+        // Outer row — aligns bubble left (theirs) or right (mine)
+        JPanel row = new JPanel();
+        row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
+        row.setOpaque(false);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        row.setBorder(new EmptyBorder(3, 10, 3, 10));
+
+        JPanel bubble = buildBubble(msg, mine);
+
+        if (mine) {
+            row.add(Box.createHorizontalGlue());
+            row.add(bubble);
+        } else {
+            row.add(bubble);
+            row.add(Box.createHorizontalGlue());
+        }
+        return row;
+    }
+
+    private JPanel buildBubble(PrivateMessage msg, boolean mine) {
+        Color bgColor = mine ? BUBBLE_MINE : BUBBLE_THEIRS;
+        int arc = 14;
+
+        JPanel bubble = new JPanel(new BorderLayout(0, 4)) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setPaint(new GradientPaint(0, 0, PRIMARY, getWidth(), getHeight(), SECONDARY));
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 9, 9);
+                g2.setColor(bgColor);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), arc, arc);
                 g2.dispose();
-                super.paintComponent(g);
             }
         };
-        avatarLbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        avatarLbl.setForeground(Color.WHITE);
-        avatarLbl.setOpaque(false);
-        avatarLbl.setPreferredSize(new Dimension(32, 32));
-        avatarLbl.setMinimumSize(new Dimension(32, 32));
-        avatarLbl.setMaximumSize(new Dimension(32, 32));
-
-        JPanel authorRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        authorRow.setOpaque(false);
-        authorRow.add(avatarLbl);
-        JLabel authorLbl = new JLabel(authorName);
-        authorLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        authorLbl.setForeground(new Color(0x4A, 0x55, 0x68));
-        authorRow.add(authorLbl);
-        JLabel timeLbl = new JLabel(formatTime(msg.createdAt));
-        timeLbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        timeLbl.setForeground(Theme.MUTED);
-        authorRow.add(timeLbl);
+        bubble.setOpaque(false);
+        bubble.setBorder(new EmptyBorder(8, 12, 6, 12));
+        bubble.setMaximumSize(new Dimension(380, Integer.MAX_VALUE));
 
         JPanel bodyBox = new JPanel();
         bodyBox.setLayout(new BoxLayout(bodyBox, BoxLayout.Y_AXIS));
         bodyBox.setOpaque(false);
-        bodyBox.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+        // Reply quote
         if (msg.replyToId != null) {
-            JLabel quote = new JLabel("<html><body style='width:340px'>↩ "
-                + (msg.replyToSenderId == user.getUserId() ? "You" : currentOtherName) + ": "
-                + escapeHtml(msg.replyToBody != null ? truncate(msg.replyToBody, 80) : "Attachment")
-                + "</body></html>");
-            quote.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-            quote.setForeground(Theme.MUTED);
-            quote.setAlignmentX(Component.LEFT_ALIGNMENT);
+            String rpName = msg.replyToSenderId == user.getUserId() ? "You" : currentOtherName;
+            String rpBody = msg.replyToBody != null ? truncate(msg.replyToBody, 60) : "📎 Attachment";
+            JPanel quote = new JPanel(new BorderLayout());
+            quote.setOpaque(true);
+            quote.setBackground(mine ? new Color(0xBB, 0xF7, 0xD0) : new Color(0xF1, 0xF0, 0xFF));
             quote.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 3, 0, 0, PRIMARY),
-                new EmptyBorder(2, 8, 2, 4)));
+                new EmptyBorder(3, 8, 3, 8)));
+            JLabel rpAuthorLbl = new JLabel(rpName);
+            rpAuthorLbl.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            rpAuthorLbl.setForeground(PRIMARY);
+            JLabel rpBodyLbl = new JLabel(rpBody);
+            rpBodyLbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+            rpBodyLbl.setForeground(new Color(0x4A, 0x55, 0x68));
+            JPanel qt = new JPanel(); qt.setLayout(new BoxLayout(qt, BoxLayout.Y_AXIS)); qt.setOpaque(false);
+            qt.add(rpAuthorLbl); qt.add(rpBodyLbl);
+            quote.add(qt, BorderLayout.CENTER);
             bodyBox.add(quote);
             bodyBox.add(Box.createVerticalStrut(4));
         }
 
+        // Content
         if (msg.deleted) {
             JLabel del = new JLabel("🚫 This message was deleted");
             del.setFont(new Font("Segoe UI", Font.ITALIC, 13));
-            del.setForeground(Theme.MUTED);
+            del.setForeground(new Color(0x94, 0xA3, 0xB8));
             bodyBox.add(del);
         } else if (msg.imagePath != null) {
-            String url = storageBase + msg.imagePath;
-            JLabel imgLbl = new JLabel("🖼 Photo");
+            String url = resolveUrl(msg.imagePath);
+            JLabel imgLbl = new JLabel("🖼 Loading…");
             imgLbl.setFont(new Font("Segoe UI", Font.ITALIC, 13));
             imgLbl.setForeground(PRIMARY);
             imgLbl.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            imgLbl.setMaximumSize(new Dimension(260, 200));
             imgLbl.addMouseListener(new MouseAdapter() {
                 @Override public void mouseClicked(MouseEvent e) {
                     try { Desktop.getDesktop().browse(new java.net.URI(url)); } catch (Exception ignored) {}
@@ -624,85 +776,299 @@ public class MessagesPanel extends JPanel {
             new SwingWorker<ImageIcon, Void>() {
                 @Override protected ImageIcon doInBackground() throws Exception {
                     Image img = new ImageIcon(new java.net.URL(url)).getImage()
-                        .getScaledInstance(200, -1, Image.SCALE_SMOOTH);
+                        .getScaledInstance(240, -1, Image.SCALE_SMOOTH);
                     return new ImageIcon(img);
                 }
                 @Override protected void done() {
-                    try { imgLbl.setIcon(get()); imgLbl.setText(null); } catch (Exception ignored) {}
+                    try { imgLbl.setIcon(get()); imgLbl.setText(null);
+                        imgLbl.getParent().revalidate(); } catch (Exception ignored) {}
                 }
             }.execute();
             bodyBox.add(imgLbl);
             if (msg.body != null && !msg.body.isEmpty()) {
-                JLabel caption = new JLabel(msg.body);
+                JLabel caption = new JLabel("<html><body style='width:220px'>" + escapeHtml(msg.body) + "</body></html>");
                 caption.setFont(new Font("Segoe UI", Font.PLAIN, 13));
                 bodyBox.add(caption);
             }
         } else if (msg.audioPath != null) {
-            String url = storageBase + msg.audioPath;
-            JPanel audioBubble = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-            audioBubble.setOpaque(false);
-            JLabel waveLbl = new JLabel("🎤 Voice message");
-            waveLbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-            waveLbl.setForeground(new Color(0x38, 0xA1, 0x69));
-            JButton playBtn = new JButton("▶ Play");
-            playBtn.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            String url = resolveUrl(msg.audioPath);
+            // Play button — mirrors .audio-play-btn
+            JButton playBtn = new JButton("\u25B6");
+            playBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
             playBtn.setForeground(Color.WHITE);
-            playBtn.setBackground(new Color(0x38, 0xA1, 0x69));
+            playBtn.setBackground(new Color(0x66, 0x7E, 0xEA));
             playBtn.setBorderPainted(false);
             playBtn.setFocusPainted(false);
+            playBtn.setPreferredSize(new Dimension(38, 38));
             playBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            playBtn.addActionListener(e -> {
-                try { Desktop.getDesktop().browse(new java.net.URI(url)); } catch (Exception ignored) {}
-            });
-            audioBubble.add(waveLbl);
-            audioBubble.add(playBtn);
+            playBtn.addActionListener(e -> playAudio(url, playBtn));
+            // Waveform bars — mirrors .audio-waveform 20 bars
+            int[] barHeights = {8,14,20,28,22,16,26,18,10,24,20,14,22,8,18,26,12,20,30,14};
+            JPanel wavePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
+            wavePanel.setOpaque(false);
+            Color barColor = mine ? new Color(0x86,0xEF,0xAC) : new Color(0xCB,0xD5,0xE1);
+            for (int bh : barHeights) {
+                final int barH = bh;
+                JPanel bar = new JPanel() {
+                    @Override public Dimension getPreferredSize() { return new Dimension(3, barH); }
+                    @Override protected void paintComponent(Graphics g) {
+                        Graphics2D g2 = (Graphics2D) g.create();
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        g2.setColor(barColor);
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 3, 3);
+                        g2.dispose();
+                    }
+                };
+                bar.setOpaque(false);
+                wavePanel.add(bar);
+            }
+            // Duration label — mirrors .audio-duration
+            JLabel durLbl = new JLabel("0:00");
+            durLbl.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            durLbl.setForeground(new Color(0x64, 0x74, 0x8B));
+            JPanel waveRow = new JPanel(new BorderLayout(4, 0));
+            waveRow.setOpaque(false);
+            waveRow.add(wavePanel, BorderLayout.CENTER);
+            waveRow.add(durLbl,   BorderLayout.EAST);
+            JPanel audioBubble = new JPanel(new BorderLayout(8, 0));
+            audioBubble.setOpaque(false);
+            audioBubble.setMaximumSize(new Dimension(300, 54));
+            audioBubble.add(playBtn,  BorderLayout.WEST);
+            audioBubble.add(waveRow,  BorderLayout.CENTER);
             bodyBox.add(audioBubble);
         } else if (msg.filePath != null) {
-            String url  = storageBase + msg.filePath;
+            String url  = resolveUrl(msg.filePath);
             String name = msg.fileName != null ? msg.fileName : "file";
-            JButton dlBtn = new JButton("📎 " + name + "  ⬇ Download");
-            dlBtn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-            dlBtn.setForeground(PRIMARY);
-            dlBtn.setBackground(new Color(0xEE, 0xF2, 0xFF));
+            String ext  = name.contains(".") ? name.substring(name.lastIndexOf('.') + 1).toUpperCase() : "FILE";
+            String size = msg.fileSize >= 1_048_576
+                ? String.format("%.1f MB", msg.fileSize / 1_048_576.0)
+                : msg.fileSize > 0 ? (msg.fileSize / 1024) + " KB" : ext;
+            JPanel fileBubble = new JPanel(new BorderLayout(10, 0)) {
+                @Override protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(mine ? FILE_BG_MINE : FILE_BG);
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                    g2.setColor(new Color(0xE2, 0xE8, 0xF0));
+                    g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                    g2.dispose();
+                }
+            };
+            fileBubble.setOpaque(false);
+            fileBubble.setBorder(new EmptyBorder(8, 10, 8, 10));
+            fileBubble.setMaximumSize(new Dimension(280, 60));
+            JLabel iconLbl = new JLabel(fileEmoji(ext));
+            iconLbl.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 22));
+            JPanel info = new JPanel(); info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS)); info.setOpaque(false);
+            JLabel nameLbl = new JLabel(truncate(name, 28));
+            nameLbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            nameLbl.setForeground(new Color(0x1E, 0x29, 0x3B));
+            JLabel metaLbl = new JLabel(ext + "  ·  " + size);
+            metaLbl.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+            metaLbl.setForeground(new Color(0x94, 0xA3, 0xB8));
+            info.add(nameLbl); info.add(metaLbl);
+            JButton dlBtn = new JButton("⬇");
+            dlBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            dlBtn.setForeground(Color.WHITE);
+            dlBtn.setBackground(PRIMARY);
             dlBtn.setBorderPainted(false);
             dlBtn.setFocusPainted(false);
+            dlBtn.setPreferredSize(new Dimension(30, 30));
             dlBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             dlBtn.addActionListener(e -> {
                 try { Desktop.getDesktop().browse(new java.net.URI(url)); } catch (Exception ignored) {}
             });
-            bodyBox.add(dlBtn);
+            fileBubble.add(iconLbl, BorderLayout.WEST);
+            fileBubble.add(info,    BorderLayout.CENTER);
+            fileBubble.add(dlBtn,   BorderLayout.EAST);
+            bodyBox.add(fileBubble);
         } else {
-            JTextArea bodyArea = new JTextArea(msg.body != null ? msg.body : "");
-            bodyArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            bodyArea.setLineWrap(true);
-            bodyArea.setWrapStyleWord(true);
-            bodyArea.setEditable(false);
-            bodyArea.setOpaque(false);
-            bodyArea.setBorder(new EmptyBorder(4, 0, 4, 0));
-            bodyBox.add(bodyArea);
+            JLabel bodyLbl = new JLabel(
+                "<html><body style='width:260px'>" + escapeHtml(msg.body != null ? msg.body : "") + "</body></html>");
+            bodyLbl.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            bodyLbl.setForeground(new Color(0x1E, 0x29, 0x3B));
+            bodyBox.add(bodyLbl);
         }
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        // Timestamp (bottom-right, WhatsApp style)
+        JLabel timeLbl = new JLabel(formatTime(msg.createdAt));
+        timeLbl.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        timeLbl.setForeground(new Color(0x94, 0xA3, 0xB8));
+        JPanel timeRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        timeRow.setOpaque(false);
+        timeRow.add(timeLbl);
+
+        // Actions (reply / edit / delete)
+        JPanel actions = new JPanel(new FlowLayout(mine ? FlowLayout.RIGHT : FlowLayout.LEFT, 4, 0));
         actions.setOpaque(false);
         if (!msg.deleted) {
-            JButton replyBtn = smallButton("↩ Reply", PRIMARY);
+            JButton replyBtn = smallButton("↩", PRIMARY);
+            replyBtn.setToolTipText("Reply");
             replyBtn.addActionListener(e -> setReply(msg.id, mine ? "You" : currentOtherName,
                 msg.body != null ? msg.body : "Attachment"));
             actions.add(replyBtn);
             if (mine) {
-                JButton editBtn = smallButton("✏ Edit", new Color(0x38, 0xA1, 0x69));
-                editBtn.addActionListener(e -> showEditDialog(msg));
-                JButton deleteBtn = smallButton("🗑 Delete", new Color(0xE5, 0x3E, 0x3E));
+                if (msg.body != null) {
+                    JButton editBtn = smallButton("✏", new Color(0x38, 0xA1, 0x69));
+                    editBtn.setToolTipText("Edit");
+                    editBtn.addActionListener(e -> showEditDialog(msg));
+                    actions.add(editBtn);
+                }
+                JButton deleteBtn = smallButton("🗑", new Color(0xE5, 0x3E, 0x3E));
+                deleteBtn.setToolTipText("Delete");
                 deleteBtn.addActionListener(e -> deleteMessage(msg));
-                actions.add(editBtn);
                 actions.add(deleteBtn);
             }
         }
 
-        card.add(authorRow, BorderLayout.NORTH);
-        card.add(bodyBox,   BorderLayout.CENTER);
-        card.add(actions,   BorderLayout.SOUTH);
-        return card;
+        bubble.add(bodyBox,  BorderLayout.CENTER);
+        bubble.add(timeRow,  BorderLayout.SOUTH);
+
+        // Wrap bubble + actions in a column
+        JPanel col = new JPanel();
+        col.setLayout(new BoxLayout(col, BoxLayout.Y_AXIS));
+        col.setOpaque(false);
+        col.add(bubble);
+        col.add(actions);
+        return col;
+    }
+
+    // ── Active audio playback (one at a time, mirrors web's toggleAudio) ──
+    private SourceDataLine activeLine   = null;
+    private boolean        paused       = false;
+    private JButton        activePlayBtn = null;
+
+    private void playAudio(String url, JButton playBtn) {
+        // If this button is already playing, pause/resume
+        if (playBtn == activePlayBtn && activeLine != null) {
+            if (paused) {
+                activeLine.start();
+                paused = false;
+                playBtn.setText("⏸");
+            } else {
+                activeLine.stop();
+                paused = true;
+                playBtn.setText("▶");
+            }
+            return;
+        }
+        // Stop any other playing line first
+        stopActiveAudio();
+        activePlayBtn = playBtn;
+        playBtn.setEnabled(false);
+        playBtn.setText("⏳");
+        new SwingWorker<File, Void>() {
+            @Override protected File doInBackground() throws Exception {
+                String ext = url.contains(".") ? url.substring(url.lastIndexOf('.')) : ".wav";
+                File tmp = File.createTempFile("dm_play_", ext);
+                tmp.deleteOnExit();
+                try {
+                    java.net.URL audioUrl = new java.net.URL(url);
+                    try (java.io.InputStream in = audioUrl.openStream();
+                         java.io.FileOutputStream out = new java.io.FileOutputStream(tmp)) {
+                        byte[] buf = new byte[8192]; int n;
+                        while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+                    }
+                } catch (Exception ex) {
+                    byte[] bytes = webSession.getBytes(url.replace(webSession.rootUrl, ""));
+                    try (java.io.FileOutputStream out = new java.io.FileOutputStream(tmp)) {
+                        out.write(bytes);
+                    }
+                }
+                return tmp;
+            }
+            @Override protected void done() {
+                playBtn.setEnabled(true);
+                try {
+                    File tmp = get();
+                    String name = tmp.getName().toLowerCase();
+                    if (name.endsWith(".wav")) {
+                        playWav(tmp, playBtn);
+                    } else {
+                        Desktop.getDesktop().open(tmp);
+                        playBtn.setText("▶");
+                        activePlayBtn = null;
+                    }
+                } catch (Exception ex) {
+                    playBtn.setText("▶");
+                    activePlayBtn = null;
+                    setStatus("⚠ Could not play audio: " + ex.getMessage());
+                }
+            }
+        }.execute();
+    }
+
+    private void stopActiveAudio() {
+        if (activeLine != null) {
+            activeLine.stop();
+            activeLine.close();
+            activeLine = null;
+        }
+        paused = false;
+        if (activePlayBtn != null) {
+            JButton btn = activePlayBtn;
+            SwingUtilities.invokeLater(() -> btn.setText("▶"));
+            activePlayBtn = null;
+        }
+    }
+
+    private void playWav(File file, JButton playBtn) {
+        new Thread(() -> {
+            try (AudioInputStream ais = AudioSystem.getAudioInputStream(file)) {
+                AudioFormat fmt = ais.getFormat();
+                DataLine.Info info = new DataLine.Info(SourceDataLine.class, fmt);
+                if (!AudioSystem.isLineSupported(info)) {
+                    SwingUtilities.invokeLater(() -> {
+                        try { Desktop.getDesktop().open(file); } catch (Exception ignored) {}
+                        playBtn.setText("▶"); activePlayBtn = null;
+                    });
+                    return;
+                }
+                SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info);
+                line.open(fmt);
+                line.start();
+                activeLine = line;
+                paused = false;
+                SwingUtilities.invokeLater(() -> playBtn.setText("⏸"));
+                byte[] buf = new byte[4096]; int n;
+                while ((n = ais.read(buf)) != -1) {
+                    // Block here while paused
+                    while (paused && activeLine == line) {
+                        Thread.sleep(50);
+                    }
+                    if (activeLine != line) break; // stopped externally
+                    line.write(buf, 0, n);
+                }
+                line.drain();
+                line.close();
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> setStatus("⚠ Playback error: " + ex.getMessage()));
+            } finally {
+                SwingUtilities.invokeLater(() -> {
+                    playBtn.setText("▶");
+                    if (activePlayBtn == playBtn) { activeLine = null; activePlayBtn = null; paused = false; }
+                });
+            }
+        }, "dm-audio-play").start();
+    }
+
+    private String resolveUrl(String path) {
+        if (path == null) return "";
+        if (path.startsWith("http://") || path.startsWith("https://")) return path;
+        return storageBase + path;
+    }
+
+    private String fileEmoji(String ext) {
+        return switch (ext.toLowerCase()) {
+            case "pdf"              -> "📕";
+            case "doc", "docx"      -> "📘";
+            case "xls", "xlsx", "csv" -> "📗";
+            case "ppt", "pptx"      -> "📙";
+            case "zip", "rar", "7z" -> "🗜";
+            case "mp3", "wav", "ogg" -> "🎵";
+            case "mp4", "mov", "avi" -> "🎬";
+            default                 -> "📄";
+        };
     }
 
     // ── Sending ──────────────────────────────────────────────────────────
@@ -880,13 +1246,37 @@ public class MessagesPanel extends JPanel {
                 } catch (Exception ignored) {}
             }, "dm-voice-recorder");
             recordThread.start();
-            setStatus("🔴 Recording… click ⏹ to stop");
+            // Show audio-preview bar with live timer (mirrors .audio-preview + rec-timer)
+            recSeconds = 0;
+            recTimerLbl.setText("0:00");
+            audioPreviewBar.setVisible(true);
+            recTimer = new Timer(1000, ev -> {
+                recSeconds++;
+                recTimerLbl.setText(recSeconds / 60 + ":" + String.format("%02d", recSeconds % 60));
+            });
+            recTimer.start();
+            setStatus("🔴 Recording…");
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Could not start recording: " + ex.getMessage());
         }
     }
 
+    private void discardRecording(JButton micBtn) {
+        if (recTimer != null) { recTimer.stop(); recTimer = null; }
+        audioPreviewBar.setVisible(false);
+        recTimerLbl.setText("0:00");
+        recording = false;
+        micBtn.setText("🎤");
+        micBtn.setForeground(null);
+        if (micLine != null) { micLine.stop(); micLine.close(); micLine = null; }
+        pendingAudio = null;
+        setStatus(" ");
+    }
+
     private void stopRecording(JButton micBtn) {
+        if (recTimer != null) { recTimer.stop(); recTimer = null; }
+        audioPreviewBar.setVisible(false);
+        recTimerLbl.setText("0:00");
         recording = false;
         micBtn.setText("🎤");
         micBtn.setForeground(null);
@@ -1061,7 +1451,16 @@ public class MessagesPanel extends JPanel {
 
     /** Renders a {@link Conversation} row: avatar + name + preview/role + time + unread pill. */
     private class ConversationCellRenderer extends JPanel implements ListCellRenderer<Conversation> {
-        private final JLabel avatar = new JLabel("", SwingConstants.CENTER);
+        private final JLabel avatar = new JLabel("", SwingConstants.CENTER) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setPaint(new GradientPaint(0, 0, PRIMARY, getWidth(), getHeight(), SECONDARY));
+                g2.fillOval(0, 0, getWidth(), getHeight());
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
         private final JLabel nameLbl = new JLabel();
         private final JLabel subLbl  = new JLabel();
         private final JLabel timeLbl = new JLabel();
@@ -1114,10 +1513,12 @@ public class MessagesPanel extends JPanel {
         public Component getListCellRendererComponent(JList<? extends Conversation> list, Conversation c,
                                                        int index, boolean isSelected, boolean cellHasFocus) {
             setBackground(isSelected ? new Color(0xEE, 0xF2, 0xFF) : Color.WHITE);
-            avatar.setText(c.name.isEmpty() ? "?" : String.valueOf(c.name.charAt(0)).toUpperCase());
+            final String initial = c.name.isEmpty() ? "?" : String.valueOf(c.name.charAt(0)).toUpperCase();
+            // Replace flat avatar with gradient-painted label
+            avatar.setText(initial);
             avatar.setIcon(null);
-            avatar.setOpaque(true);
-            avatar.setBackground(PRIMARY);
+            avatar.setOpaque(false);
+            // repaint will use paintComponent below
             nameLbl.setText(c.name);
             subLbl.setText(c.roleOrPreview);
             timeLbl.setText(c.timeText != null ? c.timeText : "");
